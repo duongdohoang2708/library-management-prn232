@@ -1,0 +1,165 @@
+@using LibraryManagementDAL.Models
+@model IEnumerable<LibraryManagementDAL.Models.BookCopy>
+@{
+    ViewData["Title"] = "Quản lý Bản sao: " + ViewBag.BookTitle;
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    int bookId = ViewBag.BookId;
+}
+
+<div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
+    <!-- Breadcrumb & Header -->
+    <div class="mb-8">
+        <a asp-controller="Inventory" asp-action="Index" class="inline-flex items-center text-white/40 hover:text-primary transition-colors mb-4 text-sm font-medium">
+            <span class="material-symbols-outlined text-[18px] mr-1">arrow_back</span>
+            Back to list
+        </a>
+        <h1 class="text-4xl font-bold font-display text-white mb-2">Manage Copy Inventory (Import)</h1>
+        <p class="text-white/60">Book: <strong class="text-white">@ViewBag.BookTitle</strong></p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 mb-6 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center gap-3">
+            <span class="material-symbols-outlined">check_circle</span>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="p-4 mb-6 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3">
+            <span class="material-symbols-outlined">error</span>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        
+        <!-- Left: Add New Copies -->
+        <div class="lg:col-span-1 bg-black/20 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-6">
+                <span class="material-symbols-outlined text-primary">add_box</span>
+                Import Hard Copies
+            </h2>
+            <form asp-action="AddCopy" method="post" class="space-y-5">
+                <input type="hidden" name="bookId" value="@bookId" />
+                
+                <div>
+                    <label class="block text-sm font-medium text-white/60 mb-2">Number of Copies to Import</label>
+                    <input type="number" name="numberOfCopies" value="1" min="1" max="50" required
+                           class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-white/60 mb-2">Shelf Location (Optional)</label>
+                    <input type="text" name="location" placeholder="Example: Shelf A1, Compartment 2..."
+                           class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors" />
+                </div>
+
+                <div class="p-4 bg-primary/10 border border-primary/20 rounded-xl">
+                    <p class="text-sm text-primary/80 flex items-start gap-2">
+                        <span class="material-symbols-outlined text-[18px]">info</span>
+                        <span>The barcode will be <strong>automatically generated</strong> by the system for each new book.</span>
+                    </p>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-primary text-background-dark font-bold rounded-xl hover:bg-primary/90 transition-all flex justify-center items-center gap-2">
+                    <span class="material-symbols-outlined">playlist_add</span>
+                    Generate Barcode & Add to Inventory
+                </button>
+            </form>
+        </div>
+
+        <!-- Right: List existing copies -->
+        <div class="lg:col-span-2 bg-black/20 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <h2 class="text-xl font-bold text-white">Current Hard Copies</h2>
+                <div class="px-3 py-1 bg-white/10 rounded-lg text-sm font-medium text-white/80">
+                    Total: <span class="text-white">@Model.Count()</span> copies
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10">
+                            <th class="py-4 px-6 font-medium text-white/60">Barcode</th>
+                            <th class="py-4 px-6 font-medium text-white/60">Status</th>
+                            <th class="py-4 px-6 font-medium text-white/60">Condition</th>
+                            <th class="py-4 px-6 font-medium text-white/60">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-white/80">
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var copy in Model)
+                            {
+                                <tr class="hover:bg-white/[0.02] transition-colors relative group">
+                                    <form asp-action="UpdateStatus" method="post" class="contents">
+                                        <input type="hidden" name="copyId" value="@copy.BookCopyId" />
+                                        <input type="hidden" name="bookId" value="@bookId" />
+                                        
+                                        <td class="py-4 px-6 whitespace-nowrap">
+                                            <span class="font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">@copy.Barcode</span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <!-- Edit Status -->
+                                            @if (copy.Status == BookCopyStatus.Available || copy.Status == BookCopyStatus.Lost || copy.Status == BookCopyStatus.Damaged)
+                                            {
+                                                <select name="status" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none">
+                                                    <option value="0" selected="@(copy.Status == BookCopyStatus.Available)">Available</option>
+                                                    <option value="3" selected="@(copy.Status == BookCopyStatus.Lost)">Lost</option>
+                                                    <option value="4" selected="@(copy.Status == BookCopyStatus.Damaged)">Damaged</option>
+                                                </select>
+                                            }
+                                            else
+                                            {
+                                                <div class="flex items-center gap-2">
+                                                    <input type="hidden" name="status" value="@((int)copy.Status)" />
+                                                    @if (copy.Status == BookCopyStatus.Borrowed)
+                                                    {
+                                                        <span class="px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg text-xs font-bold uppercase tracking-wider">Borrowed</span>
+                                                    }
+                                                    else if (copy.Status == BookCopyStatus.Reserved)
+                                                    {
+                                                        <span class="px-3 py-1.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-lg text-xs font-bold uppercase tracking-wider">Reserved</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <!-- Edit Condition -->
+                                            <select name="condition" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none">
+                                                <option value="0" selected="@(copy.Condition == BookCondition.New)">New</option>
+                                                <option value="1" selected="@(copy.Condition == BookCondition.Good)">Good</option>
+                                                <option value="2" selected="@(copy.Condition == BookCondition.Fair)">Fair</option>
+                                                <option value="3" selected="@(copy.Condition == BookCondition.Poor)">Poor</option>
+                                                <option value="4" selected="@(copy.Condition == BookCondition.Damaged)">Damaged</option>
+                                            </select>
+                                        </td>
+                                        <td class="py-3 px-6 whitespace-nowrap">
+                                            <input type="text" name="location" value="@copy.Location" placeholder="Location" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none mb-2 w-full max-w-[120px]" />
+                                            <button type="submit" class="px-3 py-2 bg-primary/20 text-primary hover:bg-primary hover:text-background-dark rounded-lg transition-colors font-medium text-sm flex items-center justify-center gap-1 w-full max-w-[120px]">
+                                                <span class="material-symbols-outlined text-[16px]">save</span>
+                                                Save
+                                            </button>
+                                        </td>
+                                    </form>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="py-12 text-center text-white/40">
+                                    <span class="material-symbols-outlined text-4xl mb-4 opacity-50 block">inventory</span>
+                                    No physical copies found. Create new copies by entering the information on the left pane.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>

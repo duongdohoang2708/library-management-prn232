@@ -1,0 +1,381 @@
+@using LibraryManagementDAL.DTO.Circulation
+@using LibraryManagementDAL.Models
+@model BorrowRequest
+
+@{
+    ViewData["Title"] = "Cho Mượn Sách";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var availableCopies = ViewBag.AvailableCopies as List<BookCopy> ?? new List<BookCopy>();
+}
+
+<div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
+
+    <div class="flex items-center gap-3 mb-8 cursor-pointer w-fit group" onclick="window.history.back()">
+        <span class="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors">arrow_back</span>
+        <span class="text-sm font-medium text-white/40 group-hover:text-primary transition-colors tracking-wide">Back to list</span>
+    </div>
+    
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
+            
+            <!-- Decorator glow -->
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 blur-3xl rounded-full pointer-events-none"></div>
+
+            <div class="p-8 border-b border-white/5 relative z-10">
+                <h2 class="text-2xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary text-3xl">post_add</span>
+                    Create New Loan
+                </h2>
+                <p class="text-sm text-white/40">Select reader and search for books. Maximum 5 books per transaction.</p>
+            </div>
+
+            <div class="p-8 relative z-10 bg-black/10">
+                <form asp-action="Borrow" method="post" id="borrowForm" class="flex flex-col gap-6">
+                    <div asp-validation-summary="ModelOnly" class="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-xl font-medium"></div>
+
+                    <!-- User Selection Input -->
+                    <div class="flex flex-col gap-2 relative">
+                        <label class="text-sm font-semibold text-white/80 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px] text-white/40">badge</span>
+                            Reader Information (ID or Name)
+                        </label>
+                        <div class="relative group">
+                            <input type="text" id="userSearchInput" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-4 pr-10 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all text-lg shadow-inner shadow-black/20" 
+                                   placeholder="Type ID, name or email to search..." autocomplete="off" />
+                            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors text-2xl">person_search</span>
+                            
+                            <!-- Hidden actual ID field -->
+                            <input asp-for="UserId" type="hidden" id="selectedUserId" />
+                        </div>
+                        
+                        <!-- User Search Results Dropdown -->
+                        <div id="userSearchResults" class="absolute top-full left-0 right-0 mt-2 bg-[#1a232e] border border-white/10 rounded-xl shadow-2xl z-[100] hidden overflow-hidden backdrop-blur-xl">
+                            <div id="userResultsList" class="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                <!-- Results will be injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Selected User Display -->
+                        <div id="selectedUserCard" class="hidden mt-2 p-3 bg-primary/10 border border-primary/30 rounded-xl flex items-center justify-between animate-fadeIn">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined">person</span>
+                                </div>
+                                <div>
+                                    <h4 id="displayUserName" class="text-sm font-bold text-white">---</h4>
+                                    <p id="displayUserInfo" class="text-[11px] text-primary/70 font-mono">ID: ---</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="clearSelectedUser()" class="p-1.5 hover:bg-white/5 rounded-lg text-white/40 hover:text-red-400 transition-colors">
+                                <span class="material-symbols-outlined text-sm">close</span>
+                            </button>
+                        </div>
+
+                        <span asp-validation-for="UserId" class="text-red-400 text-xs font-semibold mt-1"></span>
+                    </div>
+
+                    <!-- Selected Books Display -->
+                    <div class="flex flex-col gap-3 mt-2">
+                        <div class="flex justify-between items-end">
+                            <label class="text-sm font-semibold text-white/80 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[18px] text-white/40">library_books</span>
+                                Selected Books
+                            </label>
+                            <span id="selectedCount" class="text-[10px] uppercase font-bold tracking-wider text-primary/60 bg-primary/10 px-2 py-0.5 rounded border border-primary/20">0 / 5 books</span>
+                        </div>
+
+                        <!-- Selected books container -->
+                        <div id="selectedBooksContainer" class="min-h-[60px] border border-dashed border-white/10 rounded-xl p-3 flex flex-wrap gap-2 transition-all">
+                            <p id="emptyMessage" class="text-white/20 text-sm w-full text-center py-2">No books selected. Search below to add.</p>
+                        </div>
+
+                        <!-- Hidden inputs for selected barcodes will be added here by JS -->
+                        <div id="hiddenBarcodesContainer"></div>
+                    </div>
+
+                    <!-- Search Books Section -->
+                    <div class="flex flex-col gap-3 mt-2">
+                        <label class="text-sm font-semibold text-white/80 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px] text-white/40">search</span>
+                            Search Available Books
+                        </label>
+                        <div class="relative group">
+                            <input type="text" id="bookSearchInput" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all text-sm shadow-inner shadow-black/20" 
+                                   placeholder="Type title, author, or barcode to search..." autocomplete="off" />
+                            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors text-xl">manage_search</span>
+                        </div>
+
+                        <!-- Search Results Grid -->
+                        <div id="searchResultsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            @if (availableCopies != null)
+                            {
+                                foreach (var copy in availableCopies)
+                                {
+                                    <div class="book-card cursor-pointer flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-primary/10 hover:border-primary/40 transition-all group/card"
+                                         data-barcode="@copy.Barcode"
+                                         data-title="@copy.Book?.Title"
+                                         data-author="@copy.Book?.Author?.Name"
+                                         data-location="@copy.Location"
+                                         onclick="toggleBookSelection(this)">
+                                        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center">
+                                            <span class="material-symbols-outlined text-white/30 group-hover/card:text-primary transition-colors">book_2</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="text-sm font-semibold text-white truncate group-hover/card:text-primary transition-colors">@copy.Book?.Title</h4>
+                                            <div class="flex items-center gap-2 mt-0.5">
+                                                <span class="text-[10px] text-white/40">@copy.Book?.Author?.Name</span>
+                                                <span class="text-white/10">•</span>
+                                                <span class="text-[10px] text-primary font-mono tracking-wider">@copy.Barcode</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-shrink-0 w-6 h-6 rounded-full border-2 border-white/20 flex items-center justify-center transition-all check-circle">
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-4 mt-6 pt-6 border-t border-white/10">
+                        <a asp-action="Index" class="flex-1 py-3.5 border border-white/10 bg-white/5 hover:bg-white/10 text-white/80 font-bold rounded-xl transition-all text-center">
+                            Cancel
+                        </a>
+                        <button type="submit" id="submitBtn" class="flex-[2] py-3.5 border border-primary bg-primary hover:bg-primary/90 text-background-dark font-black rounded-xl hover:shadow-xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-2 text-lg disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                            <span class="material-symbols-outlined">how_to_reg</span>
+                            Confirm Loan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .book-card.selected {
+        background: rgba(var(--primary-rgb, 234 179 8) / 0.1) !important;
+        border-color: rgba(var(--primary-rgb, 234 179 8) / 0.5) !important;
+    }
+    .book-card.selected .check-circle {
+        background: #eab308;
+        border-color: #eab308;
+    }
+    .book-card.selected .check-circle::after {
+        content: '✓';
+        color: #0f1923;
+        font-size: 12px;
+        font-weight: 900;
+    }
+    .book-card.hidden-by-search {
+        display: none !important;
+    }
+    .selected-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px 6px 12px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 10px;
+        font-size: 12px;
+        color: rgba(255,255,255,0.8);
+        animation: fadeIn 0.2s ease;
+    }
+    .selected-tag .tag-barcode {
+        font-family: monospace;
+        font-size: 10px;
+        color: #eab308;
+        letter-spacing: 0.05em;
+    }
+    .selected-tag .remove-btn {
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(239,68,68,0.15);
+        border: 1px solid rgba(239,68,68,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #ef4444;
+        transition: all 0.2s;
+    }
+    .selected-tag .remove-btn:hover {
+        background: rgba(239,68,68,0.3);
+    }
+    .animate-fadeIn {
+        animation: fadeIn 0.2s ease forwards;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to   { opacity: 1; transform: scale(1); }
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const selectedBooks = new Map(); // barcode -> { title, author }
+        const MAX_BOOKS = 5;
+
+        // User Search Logic
+        const userSearchInput = document.getElementById('userSearchInput');
+        const userSearchResults = document.getElementById('userSearchResults');
+        const userResultsList = document.getElementById('userResultsList');
+        const selectedUserIdInput = document.getElementById('selectedUserId');
+        const selectedUserCard = document.getElementById('selectedUserCard');
+        const displayUserName = document.getElementById('displayUserName');
+        const displayUserInfo = document.getElementById('displayUserInfo');
+
+        let searchTimeout = null;
+
+        userSearchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 1) {
+                userSearchResults.classList.add('hidden');
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/Circulation/SearchUsers?query=${encodeURIComponent(query)}`);
+                    const users = await response.json();
+                    
+                    if (users.length > 0) {
+                        renderUserResults(users);
+                        userSearchResults.classList.remove('hidden');
+                    } else {
+                        userResultsList.innerHTML = '<div class="p-4 text-white/40 text-center text-sm">Không tìm thấy người dùng nào</div>';
+                        userSearchResults.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Error fetching users:', error);
+                }
+            }, 300);
+        });
+
+        function renderUserResults(users) {
+            userResultsList.innerHTML = users.map(user => `
+                <div class="px-4 py-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 transition-colors group" 
+                     onclick="selectUser(${user.userId}, '${user.fullName}', '${user.email}')">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-sm font-bold text-white group-hover:text-primary transition-colors">${user.fullName}</div>
+                            <div class="text-[10px] text-white/40 font-mono">${user.email}</div>
+                        </div>
+                        <div class="px-2 py-0.5 bg-white/5 rounded text-[10px] text-primary font-bold">ID: ${user.userId}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectUser(id, name, email) {
+            selectedUserIdInput.value = id;
+            displayUserName.textContent = name;
+            displayUserInfo.textContent = `ID: ${id} • ${email}`;
+            
+            selectedUserCard.classList.remove('hidden');
+            userSearchResults.classList.add('hidden');
+            userSearchInput.value = '';
+            userSearchInput.placeholder = 'Selected: ' + name;
+        }
+
+        function clearSelectedUser() {
+            selectedUserIdInput.value = '';
+            selectedUserCard.classList.add('hidden');
+            userSearchInput.placeholder = 'Type ID, name, or email to search...';
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!userSearchInput.contains(e.target) && !userSearchResults.contains(e.target)) {
+                userSearchResults.classList.add('hidden');
+            }
+        });
+
+        function toggleBookSelection(cardEl) {
+            // ... existing book selection ...
+            const barcode = cardEl.dataset.barcode;
+            const title = cardEl.dataset.title;
+            const author = cardEl.dataset.author;
+
+            if (selectedBooks.has(barcode)) {
+                selectedBooks.delete(barcode);
+                cardEl.classList.remove('selected');
+            } else {
+                if (selectedBooks.size >= MAX_BOOKS) {
+                    alert('You can only select a maximum of ' + MAX_BOOKS + ' books!');
+                    return;
+                }
+                selectedBooks.set(barcode, { title, author });
+                cardEl.classList.add('selected');
+            }
+            updateUI();
+        }
+
+        function removeBook(barcode) {
+            selectedBooks.delete(barcode);
+            const card = document.querySelector(`.book-card[data-barcode="${barcode}"]`);
+            if (card) card.classList.remove('selected');
+            updateUI();
+        }
+
+        function updateUI() {
+            const container = document.getElementById('selectedBooksContainer');
+            const hiddenContainer = document.getElementById('hiddenBarcodesContainer');
+            const countEl = document.getElementById('selectedCount');
+            const emptyMsg = document.getElementById('emptyMessage');
+            const submitBtn = document.getElementById('submitBtn');
+
+            countEl.textContent = `${selectedBooks.size} / ${MAX_BOOKS} books`;
+            container.querySelectorAll('.selected-tag').forEach(el => el.remove());
+            hiddenContainer.innerHTML = '';
+
+            if (selectedBooks.size > 0) {
+                emptyMsg.style.display = 'none';
+                submitBtn.disabled = false;
+            } else {
+                emptyMsg.style.display = 'block';
+                submitBtn.disabled = true;
+            }
+
+            selectedBooks.forEach((info, barcode) => {
+                const tag = document.createElement('div');
+                tag.className = 'selected-tag';
+                tag.innerHTML = `
+                    <span>${info.title}</span>
+                    <span class="tag-barcode">${barcode}</span>
+                    <span class="remove-btn" onclick="removeBook('${barcode}')">×</span>
+                `;
+                container.appendChild(tag);
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'Barcodes';
+                input.value = barcode;
+                hiddenContainer.appendChild(input);
+            });
+        }
+
+        document.getElementById('bookSearchInput').addEventListener('input', function () {
+            const query = this.value.toLowerCase().trim();
+            document.querySelectorAll('.book-card').forEach(card => {
+                const title = (card.dataset.title || '').toLowerCase();
+                const barcode = (card.dataset.barcode || '').toLowerCase();
+                const author = (card.dataset.author || '').toLowerCase();
+
+                if (!query || title.includes(query) || barcode.includes(query) || author.includes(query)) {
+                    card.classList.remove('hidden-by-search');
+                } else {
+                    card.classList.add('hidden-by-search');
+                }
+            });
+        });
+    </script>
+}

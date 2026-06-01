@@ -1,0 +1,107 @@
+@using LibraryManagementBLL.Interfaces
+@model List<UserFinesDTO>
+@{
+    ViewData["Title"] = "Quản lý Tiền phạt & Thanh toán";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
+    <!-- Header Area -->
+    <div class="flex justify-between items-end mb-8">
+        <div>
+            <h1 class="text-4xl font-bold font-display text-white mb-2">Fees & Fines Management</h1>
+            <p class="text-white/60">Manage payments for overdue, damaged, or lost books.</p>
+        </div>
+        <div>
+            <a asp-action="CreateFine" class="px-5 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl transition-all flex items-center gap-2 font-bold group">
+                <span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">add_card</span>
+                Create Fine Manually
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 mb-6 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <!-- Search Bar & Filters -->
+    <div class="bg-black/20 border border-white/10 rounded-2xl p-6 mb-8 backdrop-blur-md">
+        <form id="paymentSearchForm" method="get" asp-action="Index" class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1 relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/40">search</span>
+                <input type="text" name="searchQuery" value="@ViewBag.SearchQuery" 
+                       oninput="clearTimeout(this.delay); this.delay = setTimeout(() => { triggerSearch(this.form); }, 500);"
+                       placeholder="Search ID, Name, Email..." 
+                       class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition-colors" />
+            </div>
+            
+            @if(!string.IsNullOrEmpty(ViewBag.SearchQuery)) 
+            {
+                <div class="flex items-center">
+                    <a asp-action="Index" class="px-6 py-3 bg-red-400/10 text-red-400 hover:bg-red-400/20 font-medium rounded-xl transition-colors flex items-center justify-center gap-2" title="Clear Filters">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                        Clear
+                    </a>
+                </div>
+            }
+        </form>
+    </div>
+
+    <!-- Fines Table -->
+    <div class="bg-black/20 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md" id="tableContainer">
+        <partial name="_FinesTable" model="Model" />
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+
+        function changePage(page) {
+            currentPage = page;
+            triggerSearch(document.getElementById('paymentSearchForm'));
+        }
+
+        function triggerSearch(form) {
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+            params.set('page', currentPage);
+            
+            const tableContainer = document.getElementById('tableContainer');
+            if (tableContainer) {
+                tableContainer.style.opacity = '0.5';
+                tableContainer.style.pointerEvents = 'none';
+            }
+
+            fetch(`${form.action}?${params.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                if (tableContainer) {
+                    tableContainer.innerHTML = html;
+                    tableContainer.style.opacity = '1';
+                    tableContainer.style.pointerEvents = 'auto';
+                    window.history.replaceState({}, '', `${form.action}?${params.toString()}`);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+                if (tableContainer) {
+                    tableContainer.style.opacity = '1';
+                    tableContainer.style.pointerEvents = 'auto';
+                }
+            });
+        }
+
+        // Reset page to 1 when search changes
+        document.querySelector('input[name="searchQuery"]').addEventListener('input', () => {
+            currentPage = 1;
+        });
+    </script>
+}

@@ -1,0 +1,403 @@
+@model LibraryManagementDAL.DTO.Book.BookCreateModelRequest
+
+
+@{
+    ViewData["Title"] = "Add Book";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var mode = ViewBag.Mode as string;
+}
+
+<div class="flex-1 flex overflow-hidden">
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 px-8 py-12 overflow-y-auto custom-scrollbar">
+    
+        <div class="max-w-4xl mx-auto pb-20">
+            <!-- Header -->
+            <div class="mb-10">
+                <h1 class="text-4xl font-bold font-display text-white mb-2">Add New Book</h1>
+                <p class="text-white/60 text-sm">Create a single book entry or import multiple books via Excel</p>
+            </div>
+            
+            <!-- Tabs Navigation -->
+            <div class="flex gap-4 mb-8">
+
+            <!-- ADD SINGLE -->
+            <a asp-action="AddBook"
+               asp-controller="Books"
+               asp-route-mode="single"
+               class="px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 border transition-all
+            @(mode == "single"
+                           ? "bg-primary text-background-dark border-primary"
+                           : "bg-white/10 hover:bg-white/20 text-white border-white/10")">
+
+                <span class="material-symbols-outlined text-lg">menu_book</span>
+                Add Single Book
+
+            </a>
+
+            <!-- IMPORT FILE -->
+            <a asp-action="AddBook"
+               asp-controller="Books"
+               asp-route-mode="import"
+               class="px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 border transition-all
+            @(mode == "import"
+                           ? "bg-primary text-background-dark border-primary"
+                           : "bg-white/10 hover:bg-white/20 text-white border-white/10")">
+
+                <span class="material-symbols-outlined text-lg">upload_file</span>
+                Import File
+
+            </a>
+
+        </div>
+
+
+        @if (ViewBag.Mode == "single")
+        {
+            <div class="mt-6 bg-white/5 p-8 rounded-2xl border border-white/10 shadow-2xl">
+
+                <h2 class="text-white text-2xl font-bold mb-8">
+                    Add Single Book
+                </h2>
+
+                <form asp-action="AddBook" asp-controller="Books" method="post" enctype="multipart/form-data">
+
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <!-- Left: Image Upload -->
+                        <div class="w-full md:w-1/3 flex flex-col gap-4">
+                            <label class="text-white font-bold">Book Cover Image</label>
+                            
+                            <!-- Image Preview Area -->
+                            <div class="w-full aspect-[3/4] rounded-xl bg-black/40 border border-white/10 border-dashed flex items-center justify-center p-2 relative overflow-hidden group cursor-pointer hover:border-primary/50 transition-colors" onclick="document.getElementById('coverImageInput').click()">
+                                <img id="coverPreview" class="w-full h-full object-contain hidden" />
+                                <div id="coverPlaceholder" class="flex flex-col items-center gap-2 text-white/30 group-hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-5xl">add_photo_alternate</span>
+                                    <span class="text-sm">Click to upload cover</span>
+                                </div>
+                            </div>
+                            
+                            <input type="file" id="coverImageInput" name="ImageFile" accept="image/*" class="hidden" onchange="previewCover(event)" />
+                            
+                            <p class="text-xs text-white/40 text-center">Recommended aspect ratio 3:4. Format: JPG, PNG.</p>
+                        </div>
+
+                        <!-- Right: Form Fields -->
+                        <div class="w-full md:w-2/3 flex flex-col gap-4">
+                            <!-- TITLE -->
+                    <div class="mb-3">
+                        <label asp-for="Title" class="text-white"></label>
+
+                        <input asp-for="Title"
+                               class="w-full p-2 rounded bg-black/30 text-white border border-white/10" />
+
+                        <span asp-validation-for="Title"
+                              class="text-red-500"></span>
+                    </div>
+
+
+                    <!-- DESCRIPTION -->
+                    <div class="mb-3">
+                        <label asp-for="Description" class="text-white"></label>
+
+                        <textarea asp-for="Description"
+                                  class="w-full p-2 rounded bg-black/30 text-white border border-white/10">
+                    </textarea>
+                    </div>
+
+
+                    <!-- PUBLISH YEAR -->
+                    <div class="mb-3">
+                        <label asp-for="PublishYear" class="text-white"></label>
+
+                        <input asp-for="PublishYear"
+                               type="number"
+                               class="w-full p-2 rounded bg-black/30 text-white border border-white/10" />
+
+                        <span asp-validation-for="PublishYear"
+                              class="text-red-500"></span>
+                    </div>
+
+
+                    <!-- EDITION NUMBER -->
+                    <div class="mb-3">
+                        <label asp-for="EditionNumber" class="text-white"></label>
+
+                        <input asp-for="EditionNumber"
+                               type="number"
+                               class="w-full p-2 rounded bg-black/30 text-white border border-white/10" />
+                    </div>
+
+
+                    <!-- AUTHOR -->
+                    <div class="mb-4">
+
+                        <label class="text-white block mb-1">Author</label>
+
+                        <!-- Select existing author -->
+                        <select asp-for="AuthorId"
+                                id="authorSelect"
+                                class="w-full p-2 rounded bg-black/30 text-white border border-white/10 mb-2">
+
+                            <option value="">-- Select existing author --</option>
+
+                            @foreach (var author in ViewBag.Authors)
+                            {
+                                <option value="@author.AuthorId">
+                                    @author.Name
+                                </option>
+                            }
+
+                        </select>
+
+                        <span asp-validation-for="AuthorId"
+                              class="text-red-500"></span>
+
+                        <div class="text-white/50 text-xs mb-2 text-center">OR</div>
+
+                        <!-- Input new author -->
+                        <input asp-for="AuthorName"
+                               id="authorInput"
+                               placeholder="Enter new author name"
+                               class="w-full p-2 rounded bg-black/30 text-white border border-white/10" />
+
+                        <span asp-validation-for="AuthorName"
+                              class="text-red-500"></span>
+
+                    </div>
+
+
+
+                    <!-- CATEGORY -->
+                    <div class="mb-3">
+
+                        <label class="text-white">Category</label>
+
+                        <select asp-for="CategoryId"
+                                class="w-full p-2 rounded bg-black/30 text-white border border-white/10">
+
+                            <option value="">-- Select Category --</option>
+
+                            @foreach (var category in ViewBag.Categories)
+                            {
+                                <option value="@category.CategoryId">
+                                    @category.CategoryName
+                                </option>
+                            }
+
+                        </select>
+
+                        <span asp-validation-for="CategoryId"
+                              class="text-red-500"></span>
+
+                    </div>
+
+
+                    <!-- PUBLISHER -->
+                    <div class="mb-3">
+
+                        <label class="text-white">Publisher</label>
+
+                        <select asp-for="PublisherId"
+                                class="w-full p-2 rounded bg-black/30 text-white border border-white/10">
+
+                            <option value="">-- Select Publisher --</option>
+
+                            @foreach (var publisher in ViewBag.Publishers)
+                            {
+                                <option value="@publisher.PublisherId">
+                                    @publisher.PublisherName
+                                </option>
+                            }
+
+                        </select>
+
+                        <span asp-validation-for="PublisherId"
+                              class="text-red-500"></span>
+
+                    </div>
+
+
+                    <!-- IS ACTIVE -->
+                    <div class="mb-3 flex items-center gap-2">
+                        <input asp-for="IsActive" class="w-4 h-4 rounded bg-black/30 text-primary border-white/10 focus:ring-primary focus:ring-offset-background-dark" />
+                        <label asp-for="IsActive" class="text-white text-sm"></label>
+                    </div>
+
+                    <!-- SUBMIT -->
+                    <div class="mt-8 flex justify-end gap-3">
+                        <a asp-action="AllBooks" class="px-8 py-3 rounded-xl border border-white/10 text-white/40 hover:text-white hover:bg-white/5 transition-all text-sm uppercase font-bold tracking-wider flex items-center">
+                            Cancel
+                        </a>
+                        <button type="submit" class="bg-primary px-8 py-3 rounded-xl text-background-dark font-black hover:shadow-xl hover:shadow-primary/30 transition-all text-sm uppercase tracking-wider">
+                            Create Book
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+        }
+
+        <!-- IMPORT FORM -->
+        @if (mode == "import")
+        {
+            <div class="mt-6 w-full">
+
+                <div class="bg-gradient-to-br from-white/5 to-white/10
+                        backdrop-blur-xl
+                        p-8 rounded-2xl
+                        border border-white/10
+                        shadow-2xl">
+
+                    <h2 class="text-white text-2xl font-bold mb-2">
+                        Import Books
+                    </h2>
+
+                    <p class="text-white/60 text-sm mb-6">
+                        Upload your Excel file using our template format.
+                    </p>
+
+                    <!-- Download Template -->
+                    <a asp-action="DownloadTemplate"
+                       asp-controller="Books"
+                       class="inline-flex items-center gap-2
+                          text-primary hover:text-yellow-300
+                          text-sm font-medium mb-6 transition">
+
+                        <span class="material-symbols-outlined text-lg">
+                            download
+                        </span>
+
+                        Download Template
+
+                    </a>
+
+                    <!-- Upload Form -->
+                    <form asp-action="Import"
+                          asp-controller="Books"
+                          method="post"
+                          enctype="multipart/form-data">
+
+                        <!-- Drag Area -->
+                        <label class="flex flex-col items-center justify-center
+                                  w-full h-40
+                                  border-2 border-dashed border-white/20
+                                  rounded-xl cursor-pointer
+                                  hover:border-primary
+                                  hover:bg-white/5
+                                  transition-all">
+
+                            <span class="material-symbols-outlined text-4xl text-primary mb-2">
+                                upload_file
+                            </span>
+
+                            <span class="text-white/70 text-sm">
+                                Click to upload or drag and drop
+                            </span>
+
+                            <span class="text-white/40 text-xs mt-1">
+                                Only .xlsx files supported
+                            </span>
+
+                            <input type="file"
+                                   name="file"
+                                   id="fileInput"
+                                   accept=".xlsx"
+                                   class="hidden" />
+                        </label>
+
+                        <!-- File name display -->
+                        <p id="fileName"
+                           class="text-white/60 text-sm mt-3 hidden">
+                        </p>
+
+                        <!-- Submit Button -->
+                        <div class="mt-8 flex gap-3">
+                            <a asp-action="AllBooks" class="flex-1 text-center py-3 rounded-xl border border-white/10 text-white/40 hover:text-white hover:bg-white/5 transition-all text-sm uppercase font-bold tracking-wider flex items-center justify-center">
+                                Cancel
+                            </a>
+                            <button type="submit"
+                                    class="flex-[2]
+                                       bg-primary hover:bg-yellow-400
+                                       transition-all
+                                       py-3 rounded-xl
+                                       text-background-dark font-bold
+                                       shadow-lg">
+                                Upload & Import
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        }
+
+        </div> <!-- /max-w-4xl -->
+
+    </div>
+
+</div>
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<script>
+
+    // Author toggle (only on single mode)
+    const authorInput = document.getElementById("authorInput");
+    const authorSelect = document.getElementById("authorSelect");
+
+    if (authorInput) {
+        authorInput.addEventListener("input", function () {
+            if (this.value.trim() !== "" && authorSelect) {
+                authorSelect.value = "";
+            }
+        });
+    }
+
+    if (authorSelect) {
+        authorSelect.addEventListener("change", function () {
+            if (this.value !== "" && authorInput) {
+                authorInput.value = "";
+            }
+        });
+    }
+
+    // File import (only on import mode)
+    const fileInput = document.getElementById("fileInput");
+    const fileName = document.getElementById("fileName");
+
+    if (fileInput) {
+        fileInput.addEventListener("change", function () {
+            if (this.files.length > 0) {
+                fileName.textContent = "📄 Selected file: " + this.files[0].name;
+                fileName.classList.remove("hidden");
+            }
+        });
+    }
+
+    function previewCover(event) {
+        const input = event.target;
+        const preview = document.getElementById('coverPreview');
+        const placeholder = document.getElementById('coverPlaceholder');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            preview.src = "";
+            preview.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+        }
+    }
+
+</script>
+}
+
