@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>LibraryManagement.BLL</id>
+    <version>1.0.0</version>
+    <authors>LibraryManagement.BLL</authors>
+    <description>Package Description</description>
+    <repository type="git" commit="e6115da601993dfc1dae224e514bb56584b33581" />
+    <dependencies>
+      <group targetFramework="net9.0">
+        <dependency id="LibraryManagement.DAL" version="1.0.0" exclude="Build,Analyzers" />
+        <dependency id="EPPlus" version="8.4.2" exclude="Build,Analyzers" />
+        <dependency id="Google.Apis.Auth" version="1.71.0" exclude="Build,Analyzers" />
+        <dependency id="MailKit" version="4.15.1" exclude="Build,Analyzers" />
+        <dependency id="Quartz" version="3.16.1" exclude="Build,Analyzers" />
+        <dependency id="Quartz.Extensions.Hosting" version="3.16.1" exclude="Build,Analyzers" />
+        <dependency id="System.IdentityModel.Tokens.Jwt" version="8.0.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkReferences>
+      <group targetFramework="net9.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+    </frameworkReferences>
+  </metadata>
+  <files>
+    <file src="C:\Users\admin\Downloads\library-management-prn232-main\library-management-prn232-main\LibraryManagement.BLL\bin\Debug\net9.0\LibraryManagement.BLL.dll" target="lib\net9.0\LibraryManagement.BLL.dll" />
+  </files>
+</package>
