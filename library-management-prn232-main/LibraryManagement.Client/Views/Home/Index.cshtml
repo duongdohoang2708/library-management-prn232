@@ -1,0 +1,219 @@
+@model List<LibraryManagementDAL.Models.Book>
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var popularBooks = ViewBag.PopularBooks as List<LibraryManagementDAL.Models.Book>;
+}
+
+<div class="flex-1 flex overflow-hidden bg-[#0A0F1E]">
+    <!-- Main Scrollable Content -->
+    <div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
+        
+        <!-- Welcome Hero -->
+        <div class="mb-12 p-10 rounded-[3rem] bg-gradient-to-br from-primary/20 via-primary/5 to-transparent border border-white/5 relative overflow-hidden group">
+            <div class="relative z-10">
+                <span class="inline-block px-4 py-1.5 rounded-full bg-primary/20 text-primary text-[10px] font-black tracking-widest uppercase mb-6 border border-primary/30 backdrop-blur-md">
+                    Library Management System
+                </span>
+                <h1 class="text-5xl font-black text-white mb-4 leading-tight">Your Personal <br/><span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-teal-400">Knowledge Sanctuary</span></h1>
+                <p class="text-white/50 max-w-lg text-lg">Access the world's best collection of literature and research materials from your digital dashboard.</p>
+            </div>
+            <!-- Decorative Elements -->
+            <div class="absolute -right-20 -bottom-20 w-96 h-96 bg-primary/10 blur-[120px] rounded-full group-hover:bg-primary/20 transition-all duration-1000"></div>
+            <div class="absolute right-20 top-10 w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_20px_#10B981]"></div>
+        </div>
+
+        <!-- Recommended Section -->
+        <section class="mb-16">
+            <div class="flex items-center justify-between mb-8 px-2">
+                <div class="flex items-center gap-4">
+                    <div class="w-1.5 h-10 bg-primary rounded-full shadow-[0_0_20px_rgba(16,185,129,0.5)]"></div>
+                    <h2 class="text-3xl font-black text-white tracking-tight">Recommended</h2>
+                </div>
+                <a asp-controller="Books" asp-action="ViewBooks" class="group flex items-center gap-2 text-primary font-black text-sm hover:gap-3 transition-all">
+                    Explores All
+                    <span class="material-symbols-outlined text-lg">arrow_right_alt</span>
+                </a>
+            </div>
+            
+            <div class="flex gap-8 overflow-x-auto pb-8 custom-scrollbar">
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var book in Model.Take(6))
+                    {
+                        <div class="min-w-[380px] bg-white/5 border border-white/10 p-6 rounded-[2.5rem] flex gap-6 group hover:border-primary/40 hover:bg-white/10 transition-all duration-500 hover:-translate-y-2 relative">
+                            <div class="w-32 h-44 rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
+                                <img alt="@book.Title" 
+                                     class="w-full h-full object-cover" 
+                                     src="@(string.IsNullOrEmpty(book.ImageUrl) ? "https://images.unsplash.com/photo-1543005139-ed1fbede6f0b?q=80&w=1000&auto=format&fit=crop" : book.ImageUrl)" />
+                            </div>
+
+                            <div class="flex flex-col justify-between py-2 flex-1 min-w-0">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <div class="px-2 py-0.5 rounded-md bg-white/5 text-[9px] font-black text-white/40 uppercase tracking-widest border border-white/5">
+                                            @book.Category?.CategoryName
+                                        </div>
+                                    </div>
+                                    <h3 class="font-black text-white text-xl mb-1 group-hover:text-primary transition-colors truncate">
+                                        <a href="@Url.Action("Details", "Books", new { id = book.BookId })">@book.Title</a>
+                                    </h3>
+                                    <p class="text-sm text-white/30 font-bold">@book.Author?.Name</p>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center text-[10px] font-black uppercase text-white/60 tracking-wider">
+                                        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">auto_stories</span> Ed. @book.EditionNumber</span>
+                                        <span>@book.PublishYear</span>
+                                    </div>
+                                    <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                        <div class="h-full bg-gradient-to-r from-primary to-teal-400 shadow-[0_0_10px_#10B981]" style="width: 100%"></div>
+                                    </div>
+                                    <a href="@Url.Action("Details", "Books", new { id = book.BookId })" class="inline-flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] transform translate-x-0 group-hover:translate-x-2 transition-transform">
+                                        Book details <span class="material-symbols-outlined text-sm">trending_flat</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+
+        <!-- Subjects Section -->
+        <section class="mb-20">
+            <h2 class="text-xl font-black mb-8 text-white flex items-center gap-4">
+                <span class="w-12 h-0.5 bg-white/10 rounded-full"></span>
+                Browse Genres
+            </h2>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
+                @if (ViewBag.Categories != null)
+                {
+                    var index = 0;
+                    foreach (var c in ViewBag.Categories)
+                    {
+                        var isHidden = index >= 5;
+                        var isSelected = ViewBag.Category == c.CategoryName;
+
+                        <a href="@Url.Action("ViewBooks", "Books", new { category = c.CategoryName })"
+                           class="@(isHidden ? "hidden extra-category" : "") group">
+                            <div class="p-6 rounded-3xl border transition-all duration-500 flex flex-col items-center gap-4 @(isSelected ? "bg-primary border-primary text-background-dark shadow-xl shadow-primary/20 scale-105" : "bg-white/5 border-white/5 hover:border-primary/40 hover:bg-white/10 text-white hover:scale-105")">
+                                <span class="material-symbols-outlined text-3xl transition-transform group-hover:rotate-12">@(isSelected ? "explore" : "library_books")</span>
+                                <span class="text-[10px] font-black uppercase tracking-[0.15em] text-center">@c.CategoryName</span>
+                            </div>
+                        </a>
+                        index++;
+                    }
+
+                    if (((IEnumerable<dynamic>)ViewBag.Categories).Count() > 5)
+                    {
+                        <div id="toggleMore" class="p-6 rounded-3xl bg-white/5 border border-white/5 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary/40 hover:bg-white/10 transition-all group hover:scale-105">
+                            <span id="toggleMoreIcon" class="material-symbols-outlined text-3xl text-primary group-hover:scale-110 transition-transform">control_point</span>
+                            <span id="toggleMoreText" class="text-[10px] font-black text-white uppercase tracking-widest">More</span>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+        
+        <!-- Popular Books (With Reviews) -->
+        <section class="mb-12">
+            <div class="flex items-end justify-between mb-10 px-2">
+                <div>
+                     <span class="text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-3 block">Top Rated</span>
+                     <h2 class="text-4xl font-black text-white leading-tight">Popular Collections</h2>
+                </div>
+                <div class="hidden md:flex gap-4">
+                    <div class="p-3 rounded-2xl bg-white/5 border border-white/10 text-white/30"><span class="material-symbols-outlined">star</span></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+                @if (popularBooks != null)
+                {
+                    foreach (var book in popularBooks)
+                    {
+                        var avgRating = book.BookReviews.Any() ? Math.Round(book.BookReviews.Average(r => r.Rating), 1) : 0;
+                        var totalReviews = book.BookReviews.Count;
+                        var latestReview = book.BookReviews.OrderByDescending(r => r.CreatedAt).FirstOrDefault();
+
+                        <div class="group flex flex-col">
+                            <!-- Premium Book Card -->
+                            <div class="relative aspect-[3/4.4] rounded-[2.5rem] overflow-hidden mb-6 shadow-2xl transition-all duration-700 group-hover:-translate-y-3 group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
+                                <img class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                     src="@(string.IsNullOrEmpty(book.ImageUrl) ? "https://images.unsplash.com/photo-1543005139-ed1fbede6f0b?q=80&w=1000&auto=format&fit=crop" : book.ImageUrl)" />
+                                
+                                <!-- Star Badge -->
+                                <div class="absolute top-6 right-6 px-3 py-1.5 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 flex items-center gap-1.5 shadow-2xl">
+                                    <span class="material-symbols-outlined text-amber-400 text-sm fill-current">star</span>
+                                    <span class="text-sm font-black text-white">@avgRating</span>
+                                </div>
+
+                                <!-- Hover Content: Latest Review -->
+                                <div class="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-black via-black/90 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                                    @if (latestReview != null)
+                                    {
+                                        <div class="mb-6">
+                                            <div class="flex items-center gap-2 mb-3">
+                                                <div class="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">@latestReview.User?.FullName.Substring(0, 1)</div>
+                                                <span class="text-[10px] font-black text-white/50 uppercase tracking-widest">Latest Review</span>
+                                            </div>
+                                            <p class="text-white text-xs italic line-clamp-3 leading-relaxed">"@latestReview.Comment"</p>
+                                        </div>
+                                    }
+                                    <div class="flex flex-col gap-3">
+                                        <a href="@Url.Action("Details", "Books", new { id = book.BookId })"
+                                           class="w-full py-3 bg-white text-background-dark text-[10px] font-black rounded-xl text-center shadow-lg hover:scale-105 transition-transform block uppercase tracking-widest">
+                                            View details
+                                        </a>
+                                        <a href="@Url.Action("Index", "Review", new { bookId = book.BookId })"
+                                           class="w-full py-3 bg-primary/20 backdrop-blur-md border border-primary/30 text-primary text-[10px] font-black rounded-xl text-center shadow-lg hover:bg-primary hover:text-black transition-all block uppercase tracking-widest">
+                                            Write Review
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="px-3">
+                                <h3 class="text-xl font-black text-white truncate group-hover:text-primary transition-colors">
+                                    <a href="@Url.Action("Details", "Books", new { id = book.BookId })">@book.Title</a>
+                                </h3>
+                                <div class="flex items-center justify-between mt-2">
+                                    <p class="text-xs text-white/40 font-bold uppercase tracking-widest">@book.Author?.Name</p>
+                                    <span class="text-[10px] font-black text-white/20">@totalReviews Reviews</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+<style>
+    .fill-current {
+        font-variation-settings: 'FILL' 1;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleBtn = document.getElementById("toggleMore");
+        const extraItems = document.querySelectorAll(".extra-category");
+
+        if (!toggleBtn || extraItems.length === 0) return;
+
+        let expanded = false;
+
+        toggleBtn.addEventListener("click", function () {
+            expanded = !expanded;
+            extraItems.forEach(item => {
+                item.classList.toggle("hidden");
+            });
+            document.getElementById("toggleMoreText").innerText = expanded ? "Less" : "More";
+            document.getElementById("toggleMoreIcon").innerText = expanded ? "expand_less" : "control_point";
+        });
+    });
+</script>

@@ -1,0 +1,31 @@
+/* Custom Scrollbar Styles */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(242, 223, 13, 0.3);
+    border-radius: 10px;
+}
+
+/* Background Gradients */
+.teal-gradient {
+    background: linear-gradient(135deg, #0F2E2E 0%, #081a1a 100%);
+}
+
+/* Special Effects */
+.glow-text {
+    text-shadow: 0 0 8px rgba(242, 223, 13, 0.4);
+}
+
+/* Toggle Switch Styles */
+.notify-toggle input:checked ~ .toggle-bg {
+    background-color: #f2df0d; /* Primary color */
+}
+.notify-toggle input:checked ~ .toggle-dot {
+    transform: translateX(100%);
+    background-color: #0F2E2E; /* Background dark */
+}

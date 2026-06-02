@@ -1,0 +1,205 @@
+@using LibraryManagementDAL.Models
+@{
+    ViewData["Title"] = "Tạo khoản phạt thủ công";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
+
+    <div class="flex items-center gap-3 mb-8 cursor-pointer w-fit group" onclick="window.history.back()">
+        <span class="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors">arrow_back</span>
+        <span class="text-sm font-medium text-white/40 group-hover:text-primary transition-colors tracking-wide">Back</span>
+    </div>
+    
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
+            
+            <!-- Decorator glow -->
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 blur-3xl rounded-full pointer-events-none"></div>
+
+            <div class="p-8 border-b border-white/5 relative z-10">
+                <h2 class="text-2xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary text-3xl">add_card</span>
+                    Create Manual Fine
+                </h2>
+                <p class="text-white/40 text-sm">Applies to cases such as: lost card, damaged property, or other compensations.</p>
+            </div>
+
+            <div class="p-8 relative z-10 bg-black/10">
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl font-medium flex items-center gap-3">
+                        <span class="material-symbols-outlined">error</span>
+                        @TempData["ErrorMessage"]
+                    </div>
+                }
+
+                <form asp-action="CreateFine" method="post" class="flex flex-col gap-6">
+                    @Html.AntiForgeryToken()
+
+                    <!-- User Selection Input -->
+                    <div class="flex flex-col gap-2 relative">
+                        <label class="text-sm font-semibold text-white/80 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px] text-white/40">person_search</span>
+                            Select Member (ID or Name)
+                        </label>
+                        <div class="relative group">
+                            <input type="text" id="userSearchInput" 
+                                   class="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-4 pr-10 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all text-sm shadow-inner shadow-black/20" 
+                                   placeholder="Type ID, name or email to search..." autocomplete="off" />
+                            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors text-2xl">person_search</span>
+                            
+                            <!-- Hidden actual ID field -->
+                            <input type="hidden" name="userId" id="selectedUserId" required />
+                        </div>
+                        
+                        <!-- User Search Results Dropdown -->
+                        <div id="userSearchResults" class="absolute top-full left-0 right-0 mt-2 bg-[#1a232e] border border-white/10 rounded-xl shadow-2xl z-[100] hidden overflow-hidden backdrop-blur-xl">
+                            <div id="userResultsList" class="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                <!-- Results will be injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Selected User Display -->
+                        <div id="selectedUserCard" class="hidden mt-2 p-3 bg-primary/10 border border-primary/30 rounded-xl flex items-center justify-between animate-fadeIn">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined">person</span>
+                                </div>
+                                <div>
+                                    <h4 id="displayUserName" class="text-sm font-bold text-white">---</h4>
+                                    <p id="displayUserInfo" class="text-[11px] text-primary/70 font-mono">ID: ---</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="clearSelectedUser()" class="p-1.5 hover:bg-white/5 rounded-lg text-white/40 hover:text-red-400 transition-colors">
+                                <span class="material-symbols-outlined text-sm">close</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Amount -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-white/80 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px] text-white/40">payments</span>
+                            Fine Amount (VND)
+                        </label>
+                        <input type="number" name="amount" required min="1000" step="1000" placeholder="Example: 50000"
+                               class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-sm shadow-inner shadow-black/20" />
+                    </div>
+
+                    <!-- Reason -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-white/80 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px] text-white/40">description</span>
+                            Reason for Fine
+                        </label>
+                        <textarea name="reason" required rows="3" placeholder="Clearly state the reason (Eg: Lost membership card, Torn poster...)"
+                                  class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-sm custom-scrollbar shadow-inner shadow-black/20"></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-4 pt-6 border-t border-white/10">
+                        <a asp-action="Index" class="flex-1 py-3 border border-white/10 bg-white/5 hover:bg-white/10 text-white/80 font-bold rounded-xl transition-all text-center">
+                            Cancel
+                        </a>
+                        <button type="submit" class="flex-1 py-3 border border-primary bg-primary hover:bg-primary/90 text-background-dark font-black rounded-xl hover:shadow-xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            Create Fine
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .animate-fadeIn {
+        animation: fadeIn 0.2s ease forwards;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to   { opacity: 1; transform: scale(1); }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // User Search Logic
+        const userSearchInput = document.getElementById('userSearchInput');
+        const userSearchResults = document.getElementById('userSearchResults');
+        const userResultsList = document.getElementById('userResultsList');
+        const selectedUserIdInput = document.getElementById('selectedUserId');
+        const selectedUserCard = document.getElementById('selectedUserCard');
+        const displayUserName = document.getElementById('displayUserName');
+        const displayUserInfo = document.getElementById('displayUserInfo');
+
+        let searchTimeout = null;
+
+        userSearchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 1) {
+                userSearchResults.classList.add('hidden');
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/Payment/SearchUsers?query=${encodeURIComponent(query)}`);
+                    const users = await response.json();
+                    
+                    if (users.length > 0) {
+                        renderUserResults(users);
+                        userSearchResults.classList.remove('hidden');
+                    } else {
+                        userResultsList.innerHTML = '<div class="p-4 text-white/40 text-center text-sm">Không tìm thấy người dùng nào</div>';
+                        userSearchResults.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Error fetching users:', error);
+                }
+            }, 300);
+        });
+
+        function renderUserResults(users) {
+            userResultsList.innerHTML = users.map(user => `
+                <div class="px-4 py-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 transition-colors group" 
+                     onclick="selectUser(${user.userId}, '${user.fullName}', '${user.email}')">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-sm font-bold text-white group-hover:text-primary transition-colors">${user.fullName}</div>
+                            <div class="text-[10px] text-white/40 font-mono">${user.email}</div>
+                        </div>
+                        <div class="px-2 py-0.5 bg-white/5 rounded text-[10px] text-primary font-bold">ID: ${user.userId}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectUser(id, name, email) {
+            selectedUserIdInput.value = id;
+            displayUserName.textContent = name;
+            displayUserInfo.textContent = `ID: ${id} • ${email}`;
+            
+            selectedUserCard.classList.remove('hidden');
+            userSearchResults.classList.add('hidden');
+            userSearchInput.value = '';
+            userSearchInput.placeholder = 'Đã chọn: ' + name;
+        }
+
+        function clearSelectedUser() {
+            selectedUserIdInput.value = '';
+            selectedUserCard.classList.add('hidden');
+            userSearchInput.placeholder = 'Gõ mã số, tên hoặc email để tìm...';
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!userSearchInput.contains(e.target) && !userSearchResults.contains(e.target)) {
+                userSearchResults.classList.add('hidden');
+            }
+        });
+    </script>
+}

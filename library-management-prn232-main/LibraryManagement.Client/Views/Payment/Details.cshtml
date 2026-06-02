@@ -1,0 +1,172 @@
+@using LibraryManagementDAL.Models
+@model List<BorrowDetail>
+@{
+    ViewData["Title"] = "Thanh toán Phạt cho: " + ViewBag.FullName;
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    int userId = ViewBag.UserId;
+    decimal totalOwed = Model?.Sum(d => (d.FineAmount ?? 0) - (d.FinePaidAmount ?? 0)) ?? 0;
+}
+
+<div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
+    <!-- Breadcrumb & Header -->
+    <div class="mb-8">
+        <a asp-action="Index" class="inline-flex items-center text-white/40 hover:text-primary transition-colors mb-4 text-sm font-medium">
+            <span class="material-symbols-outlined text-[18px] mr-1">arrow_back</span>
+            Fines List
+        </a>
+        <h1 class="text-3xl font-bold font-display text-white mb-2">Pay Fines</h1>
+        <p class="text-white/60">Member: <strong class="text-white">@ViewBag.FullName</strong> (@ViewBag.Email)</p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 mb-6 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center gap-3">
+            <span class="material-symbols-outlined">check_circle</span>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="p-4 mb-6 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3">
+            <span class="material-symbols-outlined">error</span>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        
+        <!-- Left: Payment Form -->
+        <div class="lg:col-span-1 bg-black/20 border border-white/10 rounded-2xl p-6 backdrop-blur-md sticky top-24">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-6">
+                <span class="material-symbols-outlined text-primary">point_of_sale</span>
+                Cash / Bank Transfer
+            </h2>
+            <form asp-action="Process" method="post" id="paymentForm" class="space-y-5">
+                <input type="hidden" name="userId" value="@userId" />
+                
+                <!-- Tổng nợ -->
+                <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-6">
+                    <p class="text-sm text-red-400 mb-1">Total Member Debt</p>
+                    <p class="text-3xl font-bold text-red-500">@totalOwed.ToString("N0") <span class="text-xl">VND</span></p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-white/60 mb-2">Amount Paid by Customer (VND)</label>
+                    <input type="number" name="amount" id="amountPaid" value="@totalOwed" min="1000" max="@totalOwed" required step="1000"
+                           class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-lg font-bold focus:border-primary focus:outline-none transition-colors" />
+                    <p class="text-xs text-white/40 mt-2">* Enter actual collected amount. You can collect full or partial payment.</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-white/60 mb-2">Payment Method</label>
+                    <select name="method" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors">
+                        <option value="@PaymentMethod.Cash">Cash</option>
+                        <option value="@PaymentMethod.VnPay">VnPay Gateway</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-white/60 mb-2">Notes (Optional)</label>
+                    <textarea name="note" rows="2" placeholder="Example: Collected fine for overdue book ABC..."
+                              class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors"></textarea>
+                </div>
+
+                <!-- Hidden inputs for selected fines -->
+                <div id="hiddenSelectedFines">
+                    @foreach (var detail in Model)
+                    {
+                        <input type="hidden" name="selectedFines" value="@detail.BorrowDetailId" class="selected-fine-input" />
+                    }
+                </div>
+
+                <div class="p-4 bg-primary/10 border border-primary/20 rounded-xl">
+                    <p class="text-sm text-primary/80 flex items-start gap-2">
+                        <span class="material-symbols-outlined text-[18px]">info</span>
+                        <span>By default, the system deducts amounts from the oldest debts first until the collected amount is fully exhausted.</span>
+                    </p>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-primary text-background-dark font-bold rounded-xl hover:bg-primary/90 transition-all flex justify-center items-center gap-2 text-lg">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    Confirm Collection
+                </button>
+            </form>
+        </div>
+
+        <!-- Right: List Detailed Fines -->
+        <div class="lg:col-span-2 bg-black/20 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <h2 class="text-xl font-bold text-white">Fine Details</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10">
+                            <th class="py-4 px-6 font-medium text-white/60">Book / Transaction</th>
+                            <th class="py-4 px-6 font-medium text-white/60 text-right">Total Fine</th>
+                            <th class="py-4 px-6 font-medium text-white/60 text-right">Paid</th>
+                            <th class="py-4 px-6 font-medium text-white/60 text-right">Remaining Debt</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-white/80">
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var detail in Model)
+                            {
+                                decimal reqAmount = (detail.FineAmount ?? 0);
+                                decimal paidAmount = (detail.FinePaidAmount ?? 0);
+                                decimal currentOwed = reqAmount - paidAmount;
+
+                                <tr class="hover:bg-white/[0.02] transition-colors relative group">
+                                    <td class="py-4 px-6">
+                                        <p class="font-medium text-white line-clamp-1 mb-1" title="@detail.BookCopy?.Book?.Title">
+                                            @detail.BookCopy?.Book?.Title
+                                        </p>
+                                        <div class="flex items-center gap-3 text-sm text-white/60">
+                                            <span class="flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[14px]">receipt</span>
+                                                TX: #@detail.BorrowTransactionId
+                                            </span>
+                                            <span class="flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[14px]">event</span>
+                                                @detail.ActualReturnDate?.ToString("dd/MM/yyyy")
+                                            </span>
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="py-4 px-6 text-right whitespace-nowrap">
+                                        @reqAmount.ToString("N0") đ
+                                    </td>
+                                    <td class="py-4 px-6 text-right text-green-400 whitespace-nowrap">
+                                        @paidAmount.ToString("N0") đ
+                                    </td>
+                                    <td class="py-4 px-6 text-right font-bold text-red-400 whitespace-nowrap">
+                                        @currentOwed.ToString("N0") đ
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Simple logic: if user changes amount manually, ensure it's not negative or over TotalOwed.
+        // Also if they want to uncheck fines, that's possible but for simplicity, we pass all unpaid Fine IDs
+        // and let the backend distribute the amount.
+        const totalOwed = @totalOwed;
+        const amountInput = document.getElementById('amountPaid');
+
+        amountInput.addEventListener('change', function() {
+            let val = parseFloat(this.value);
+            if (isNaN(val) || val < 0) this.value = 0;
+            if (val > totalOwed) this.value = totalOwed;
+        });
+    </script>
+}

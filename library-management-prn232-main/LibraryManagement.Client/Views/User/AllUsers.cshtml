@@ -1,0 +1,350 @@
+﻿@using LibraryManagementDAL.DTO.Pagination
+@using LibraryManagementDAL.Models
+@model PaginationResponseModel<User>
+
+@{
+    ViewData["Title"] = "User Management";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var currentRoleName = Context.Request.Query["roleName"].ToString();
+}
+
+<div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
+
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-4xl font-bold font-display text-white mb-2">User Management</h1>
+            <p class="text-white/60">Manage readers, librarians, managers, and administrators</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a asp-action="Create"
+               class="flex items-center gap-2 px-5 py-2.5 bg-primary text-background-dark font-bold rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all">
+                <span class="material-symbols-outlined text-xl">person_add</span>
+                Add User
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="mb-6 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between">
+            <div class="flex items-center gap-3 text-emerald-400">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span class="font-medium text-sm">@TempData["SuccessMessage"]</span>
+            </div>
+            <button class="text-white/40 hover:text-white transition-colors" onclick="this.parentElement.remove()">
+                <span class="material-symbols-outlined text-lg">close</span>
+            </button>
+        </div>
+    }
+
+    <!-- Search / Filter -->
+    <div class="bg-black/20 border border-white/10 rounded-2xl p-6 mb-8 backdrop-blur-md">
+        <form method="get" asp-action="AllUsers" id="filterForm" class="flex flex-col lg:flex-row gap-4">
+
+            <!-- Search -->
+            <div class="flex-1 relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/40">search</span>
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       oninput="debounceSearch(this.form)"
+                       placeholder="Search by username or user id..."
+                       class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition-colors" />
+            </div>
+
+            <!-- Role Filter -->
+            <div class="flex gap-4">
+                <select name="roleName"
+                        onchange="triggerSearch(this.form)"
+                        class="min-w-[180px] bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer">
+                    <option value="">All Role</option>
+
+                    @foreach (var role in ViewBag.Roles as List<string>)
+                    {
+                        if ((string?)ViewBag.SelectedRole == role)
+                        {
+                            <option value="@role" selected>@role</option>
+                        }
+                        else
+                        {
+                            <option value="@role">@role</option>
+                        }
+                    }
+                </select>
+
+                @if (!string.IsNullOrEmpty((string?)ViewBag.Search) || !string.IsNullOrEmpty((string?)ViewBag.SelectedRole))
+                {
+                    <a asp-action="AllUsers"
+                       class="px-4 py-3 bg-white/5 text-white/60 font-medium rounded-xl hover:bg-white/10 transition-colors flex items-center"
+                       title="Clear Filters">
+                        <span class="material-symbols-outlined">close</span>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl" id="tableContainer">
+        <div class="p-6 border-b border-white/5 bg-black/20 text-white flex items-center justify-between">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">group</span>
+                All Users
+            </h3>
+            <div class="text-xs text-white/40">
+                Page @Model.CurrentPage / @Model.TotalPages
+            </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-black/20 text-white/40 text-[11px] uppercase tracking-wider font-bold">
+                        <th class="p-4 border-b border-white/5">User ID</th>
+                        <th class="p-4 border-b border-white/5">Full Name</th>
+                        <th class="p-4 border-b border-white/5">Email</th>
+                        <th class="p-4 border-b border-white/5">Phone</th>
+                        <th class="p-4 border-b border-white/5">Roles</th>
+                        <th class="p-4 border-b border-white/5">Status</th>
+                        <th class="p-4 border-b border-white/5">Created At</th>
+                        <th class="p-4 border-b border-white/5 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    @if (Model?.Items != null && Model.Items.Any())
+                    {
+                        foreach (var user in Model.Items)
+                        {
+                            <tr class="text-white/80 border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                <td class="p-4 font-medium text-white">#@user.UserId</td>
+
+                                <td class="p-4">
+                                    <div class="font-semibold text-white group-hover:text-primary transition-colors">
+                                        @(string.IsNullOrWhiteSpace(user.FullName) ? "N/A" : user.FullName)
+                                    </div>
+                                    <div class="text-[11px] text-white/40">User account</div>
+                                </td>
+
+                                <td class="p-4 text-white/60">
+                                    @(string.IsNullOrWhiteSpace(user.Email) ? "N/A" : user.Email)
+                                </td>
+
+                                <td class="p-4 text-white/60">
+                                    @(string.IsNullOrWhiteSpace(user.Phone) ? "N/A" : user.Phone)
+                                </td>
+
+                                <td class="p-4">
+                                    <div class="flex flex-wrap gap-2">
+                                        @if (user.UserRoles != null && user.UserRoles.Any())
+                                        {
+                                            foreach (var ur in user.UserRoles)
+                                            {
+                                                var role = ur.Role?.RoleName ?? "Unknown";
+
+                                                var roleClass = role switch
+                                                {
+                                                    "Admin" => "bg-red-500/10 text-red-400 border border-red-500/20",
+                                                    "Manager" => "bg-purple-500/10 text-purple-400 border border-purple-500/20",
+                                                    "Librarian" => "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+                                                    "Reader" => "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+                                                    _ => "bg-white/10 text-white/60 border border-white/10"
+                                                };
+
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider @roleClass">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                                    @role
+                                                </span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white/60 border border-white/10 text-[11px] font-bold uppercase tracking-wider">
+                                                No Role
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="p-4">
+                                    @if (user.IsActive)
+                                    {
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                            Inactive
+                                        </span>
+                                    }
+                                </td>
+                                <td class="p-4 text-white/60">
+                                    @(user.CreatedAt.ToString("dd/MM/yyyy HH:mm"))
+                                </td>
+
+                                <td class="p-4 align-middle">
+                                    <div class="flex justify-end items-center gap-2">
+                                        <a asp-action="Profile"
+                                           asp-route-id="@user.UserId"
+                                           class="inline-flex h-10 w-10 items-center justify-center bg-white/5 text-blue-400 hover:bg-blue-500 hover:text-white border border-white/10 hover:border-blue-500 rounded-lg transition-all"
+                                           title="View Details">
+                                            <span class="material-symbols-outlined text-lg">visibility</span>
+                                        </a>
+
+                                <form asp-action="ToggleStatus" asp-route-id="@user.UserId" method="post"
+                                      onsubmit="return confirm('Bạn có chắc muốn đổi trạng thái user này?');"
+                                      class="inline-block">
+                                    @Html.AntiForgeryToken()
+
+                                    <button type="submit"
+                                            class="inline-flex h-10 w-10 items-center justify-center border rounded-lg transition-all
+                                                    @(user.IsActive
+                                                        ? "bg-white/5 text-red-400 hover:bg-red-500 hover:text-white border-white/10 hover:border-red-500"
+                                                        : "bg-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white border-white/10 hover:border-emerald-500")"
+                                            title="@(user.IsActive ? "Deactivate User" : "Activate User")">
+                                        <span class="material-symbols-outlined text-lg">
+                                            @(user.IsActive ? "person_off" : "check_circle")
+                                        </span>
+                                    </button>
+                                </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="p-12 text-center text-white/40">
+                                <span class="material-symbols-outlined text-6xl text-white/10 mb-4 block">group_off</span>
+                                <p class="text-sm">No users found.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            <div class="p-8 border-t border-white/5 bg-black/10 flex items-center justify-between">
+                <div class="text-[10px] text-white/30 font-bold uppercase tracking-[0.2em] mb-0 mr-4">
+                    Page <span class="text-white">@Model.CurrentPage</span> / <span class="text-white">@Model.TotalPages</span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <button type="button"
+                                onclick="changePage(@(Model.CurrentPage - 1))"
+                                class="px-6 py-2 rounded-full bg-white/5 border border-white/10 text-white/80 text-xs font-bold hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center group shadow-lg">
+                            <span class="material-symbols-outlined text-[18px] mr-1 group-hover:-translate-x-1 transition-transform">chevron_left</span>
+                            Prev
+                        </button>
+                    }
+
+                    <div class="flex items-center gap-2 mx-2">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            if (i == 1 || i == Model.TotalPages || (i >= Model.CurrentPage - 1 && i <= Model.CurrentPage + 1))
+                            {
+                                <button type="button"
+                                        onclick="changePage(@i)"
+                                        class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black transition-all duration-300
+                                                           @(i == Model.CurrentPage
+                                                                                         ? "bg-primary text-background-dark shadow-[0_0_20px_rgba(234,179,8,0.3)] ring-4 ring-primary/20"
+                                                                                         : "bg-transparent text-white/40 hover:text-white border border-white/10 hover:border-white/30")">
+                        @i
+                    </button>
+                                        }
+                            else if (i == 2 || i == Model.TotalPages - 1)
+                            {
+                                @if ((i == 2 && Model.CurrentPage > 3) || (i == Model.TotalPages - 1 && Model.CurrentPage < Model.TotalPages - 2))
+                                {
+                                    <span class="text-white/20 px-1 font-black">...</span>
+                                }
+                            }
+                        }
+                    </div>
+
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <button type="button"
+                                onclick="changePage(@(Model.CurrentPage + 1))"
+                                class="px-6 py-2 rounded-full bg-white/5 border border-white/10 text-white/80 text-xs font-bold hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center group shadow-lg">
+                            Next
+                            <span class="material-symbols-outlined text-[18px] ml-1 group-hover:translate-x-1 transition-transform">chevron_right</span>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let searchTimeout;
+
+        function debounceSearch(form) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const pageInput = form.querySelector('input[name="page"]');
+                if (pageInput) {
+                    pageInput.value = 1;
+                }
+                triggerSearch(form, 1);
+            }, 500);
+        }
+
+        function triggerSearch(form, page = 1) {
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+
+            params.set('page', page);
+
+            const tableContainer = document.getElementById('tableContainer');
+            if (tableContainer) {
+                tableContainer.style.opacity = '0.5';
+                tableContainer.style.pointerEvents = 'none';
+            }
+
+            fetch(`${form.action}?${params.toString()}`)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    const newTable = doc.getElementById('tableContainer');
+                    const newFilterForm = doc.getElementById('filterForm');
+
+                    if (tableContainer && newTable) {
+                        tableContainer.innerHTML = newTable.innerHTML;
+                        tableContainer.style.opacity = '1';
+                        tableContainer.style.pointerEvents = 'auto';
+                    }
+
+                    if (newFilterForm) {
+                        document.getElementById('filterForm').innerHTML = newFilterForm.innerHTML;
+                    }
+
+                    window.history.replaceState({}, '', `${form.action}?${params.toString()}`);
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                    if (tableContainer) {
+                        tableContainer.style.opacity = '1';
+                        tableContainer.style.pointerEvents = 'auto';
+                    }
+                });
+        }
+
+        function changePage(page) {
+            const form = document.getElementById('filterForm');
+            triggerSearch(form, page);
+        }
+    </script>
+}

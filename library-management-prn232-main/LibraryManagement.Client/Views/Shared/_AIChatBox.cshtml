@@ -1,0 +1,58 @@
+﻿<!-- Toggle Button -->
+<button id="ai-chat-toggle"
+        type="button"
+        class="fixed bottom-6 right-6 z-[9999] h-14 w-14 rounded-2xl border border-yellow-400/30 bg-[#e7d80f] text-slate-900 shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition hover:scale-105 hover:shadow-[0_16px_36px_rgba(231,216,15,0.25)] flex items-center justify-center">
+    <span class="material-symbols-outlined text-[28px]">auto_stories</span>
+</button>
+
+<!-- Chat Box -->
+<div id="ai-chat-box"
+     class="fixed bottom-24 right-6 z-[9999] hidden h-[560px] w-[380px] overflow-hidden rounded-[28px] border border-white/10 bg-[#0f172acc] backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+
+    <div class="flex h-full flex-col">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-white/10 bg-gradient-to-r from-[#0b3b39] to-[#0f172a] px-5 py-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e7d80f] text-slate-900 shadow-lg">
+                    <span class="material-symbols-outlined text-[22px]">auto_awesome</span>
+                </div>
+                <div>
+                    <div class="text-sm font-bold text-white">AI Book Assistant</div>
+                    <div class="text-xs text-slate-300">Hỏi đáp về sách</div>
+                </div>
+            </div>
+
+            <button id="ai-chat-close"
+                    type="button"
+                    class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Messages -->
+        <div id="ai-chat-messages"
+             class="flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#0b1220] to-[#111827] px-4 py-4">
+            <div class="max-w-[85%] rounded-2xl rounded-tl-md border border-white/8 bg-white/10 px-4 py-3 text-sm leading-6 text-slate-100 shadow-sm">
+                Xin chào, mình có thể giúp bạn tìm hiểu và gợi ý sách phù hợp.
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="border-t border-white/10 bg-[#0b1220]/95 px-4 py-4">
+            <div class="flex items-end gap-3">
+                <div class="flex-1">
+                    <input id="ai-chat-input"
+                           type="text"
+                           placeholder="Nhập câu hỏi về sách..."
+                           class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-yellow-400/40 focus:ring-2 focus:ring-yellow-300/20" />
+                </div>
+
+                <button id="ai-chat-send"
+                        type="button"
+                        class="flex h-[50px] min-w-[56px] items-center justify-center rounded-2xl bg-[#e7d80f] px-4 font-semibold text-slate-900 shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60">
+                    <span class="material-symbols-outlined">north_east</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
