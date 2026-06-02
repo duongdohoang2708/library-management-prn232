@@ -1,0 +1,247 @@
+﻿@using System.Text.Json
+@using LibraryManagementDAL.DTO.Book
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Standard Library</title>
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <script src="~/js/tailwind-config.js"></script>
+
+    <link rel="stylesheet" href="~/css/dashboard-custom.css" />
+    <style type="text/tailwindcss">
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    @{
+        var userRoles = User.Claims
+        .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+        .Select(c => c.Value)
+        .ToList();
+
+        var isStaff = userRoles.Any(r => r == "Librarian" || r == "Admin" || r == "Manager");
+
+        var toastType = TempData["ToastType"]?.ToString() ?? "info";
+        var toastMessage = TempData["ToastMessage"]?.ToString();
+
+        var importResultJson = TempData["ImportResult"]?.ToString();
+        ImportBooksResult? importResult = null;
+
+        if (!string.IsNullOrEmpty(importResultJson))
+        {
+            try
+            {
+                importResult = JsonSerializer.Deserialize<ImportBooksResult>(importResultJson);
+            }
+            catch
+            {
+                importResult = null;
+            }
+        }
+
+        var hasImportDetails = importResult?.Errors != null && importResult.Errors.Any();
+
+        string bgClass = toastType switch
+        {
+            "success" => "from-emerald-600/90 to-teal-500/90",
+            "error" => "from-red-600/90 to-rose-500/90",
+            "warning" => "from-amber-500/90 to-yellow-400/90",
+            _ => "from-sky-600/90 to-blue-500/90"
+        };
+
+        string iconName = toastType switch
+        {
+            "success" => "check_circle",
+            "error" => "error",
+            "warning" => "warning",
+            _ => "info"
+        };
+    }
+
+    <div class="flex min-h-screen teal-gradient">
+        @if (isStaff)
+        {
+            <partial name="_AdminSidebar" />
+        }
+        else
+        {
+            <partial name="_Sidebar" />
+        }
+
+        <main class="ml-20 flex-1 flex flex-col min-w-0">
+            @if (isStaff)
+            {
+                <partial name="_AdminHeader" />
+            }
+            else
+            {
+                <partial name="_TopHeader" />
+            }
+
+            @RenderBody()
+
+            <partial name="_Footer" />
+        </main>
+    </div>
+
+    @if (!string.IsNullOrEmpty(toastMessage))
+    {
+        <div id="globalToast"
+             class="fixed top-10 left-1/2 -translate-x-1/2
+                        px-10 py-5 rounded-2xl
+                        bg-gradient-to-r @bgClass
+                        backdrop-blur-xl
+                        border border-white/10
+                        text-white
+                        shadow-[0_20px_60px_rgba(0,0,0,0.6)]
+                        opacity-0 scale-90
+                        transition-all duration-500 z-50 max-w-[90vw]">
+
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center gap-3 text-lg font-semibold tracking-wide">
+                    <span class="material-symbols-outlined text-2xl">
+                        @iconName
+                    </span>
+                    <span>@toastMessage</span>
+                </div>
+
+                @if (hasImportDetails && (toastType == "error" || toastType == "warning"))
+                {
+                    <button type="button"
+                            onclick="toggleImportDetails()"
+                            class="text-sm text-white/80 hover:text-white underline text-left transition">
+                        View details
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    @if (hasImportDetails)
+    {
+        <div id="importDetailsOverlay"
+             class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-40"
+             onclick="closeImportDetails()">
+        </div>
+
+        <div id="importDetails"
+             class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                        w-[95vw] max-w-2xl
+                        max-h-[80vh]
+                        bg-gradient-to-br from-slate-900/95 to-slate-800/95
+                        backdrop-blur-xl
+                        border border-white/10
+                        rounded-2xl shadow-2xl
+                        p-6 text-white
+                        hidden z-50">
+
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <h3 class="text-xl font-bold">Import Error Details</h3>
+                    <p class="text-sm text-white/60 mt-1">
+                        Success: @importResult?.SuccessCount |
+                        Failed: @importResult?.FailCount |
+                        Total: @importResult?.TotalRows
+                    </p>
+                </div>
+
+                <button type="button"
+                        onclick="closeImportDetails()"
+                        class="w-10 h-10 rounded-xl hover:bg-white/10 transition flex items-center justify-center">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto max-h-[55vh] pr-2 space-y-3">
+                @foreach (var error in importResult!.Errors)
+                {
+                    <div class="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-white/90">
+                        @error
+                    </div>
+                }
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button type="button"
+                        onclick="closeImportDetails()"
+                        class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition text-sm font-medium">
+                    Close
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (!isStaff)
+    {
+        <partial name="_AIChatBox" />
+    }
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script src="~/js/chat-ai.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            showToast("globalToast");
+        });
+
+        function showToast(id) {
+            const toast = document.getElementById(id);
+            if (!toast) return;
+
+            setTimeout(() => {
+                toast.classList.remove("opacity-0", "scale-90");
+                toast.classList.add("opacity-100", "scale-100");
+            }, 100);
+
+            setTimeout(() => {
+                toast.classList.remove("opacity-100", "scale-100");
+                toast.classList.add("opacity-0", "scale-90");
+            }, 5000);
+        }
+
+        function toggleImportDetails() {
+            const modal = document.getElementById("importDetails");
+            const overlay = document.getElementById("importDetailsOverlay");
+
+            if (!modal || !overlay) return;
+
+            modal.classList.toggle("hidden");
+            overlay.classList.toggle("hidden");
+        }
+
+        function closeImportDetails() {
+            const modal = document.getElementById("importDetails");
+            const overlay = document.getElementById("importDetailsOverlay");
+
+            if (!modal || !overlay) return;
+
+            modal.classList.add("hidden");
+            overlay.classList.add("hidden");
+        }
+
+        function openImportModal() {
+            const modal = document.getElementById("importModal");
+            if (!modal) return;
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function closeImportModal() {
+            const modal = document.getElementById("importModal");
+            if (!modal) return;
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+    </script>
+</body>
+</html>

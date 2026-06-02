@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Role Permission Demo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div style="max-width:800px;margin:40px auto;padding:0 20px">
+    <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:40px;color:white">
+        <h1 style="font-size:22px;font-weight:700;margin-bottom:20px">
+            <i class="fas fa-shield-alt" style="color:#667eea"></i>
+            Role-based Authorization Demo
+        </h1>
+
+        <div style="background:rgba(102,126,234,0.15);border:1px solid rgba(102,126,234,0.3);border-radius:12px;padding:20px;margin-bottom:20px">
+            <p style="margin:0;font-size:16px;color:#a8b8f8">@ViewBag.Message</p>
+            @if (ViewBag.Roles != null)
+            {
+                <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.5)">
+                    Roles: <strong style="color:#667eea">@ViewBag.Roles</strong>
+                </p>
+            }
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+            <a href="/Dashboard/Public" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;text-decoration:none;color:white;transition:all 0.3s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <div style="font-size:20px;margin-bottom:6px">🌐</div>
+                <div style="font-weight:600;font-size:14px">Public</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:3px">[AllowAnonymous]</div>
+            </a>
+            <a href="/Dashboard/MemberArea" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;text-decoration:none;color:white;transition:all 0.3s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <div style="font-size:20px;margin-bottom:6px">👤</div>
+                <div style="font-weight:600;font-size:14px">Member Area</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:3px">[Authorize]</div>
+            </a>
+            <a href="/Dashboard/LibrarianArea" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;text-decoration:none;color:white;transition:all 0.3s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <div style="font-size:20px;margin-bottom:6px">📚</div>
+                <div style="font-weight:600;font-size:14px">Librarian Area</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:3px">Librarian, Manager, Admin</div>
+            </a>
+            <a href="/Dashboard/AdminArea" style="background:rgba(255,255,255,0.05);border:1px solid rgba(102,126,234,0.4);border-radius:12px;padding:16px;text-decoration:none;color:white;transition:all 0.3s" onmouseover="this.style.background='rgba(102,126,234,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <div style="font-size:20px;margin-bottom:6px">🛡️</div>
+                <div style="font-weight:600;font-size:14px">Admin Area</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:3px">[Authorize(Roles="Admin")]</div>
+            </a>
+        </div>
+    </div>
+</div>
