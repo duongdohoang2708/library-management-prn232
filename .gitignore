@@ -67,3 +67,8 @@ Desktop.ini
 # Local application secrets/configs
 **/appsettings.Local.json
 
+# VS Code workspace settings
+.vscode/
+
+# MSBuild binary logs
+*.binlog
