@@ -6,14 +6,30 @@ using LibraryManagementDAL.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.OData;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OData.Edm;
+using Microsoft.OData.ModelBuilder;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddOData(options => options
+        .Select()
+        .Filter()
+        .OrderBy()
+        .Expand()
+        .Count()
+        .SetMaxTop(100)
+        .AddRouteComponents("odata", GetEdmModel()))
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -23,6 +39,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenRepository>();
+builder.Services.AddScoped<BookRepository>();
+builder.Services.AddScoped<InventoryRepository>();
+builder.Services.AddScoped<BookCatalogService>();
+builder.Services.AddScoped<InventoryService>();
 builder.Services.AddScoped<PasswordHasher<User>>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -66,3 +86,16 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static IEdmModel GetEdmModel()
+{
+    var builder = new ODataConventionModelBuilder();
+
+    builder.EntitySet<Book>("Books");
+    builder.EntitySet<BookCopy>("BookCopies");
+    builder.EntitySet<Author>("Authors");
+    builder.EntitySet<Category>("Categories");
+    builder.EntitySet<Publisher>("Publishers");
+
+    return builder.GetEdmModel();
+}

@@ -22,6 +22,21 @@ namespace LibraryManagement.DAL.Repositories
                 .AsQueryable();
         }
 
+        public IQueryable<Author> QueryAuthors()
+        {
+            return db.Authors.AsQueryable();
+        }
+
+        public IQueryable<Category> QueryCategories()
+        {
+            return db.Categories.AsQueryable();
+        }
+
+        public IQueryable<Publisher> QueryPublishers()
+        {
+            return db.Publishers.AsQueryable();
+        }
+
         public async Task<Book?> GetBookDetailsAsync(int bookId)
         {
             return await db.Books
