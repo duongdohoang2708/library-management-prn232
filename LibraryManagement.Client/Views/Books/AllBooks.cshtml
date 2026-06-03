@@ -62,7 +62,7 @@
                            class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition-colors" />
                 </div>
 
-                <div class="flex gap-4">
+                <div class="flex gap-4 flex-wrap">
                     <select name="category"
                             onchange="this.form.querySelector('input[name=\'page\']').value = 1; triggerSearch(this.form)"
                             class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-[150px]">
@@ -76,6 +76,43 @@
                         }
                     </select>
 
+                    <select name="publisherId"
+                            onchange="this.form.querySelector('input[name=\'page\']').value = 1; triggerSearch(this.form)"
+                            class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-[160px]">
+                        <option value="">All Publishers</option>
+                        @if (ViewBag.Publishers != null)
+                        {
+                            foreach (var p in ViewBag.Publishers)
+                            {
+                                <option value="@p.PublisherId" selected="@(ViewBag.PublisherId == p.PublisherId)">@p.PublisherName</option>
+                            }
+                        }
+                    </select>
+
+                    <select name="publishYear"
+                            onchange="this.form.querySelector('input[name=\'page\']').value = 1; triggerSearch(this.form)"
+                            class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-[130px]">
+                        <option value="">All Years</option>
+                        @if (ViewBag.PublishYears != null)
+                        {
+                            foreach (var year in ViewBag.PublishYears)
+                            {
+                                <option value="@year" selected="@(ViewBag.PublishYear == year)">@year</option>
+                            }
+                        }
+                    </select>
+
+                    @if (isStaff)
+                    {
+                        <select name="isActive"
+                                onchange="this.form.querySelector('input[name=\'page\']').value = 1; triggerSearch(this.form)"
+                                class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-[130px]">
+                            <option value="">All Status</option>
+                            <option value="true" selected="@(ViewBag.IsActive == true)">Active</option>
+                            <option value="false" selected="@(ViewBag.IsActive == false)">Inactive</option>
+                        </select>
+                    }
+
                     <select name="sort"
                             onchange="triggerSearch(this.form)"
                             class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-[150px]">
@@ -85,7 +122,12 @@
                         <option value="az" selected="@(ViewBag.Sort == "az")">Title: A-Z</option>
                     </select>
                     
-                    @if (!string.IsNullOrEmpty((string)ViewBag.Keyword) || !string.IsNullOrEmpty((string)ViewBag.Category) || !string.IsNullOrEmpty((string)ViewBag.Sort))
+                    @if (!string.IsNullOrEmpty((string)ViewBag.Keyword) ||
+                                        !string.IsNullOrEmpty((string)ViewBag.Category) ||
+                                        ViewBag.PublisherId != null ||
+                                        ViewBag.PublishYear != null ||
+                                        ViewBag.IsActive != null ||
+                                        !string.IsNullOrEmpty((string)ViewBag.Sort))
                     {
                         <a asp-action="AllBooks" class="px-4 py-3 bg-white/5 text-white/60 font-medium rounded-xl hover:bg-white/10 transition-colors flex items-center" title="Clear Filters">
                             <span class="material-symbols-outlined">close</span>
