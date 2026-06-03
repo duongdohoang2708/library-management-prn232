@@ -1,5 +1,4 @@
 using LibraryManagementDAL.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -8,13 +7,16 @@ namespace LibraryManagementDAL.Data
 {
     public static class SeedData
     {
-        // Pre-computed PasswordHasher hashes (ASP.NET Core v3 format)
-        // Admin@123 hash
-        private static readonly string AdminPasswordHash =
-            new PasswordHasher<User>().HashPassword(null!, "Admin@123");
-        // Member@123 hash
-        private static readonly string MemberPasswordHash =
-            new PasswordHasher<User>().HashPassword(null!, "Member@123");
+        // Hash cố định để EF Migration không bị PendingModelChangesWarning.
+        // Không dùng PasswordHasher.HashPassword() trực tiếp trong HasData
+        // vì mỗi lần build nó sinh salt khác nhau.
+        // Password gốc: Admin@123
+        private const string AdminPasswordHash =
+            "AQAAAAIAAYagAAAAEEFkbWluU2FsdDEyMzQ1Njel4yPDX+DW0RDQGojuqKgDm9LCHqF6JL2jjZxcKy0h1A==";
+
+        // Password gốc: Member@123
+        private const string MemberPasswordHash =
+            "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==";
 
         public static void Seed(ModelBuilder modelBuilder)
         {
@@ -172,16 +174,16 @@ namespace LibraryManagementDAL.Data
 
             // USER ROLE
             modelBuilder.Entity<UserRole>().HasData(
-                new UserRole { UserId = 1, RoleId = 1 },
-                new UserRole { UserId = 2, RoleId = 3 },
-                new UserRole { UserId = 3, RoleId = 3 },
-                new UserRole { UserId = 4, RoleId = 3 },
-                new UserRole { UserId = 5, RoleId = 3 },
-                new UserRole { UserId = 6, RoleId = 3 },
-                new UserRole { UserId = 7, RoleId = 3 },
-                new UserRole { UserId = 8, RoleId = 3 },
-                new UserRole { UserId = 9, RoleId = 2 },
-                new UserRole { UserId = 10, RoleId = 3 }
+                new UserRole { UserId = 1, RoleId = 1, CreatedAt = now },
+    new UserRole { UserId = 2, RoleId = 3, CreatedAt = now },
+    new UserRole { UserId = 3, RoleId = 3, CreatedAt = now },
+    new UserRole { UserId = 4, RoleId = 3, CreatedAt = now },
+    new UserRole { UserId = 5, RoleId = 3, CreatedAt = now },
+    new UserRole { UserId = 6, RoleId = 3, CreatedAt = now },
+    new UserRole { UserId = 7, RoleId = 3, CreatedAt = now },
+    new UserRole { UserId = 8, RoleId = 3, CreatedAt = now },
+    new UserRole { UserId = 9, RoleId = 2, CreatedAt = now },
+    new UserRole { UserId = 10, RoleId = 3, CreatedAt = now }
             );
 
             // AUTHOR

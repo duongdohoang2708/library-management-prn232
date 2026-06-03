@@ -1,9 +1,17 @@
-using System;
-using System.Collections.Generic;
+namespace LibraryManagement.Client.Models
+{
+    public class ErrorViewModel
+    {
+        public string? RequestId { get; set; }
+        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+    }
+}
 
 namespace LibraryManagementBLL.Interfaces
 {
-    // Empty mock interface folder namespace to satisfy view imports without compiling BLL dependencies
+    public interface IMockInterface
+    {
+    }
 }
 
 namespace LibraryManagementDAL.DTO.Book
@@ -30,7 +38,7 @@ namespace LibraryManagementDAL.DTO.Book
 
     public class ImportBooksResult
     {
-        public List<string> Errors { get; set; } = new List<string>();
+        public List<string> Errors { get; set; } = new();
         public int SuccessCount { get; set; }
         public int FailCount { get; set; }
         public int TotalRows { get; set; }
@@ -75,6 +83,7 @@ namespace LibraryManagementDAL.DTO.Auth
     {
         public string CurrentPassword { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
         public string ConfirmNewPassword { get; set; } = string.Empty;
     }
 }
@@ -118,7 +127,7 @@ namespace LibraryManagementDAL.DTO.Circulation
     public class BorrowRequest
     {
         public int UserId { get; set; }
-        public List<string> Barcodes { get; set; } = new List<string>();
+        public List<string> Barcodes { get; set; } = new();
     }
 
     public class ReturnRequest
@@ -126,7 +135,7 @@ namespace LibraryManagementDAL.DTO.Circulation
         public int BorrowDetailId { get; set; }
         public DateTime ReturnDate { get; set; }
         public string Condition { get; set; } = string.Empty;
-        public List<int> BorrowDetailIds { get; set; } = new List<int>();
+        public List<int> BorrowDetailIds { get; set; } = new();
         public string ConditionRemarks { get; set; } = string.Empty;
     }
 }
@@ -135,7 +144,7 @@ namespace LibraryManagementDAL.DTO.Pagination
 {
     public class PaginationResponseModel<T>
     {
-        public List<T> Items { get; set; } = new List<T>();
+        public List<T> Items { get; set; } = new();
         public int PageNumber { get; set; }
         public int CurrentPage { get; set; }
         public int PageSize { get; set; }
@@ -146,7 +155,6 @@ namespace LibraryManagementDAL.DTO.Pagination
     }
 }
 
-// Global scope
 public class UserFinesDTO
 {
     public int UserId { get; set; }

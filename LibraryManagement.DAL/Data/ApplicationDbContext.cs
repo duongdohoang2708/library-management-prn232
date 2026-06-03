@@ -3,221 +3,222 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Linq.Expressions;
-
-public class ApplicationDbContext : DbContext
+namespace LibraryManagement.DAL.Data
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options) { }
-
-    #region DbSets
-
-    public DbSet<User> Users => Set<User>();
-    public DbSet<Role> Roles => Set<Role>();
-    public DbSet<UserRole> UserRoles => Set<UserRole>();
-
-    public DbSet<Author> Authors => Set<Author>();
-    public DbSet<Category> Categories => Set<Category>();
-    public DbSet<Publisher> Publishers => Set<Publisher>();
-
-    public DbSet<Book> Books => Set<Book>();
-    public DbSet<BookCopy> BookCopies => Set<BookCopy>();
-
-    public DbSet<BorrowTransaction> BorrowTransactions => Set<BorrowTransaction>();
-    public DbSet<BorrowDetail> BorrowDetails => Set<BorrowDetail>();
-
-    public DbSet<Reservation> Reservations => Set<Reservation>();
-    public DbSet<Payment> Payments => Set<Payment>();
-    public DbSet<PaymentDetail> PaymentDetails => Set<PaymentDetail>();
-    public DbSet<BookReview> BookReviews => Set<BookReview>();
-    public DbSet<BookAISummary> BookAISummary { get; set; }
-
-    public DbSet<AIRequestLog> AIRequestLogs => Set<AIRequestLog>();
-    public DbSet<AIRequestLogDetail> AIRequestLogDetails => Set<AIRequestLogDetail>();
-    public DbSet<Notification> Notification => Set<Notification>();
-
-    #endregion
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public class ApplicationDbContext : DbContext
     {
-        base.OnModelCreating(modelBuilder);
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options) { }
 
-        ConfigureEnums(modelBuilder);
-        ConfigureDecimals(modelBuilder);
-        ConfigureRelationships(modelBuilder);
-        ConfigureIndexes(modelBuilder);
-        ApplySoftDeleteFilter(modelBuilder);
+        #region DbSets
 
-        LibraryManagementDAL.Data.SeedData.Seed(modelBuilder);
+        public DbSet<User> Users => Set<User>();
+        public DbSet<Role> Roles => Set<Role>();
+        public DbSet<UserRole> UserRoles => Set<UserRole>();
 
-        modelBuilder.Entity<AIRequestLog>()
-            .HasOne(x => x.Detail)
-            .WithOne(x => x.AIRequestLog)
-            .HasForeignKey<AIRequestLogDetail>(x => x.AIRequestLogId);
+        public DbSet<Author> Authors => Set<Author>();
+        public DbSet<Category> Categories => Set<Category>();
+        public DbSet<Publisher> Publishers => Set<Publisher>();
 
-        modelBuilder.Entity<BookAISummary>()
-            .HasOne(x => x.Book)
-            .WithOne(x => x.BookAISummary)
-            .HasForeignKey<BookAISummary>(x => x.BookId);
-        modelBuilder.Entity<BookAISummary>()
-            .HasIndex(x => x.BookId)
-            .IsUnique();
-    }
+        public DbSet<Book> Books => Set<Book>();
+        public DbSet<BookCopy> BookCopies => Set<BookCopy>();
 
-    // ================= ENUM =================
-    private void ConfigureEnums(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<BookCopy>().Property(x => x.Status).HasConversion<int>();
-        modelBuilder.Entity<BookCopy>().Property(x => x.Condition).HasConversion<int>();
-        modelBuilder.Entity<Reservation>().Property(x => x.Status).HasConversion<int>();
-        modelBuilder.Entity<Payment>().Property(x => x.PaymentMethod).HasConversion<int>();
-        modelBuilder.Entity<Payment>().Property(x => x.PaymentStatus).HasConversion<int>();
-    }
+        public DbSet<BorrowTransaction> BorrowTransactions => Set<BorrowTransaction>();
+        public DbSet<BorrowDetail> BorrowDetails => Set<BorrowDetail>();
 
-    // ================= DECIMAL =================
-    private void ConfigureDecimals(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<BorrowDetail>()
-            .Property(x => x.FineAmount)
-            .HasPrecision(18, 2);
+        public DbSet<Reservation> Reservations => Set<Reservation>();
+        public DbSet<Payment> Payments => Set<Payment>();
+        public DbSet<PaymentDetail> PaymentDetails => Set<PaymentDetail>();
+        public DbSet<BookReview> BookReviews => Set<BookReview>();
+        public DbSet<BookAISummary> BookAISummary { get; set; }
 
-        modelBuilder.Entity<BorrowDetail>()
-            .Property(x => x.FinePaidAmount)
-            .HasPrecision(18, 2);
+        public DbSet<AIRequestLog> AIRequestLogs => Set<AIRequestLog>();
+        public DbSet<AIRequestLogDetail> AIRequestLogDetails => Set<AIRequestLogDetail>();
+        public DbSet<Notification> Notification => Set<Notification>();
 
-        modelBuilder.Entity<Payment>()
-            .Property(x => x.Amount)
-            .HasPrecision(18, 2);
+        #endregion
 
-        modelBuilder.Entity<PaymentDetail>()
-            .Property(x => x.Amount)
-            .HasPrecision(18, 2);
-    }
-
-    // ================= RELATIONSHIP =================
-    private void ConfigureRelationships(ModelBuilder modelBuilder)
-    {
-        // USER ROLE
-        modelBuilder.Entity<UserRole>()
-            .HasKey(x => new { x.UserId, x.RoleId });
-
-        modelBuilder.Entity<UserRole>()
-            .HasOne(x => x.User)
-            .WithMany(x => x.UserRoles)
-            .HasForeignKey(x => x.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<UserRole>()
-            .HasOne(x => x.Role)
-            .WithMany(x => x.UserRoles)
-            .HasForeignKey(x => x.RoleId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // BOOK RELATION (NO CASCADE DANGEROUS)
-        modelBuilder.Entity<Book>()
-            .HasOne(x => x.Author)
-            .WithMany(x => x.Books)
-            .HasForeignKey(x => x.AuthorId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Book>()
-            .HasOne(x => x.Category)
-            .WithMany(x => x.Books)
-            .HasForeignKey(x => x.CategoryId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Book>()
-            .HasOne(x => x.Publisher)
-            .WithMany(x => x.Books)
-            .HasForeignKey(x => x.PublisherId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // PAYMENT
-        modelBuilder.Entity<Payment>()
-            .HasOne(x => x.User)
-            .WithMany(x => x.Payments)
-            .HasForeignKey(x => x.UserId)
-            .OnDelete(DeleteBehavior.NoAction);
-
-        modelBuilder.Entity<Payment>()
-            .HasOne(x => x.BorrowTransaction)
-            .WithMany(x => x.Payments)
-            .HasForeignKey(x => x.BorrowTransactionId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<PaymentDetail>()
-            .HasOne(x => x.Payment)
-            .WithMany(x => x.PaymentDetails)
-            .HasForeignKey(x => x.PaymentId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<PaymentDetail>()
-            .HasOne(x => x.BorrowDetail)
-            .WithMany()
-            .HasForeignKey(x => x.BorrowDetailId)
-            .OnDelete(DeleteBehavior.NoAction);
-
-        // AI LOG 1-1
-        modelBuilder.Entity<AIRequestLog>()
-            .HasOne(x => x.Detail)
-            .WithOne(x => x.AIRequestLog)
-            .HasForeignKey<AIRequestLogDetail>(x => x.AIRequestLogId)
-            .OnDelete(DeleteBehavior.Cascade);
-    }
-
-    // ================= INDEX =================
-    private void ConfigureIndexes(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Book>().HasIndex(x => x.ISBN).IsUnique();
-        modelBuilder.Entity<User>().HasIndex(x => x.Email).IsUnique();
-        modelBuilder.Entity<BookCopy>().HasIndex(x => x.Barcode).IsUnique();
-
-        modelBuilder.Entity<Reservation>()
-            .HasIndex(x => new { x.BookId, x.Status });
-
-        modelBuilder.Entity<BorrowDetail>()
-            .HasIndex(x => x.BookCopyId);
-    }
-
-    // ================= SOFT DELETE GLOBAL =================
-    private void ApplySoftDeleteFilter(ModelBuilder modelBuilder)
-    {
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
-            {
-                var parameter = Expression.Parameter(entityType.ClrType, "e");
-                var prop = Expression.Property(parameter, "IsDeleted");
-                var condition = Expression.Equal(prop, Expression.Constant(false));
-                var lambda = Expression.Lambda(condition, parameter);
+            base.OnModelCreating(modelBuilder);
 
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasQueryFilter(lambda);
+            ConfigureEnums(modelBuilder);
+            ConfigureDecimals(modelBuilder);
+            ConfigureRelationships(modelBuilder);
+            ConfigureIndexes(modelBuilder);
+            ApplySoftDeleteFilter(modelBuilder);
+
+            LibraryManagementDAL.Data.SeedData.Seed(modelBuilder);
+
+            modelBuilder.Entity<AIRequestLog>()
+                .HasOne(x => x.Detail)
+                .WithOne(x => x.AIRequestLog)
+                .HasForeignKey<AIRequestLogDetail>(x => x.AIRequestLogId);
+
+            modelBuilder.Entity<BookAISummary>()
+                .HasOne(x => x.Book)
+                .WithOne(x => x.BookAISummary)
+                .HasForeignKey<BookAISummary>(x => x.BookId);
+            modelBuilder.Entity<BookAISummary>()
+                .HasIndex(x => x.BookId)
+                .IsUnique();
+        }
+
+        // ================= ENUM =================
+        private void ConfigureEnums(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<BookCopy>().Property(x => x.Status).HasConversion<int>();
+            modelBuilder.Entity<BookCopy>().Property(x => x.Condition).HasConversion<int>();
+            modelBuilder.Entity<Reservation>().Property(x => x.Status).HasConversion<int>();
+            modelBuilder.Entity<Payment>().Property(x => x.PaymentMethod).HasConversion<int>();
+            modelBuilder.Entity<Payment>().Property(x => x.PaymentStatus).HasConversion<int>();
+        }
+
+        // ================= DECIMAL =================
+        private void ConfigureDecimals(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<BorrowDetail>()
+                .Property(x => x.FineAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<BorrowDetail>()
+                .Property(x => x.FinePaidAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Payment>()
+                .Property(x => x.Amount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<PaymentDetail>()
+                .Property(x => x.Amount)
+                .HasPrecision(18, 2);
+        }
+
+        // ================= RELATIONSHIP =================
+        private void ConfigureRelationships(ModelBuilder modelBuilder)
+        {
+            // USER ROLE
+            modelBuilder.Entity<UserRole>()
+                .HasKey(x => new { x.UserId, x.RoleId });
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(x => x.User)
+                .WithMany(x => x.UserRoles)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(x => x.Role)
+                .WithMany(x => x.UserRoles)
+                .HasForeignKey(x => x.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // BOOK RELATION (NO CASCADE DANGEROUS)
+            modelBuilder.Entity<Book>()
+                .HasOne(x => x.Author)
+                .WithMany(x => x.Books)
+                .HasForeignKey(x => x.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Book>()
+                .HasOne(x => x.Category)
+                .WithMany(x => x.Books)
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Book>()
+                .HasOne(x => x.Publisher)
+                .WithMany(x => x.Books)
+                .HasForeignKey(x => x.PublisherId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // PAYMENT
+            modelBuilder.Entity<Payment>()
+                .HasOne(x => x.User)
+                .WithMany(x => x.Payments)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Payment>()
+                .HasOne(x => x.BorrowTransaction)
+                .WithMany(x => x.Payments)
+                .HasForeignKey(x => x.BorrowTransactionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PaymentDetail>()
+                .HasOne(x => x.Payment)
+                .WithMany(x => x.PaymentDetails)
+                .HasForeignKey(x => x.PaymentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PaymentDetail>()
+                .HasOne(x => x.BorrowDetail)
+                .WithMany()
+                .HasForeignKey(x => x.BorrowDetailId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // AI LOG 1-1
+            modelBuilder.Entity<AIRequestLog>()
+                .HasOne(x => x.Detail)
+                .WithOne(x => x.AIRequestLog)
+                .HasForeignKey<AIRequestLogDetail>(x => x.AIRequestLogId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
+
+        // ================= INDEX =================
+        private void ConfigureIndexes(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Book>().HasIndex(x => x.ISBN).IsUnique();
+            modelBuilder.Entity<User>().HasIndex(x => x.Email).IsUnique();
+            modelBuilder.Entity<BookCopy>().HasIndex(x => x.Barcode).IsUnique();
+
+            modelBuilder.Entity<Reservation>()
+                .HasIndex(x => new { x.BookId, x.Status });
+
+            modelBuilder.Entity<BorrowDetail>()
+                .HasIndex(x => x.BookCopyId);
+        }
+
+        // ================= SOFT DELETE GLOBAL =================
+        private void ApplySoftDeleteFilter(ModelBuilder modelBuilder)
+        {
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+                {
+                    var parameter = Expression.Parameter(entityType.ClrType, "e");
+                    var prop = Expression.Property(parameter, "IsDeleted");
+                    var condition = Expression.Equal(prop, Expression.Constant(false));
+                    var lambda = Expression.Lambda(condition, parameter);
+
+                    modelBuilder.Entity(entityType.ClrType)
+                        .HasQueryFilter(lambda);
+                }
+            }
+        }
+
+        // ================= AUTO SOFT DELETE =================
+        public override int SaveChanges()
+        {
+            SoftDelete();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            SoftDelete();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        private void SoftDelete()
+        {
+            foreach (var entry in ChangeTracker.Entries<BaseEntity>()
+                         .Where(x => x.State == EntityState.Deleted))
+            {
+                entry.State = EntityState.Modified;
+                entry.Entity.IsDeleted = true;
+                entry.Entity.DeletedAt = DateTime.UtcNow;
             }
         }
     }
-
-    // ================= AUTO SOFT DELETE =================
-    public override int SaveChanges()
-    {
-        SoftDelete();
-        return base.SaveChanges();
-    }
-
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        SoftDelete();
-        return base.SaveChangesAsync(cancellationToken);
-    }
-
-    private void SoftDelete()
-    {
-        foreach (var entry in ChangeTracker.Entries<BaseEntity>()
-                     .Where(x => x.State == EntityState.Deleted))
-        {
-            entry.State = EntityState.Modified;
-            entry.Entity.IsDeleted = true;
-            entry.Entity.DeletedAt = DateTime.UtcNow;
-        }
-    }
 }
-
