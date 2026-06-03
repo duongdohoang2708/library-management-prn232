@@ -165,3 +165,5 @@ wwwroot\lib\jquery-validation-unobtrusive\jquery.validate.unobtrusive.js
 wwwroot\lib\jquery-validation-unobtrusive\jquery.validate.unobtrusive.min.js
 wwwroot\lib\jquery-validation-unobtrusive\LICENSE.txt
 wwwroot\templates\Books_Import_Template.xlsx
+wwwroot\uploads\books\31caf060b786489a85a3eb42f7006138.jpg
+wwwroot\uploads\books\f59870ce725140c487466df739877949.png

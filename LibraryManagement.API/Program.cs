@@ -11,21 +11,16 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Nếu có file appsettings.Local.json thì giữ dòng này cũng được
-builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
-
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenRepository>();
 builder.Services.AddScoped<PasswordHasher<User>>();
-
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"];
 
@@ -50,7 +45,6 @@ builder.Services.AddAuthentication(options =>
         )
     };
 });
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

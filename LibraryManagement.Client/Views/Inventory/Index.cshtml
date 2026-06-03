@@ -4,6 +4,7 @@
     ViewData["Title"] = "Quản lý Kho sách Vật lý";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var searchBarcode = ViewBag.SearchBarcode as string;
+    var location = ViewBag.Location as string;
 }
 
 <div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
@@ -39,7 +40,7 @@
                        class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition-colors" />
             </div>
             
-            <div class="flex gap-4">
+            <div class="flex gap-4 flex-wrap">
                 <select name="status" onchange="triggerSearch(this.form)" class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer">
                     <option value="">All Statuses</option>
                     <option value="0" selected="@(ViewBag.Status == BookCopyStatus.Available)">Available</option>
@@ -58,7 +59,12 @@
                     <option value="4" selected="@(ViewBag.Condition == BookCondition.Damaged)">Damaged</option>
                 </select>
 
-                @if (!string.IsNullOrEmpty(searchBarcode) || ViewBag.Status != null || ViewBag.Condition != null)
+                <input type="text" name="location" value="@location"
+                       oninput="clearTimeout(this.delay); this.delay = setTimeout(() => { triggerSearch(this.form); }, 500);"
+                       placeholder="Shelf location..."
+                       class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors min-w-[160px]" />
+
+                @if (!string.IsNullOrEmpty(searchBarcode) || ViewBag.Status != null || ViewBag.Condition != null || !string.IsNullOrEmpty(location))
                 {
                     <a asp-action="Index" class="px-4 py-3 bg-white/5 text-white/60 font-medium rounded-xl hover:bg-white/10 transition-colors flex items-center" title="Clear Filters">
                         <span class="material-symbols-outlined">close</span>
@@ -118,7 +124,7 @@
         }
 
         // Reset page to 1 when filters change
-        document.querySelectorAll('select[name="status"], select[name="condition"], input[name="searchBarcode"]').forEach(el => {
+        document.querySelectorAll('select[name="status"], select[name="condition"], input[name="searchBarcode"], input[name="location"]').forEach(el => {
             el.addEventListener('change', () => { currentPage = 1; });
             if (el.tagName === 'INPUT') {
                 el.addEventListener('input', () => { currentPage = 1; });
