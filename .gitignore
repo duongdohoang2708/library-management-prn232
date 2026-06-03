@@ -67,3 +67,5 @@ Desktop.ini
 # Local application secrets/configs
 **/appsettings.Local.json
 
+README.md
+library-management-system.sln
