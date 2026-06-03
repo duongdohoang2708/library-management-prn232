@@ -45,7 +45,8 @@
                             <div class="w-32 h-44 rounded-2xl overflow-hidden flex-shrink-0 shadow-2xl transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
                                 <img alt="@book.Title" 
                                      class="w-full h-full object-cover" 
-                                     src="@(string.IsNullOrEmpty(book.ImageUrl) ? "https://images.unsplash.com/photo-1543005139-ed1fbede6f0b?q=80&w=1000&auto=format&fit=crop" : book.ImageUrl)" />
+                                     src="@(string.IsNullOrEmpty(book.ImageUrl) ? "https://images.unsplash.com/photo-1543005139-ed1fbede6f0b?q=80&w=1000&auto=format&fit=crop" : book.ImageUrl)"
+                                     asp-append-version="true" />
                             </div>
 
                             <div class="flex flex-col justify-between py-2 flex-1 min-w-0">
@@ -142,7 +143,8 @@
                             <!-- Premium Book Card -->
                             <div class="relative aspect-[3/4.4] rounded-[2.5rem] overflow-hidden mb-6 shadow-2xl transition-all duration-700 group-hover:-translate-y-3 group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
                                 <img class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                                     src="@(string.IsNullOrEmpty(book.ImageUrl) ? "https://images.unsplash.com/photo-1543005139-ed1fbede6f0b?q=80&w=1000&auto=format&fit=crop" : book.ImageUrl)" />
+                                     src="@(string.IsNullOrEmpty(book.ImageUrl) ? "https://images.unsplash.com/photo-1543005139-ed1fbede6f0b?q=80&w=1000&auto=format&fit=crop" : book.ImageUrl)"
+                                     asp-append-version="true" />
                                 
                                 <!-- Star Badge -->
                                 <div class="absolute top-6 right-6 px-3 py-1.5 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 flex items-center gap-1.5 shadow-2xl">

@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="EPPlus" Version="8.4.2" />
     <PackageReference Include="Google.Apis.Auth" Version="1.71.0" />
-    <PackageReference Include="MailKit" Version="4.15.1" />
+    <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Quartz" Version="3.16.1" />
     <PackageReference Include="Quartz.Extensions.Hosting" Version="3.16.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1" />

@@ -290,16 +290,16 @@ namespace LibraryManagementDAL.Data
 
             // BOOK
             modelBuilder.Entity<Book>().HasData(
-                new Book { BookId = 1, Title = "Cho tôi xin một vé đi tuổi thơ", ISBN = "9786041000001", PublishYear = 2008, EditionNumber = 1, AuthorId = 1, CategoryId = 1, PublisherId = 1, CreatedAt = now, IsActive = true },
-                new Book { BookId = 2, Title = "Nhà giả kim", ISBN = "9780061122415", PublishYear = 1988, EditionNumber = 1, AuthorId = 2, CategoryId = 9, PublisherId = 4, CreatedAt = now, IsActive = true },
-                new Book { BookId = 3, Title = "Rừng Na Uy", ISBN = "9780375704024", PublishYear = 1987, EditionNumber = 1, AuthorId = 3, CategoryId = 5, PublisherId = 6, CreatedAt = now, IsActive = true },
-                new Book { BookId = 4, Title = "Harry Potter", ISBN = "9780747532743", PublishYear = 1997, EditionNumber = 1, AuthorId = 4, CategoryId = 2, PublisherId = 9, CreatedAt = now, IsActive = true },
-                new Book { BookId = 5, Title = "Mật mã Da Vinci", ISBN = "9780307474278", PublishYear = 2003, EditionNumber = 1, AuthorId = 5, CategoryId = 3, PublisherId = 5, CreatedAt = now, IsActive = true },
-                new Book { BookId = 6, Title = "Dế Mèn Phiêu Lưu Ký", ISBN = "9786041000018", PublishYear = 1941, EditionNumber = 1, AuthorId = 6, CategoryId = 8, PublisherId = 2, CreatedAt = now, IsActive = true },
-                new Book { BookId = 7, Title = "Chí Phèo", ISBN = "9786041000025", PublishYear = 1941, EditionNumber = 1, AuthorId = 7, CategoryId = 7, PublisherId = 3, CreatedAt = now, IsActive = true },
-                new Book { BookId = 8, Title = "1984", ISBN = "9780451524935", PublishYear = 1949, EditionNumber = 1, AuthorId = 8, CategoryId = 4, PublisherId = 8, CreatedAt = now, IsActive = true },
-                new Book { BookId = 9, Title = "The Shining", ISBN = "9780307743657", PublishYear = 1977, EditionNumber = 1, AuthorId = 9, CategoryId = 6, PublisherId = 6, CreatedAt = now, IsActive = true },
-                new Book { BookId = 10, Title = "Án mạng trên chuyến tàu tốc hành", ISBN = "9780007119318", PublishYear = 1934, EditionNumber = 1, AuthorId = 10, CategoryId = 3, PublisherId = 10, CreatedAt = now, IsActive = true }
+                new Book { BookId = 1, Title = "Cho tôi xin một vé đi tuổi thơ", ISBN = "9786041000001", PublishYear = 2008, EditionNumber = 1, AuthorId = 1, CategoryId = 1, PublisherId = 1, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/chotoixinmotvedituoitho.jpg" },
+                new Book { BookId = 2, Title = "Nhà giả kim", ISBN = "9780061122415", PublishYear = 1988, EditionNumber = 1, AuthorId = 2, CategoryId = 9, PublisherId = 4, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/nhagialkim.jpg" },
+                new Book { BookId = 3, Title = "Rừng Na Uy", ISBN = "9780375704024", PublishYear = 1987, EditionNumber = 1, AuthorId = 3, CategoryId = 5, PublisherId = 6, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/rungnauy.webp" },
+                new Book { BookId = 4, Title = "Harry Potter", ISBN = "9780747532743", PublishYear = 1997, EditionNumber = 1, AuthorId = 4, CategoryId = 2, PublisherId = 9, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/harrypotter.jpg" },
+                new Book { BookId = 5, Title = "Mật mã Da Vinci", ISBN = "9780307474278", PublishYear = 2003, EditionNumber = 1, AuthorId = 5, CategoryId = 3, PublisherId = 5, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/matmadavinci.jpg" },
+                new Book { BookId = 6, Title = "Dế Mèn Phiêu Lưu Ký", ISBN = "9786041000018", PublishYear = 1941, EditionNumber = 1, AuthorId = 6, CategoryId = 8, PublisherId = 2, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/demen.jpg" },
+                new Book { BookId = 7, Title = "Chí Phèo", ISBN = "9786041000025", PublishYear = 1941, EditionNumber = 1, AuthorId = 7, CategoryId = 7, PublisherId = 3, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/chipheo.jpg" },
+                new Book { BookId = 8, Title = "1984", ISBN = "9780451524935", PublishYear = 1949, EditionNumber = 1, AuthorId = 8, CategoryId = 4, PublisherId = 8, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/1984.jpg" },
+                new Book { BookId = 9, Title = "The Shining", ISBN = "9780307743657", PublishYear = 1977, EditionNumber = 1, AuthorId = 9, CategoryId = 6, PublisherId = 6, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/theshining.jpg" },
+                new Book { BookId = 10, Title = "Án mạng trên chuyến tàu tốc hành", ISBN = "9780007119318", PublishYear = 1934, EditionNumber = 1, AuthorId = 10, CategoryId = 3, PublisherId = 10, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/anmangtauhochanh.jpg" }
             );
 
             // BOOK COPY

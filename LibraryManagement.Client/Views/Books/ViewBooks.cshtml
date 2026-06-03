@@ -89,7 +89,8 @@
                                  class="w-full h-full object-cover"
                                  src="@(string.IsNullOrEmpty(book.ImageUrl) 
                                         ? "https://via.placeholder.com/300x400?text=No+Image" 
-                                        : book.ImageUrl)" />
+                                        : book.ImageUrl)"
+                                 asp-append-version="true" />
                         </div>
 
                         <!-- Info -->

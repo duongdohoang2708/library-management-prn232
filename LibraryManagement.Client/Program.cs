@@ -25,6 +25,7 @@ builder.Services.AddSession(options =>
 var app = builder.Build();
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthentication();
