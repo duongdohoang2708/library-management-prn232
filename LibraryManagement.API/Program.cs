@@ -1,6 +1,7 @@
 using LibraryManagement.BLL.Services;
 using LibraryManagement.BLL.Services.Interface;
 using LibraryManagement.DAL.Data;
+using LibraryManagement.DAL.Repositories;
 using LibraryManagementDAL.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<AuthenRepository>();
 builder.Services.AddScoped<PasswordHasher<User>>();
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"];

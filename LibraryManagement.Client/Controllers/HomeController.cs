@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using LibraryManagement.Client.Models;
+using LibraryManagement.Client.DTO.Auth;
 
 namespace LibraryManagement.Client.Controllers;
 
@@ -20,11 +21,30 @@ public class HomeController : Controller
 
     public IActionResult Dashboard()
     {
+        var token = HttpContext.Session.GetString("AccessToken");
+
+        if (string.IsNullOrEmpty(token))
+        {
+            return RedirectToAction("Login", "Auth");
+        }
+
         return View();
     }
 
     public IActionResult AdminDashboard()
     {
+        var roles = HttpContext.Session.GetString("Roles");
+
+        if (string.IsNullOrEmpty(roles))
+        {
+            return RedirectToAction("Login", "Auth");
+        }
+
+        if (!roles.Split(',').Contains("Admin"))
+        {
+            return RedirectToAction("AccessDenied", "Auth");
+        }
+
         return View();
     }
 
@@ -38,4 +58,5 @@ public class HomeController : Controller
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+
 }

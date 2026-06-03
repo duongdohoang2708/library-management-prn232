@@ -1,13 +1,21 @@
 @{
-    var isAuthenticated = true;
-    var userName = "admin@lms.com";
-    var displayName = "Admin User";
-    var displayFullName = "LMS Admin Demo";
-    var displayUsername = "admindemo";
-    var userEmail = "admin@lms.com";
-    var primaryRole = "Admin";
-    var roleBadgeClass = "bg-primary/20 text-primary border-primary/30";
-    var userRoles = new List<string> { "Admin", "Librarian" };
+    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+    var userName = User.FindFirst("Username")?.Value ?? User.Identity?.Name ?? "";
+    var displayFullName = User.FindFirst("FullName")?.Value ?? userName;
+    var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "";
+    var displayName = !string.IsNullOrWhiteSpace(displayFullName) ? displayFullName : userEmail;
+    var displayUsername = !string.IsNullOrWhiteSpace(userName) ? userName : userEmail;
+    var userRoles = User.Claims
+        .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+        .Select(c => c.Value)
+        .ToList();
+    var primaryRole = userRoles.FirstOrDefault() ?? "Member";
+    var roleBadgeClass = primaryRole == "Admin"
+        ? "bg-primary/20 text-primary border-primary/30"
+        : "bg-white/10 text-white/70 border-white/20";
+    var avatarLetter = string.IsNullOrWhiteSpace(displayName)
+        ? "?"
+        : displayName.Substring(0, 1).ToUpperInvariant();
 }
 
 <header class="h-20 border-b border-white/10 flex items-center justify-between px-8 sticky top-0 bg-background-dark/80 backdrop-blur-md z-40">
@@ -90,7 +98,7 @@
                         <div class="flex flex-col items-center text-center">
                             <div class="relative mb-3">
                                 <div class="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center text-primary text-3xl font-black shadow-lg">
-                                    A
+                                    @avatarLetter
                                 </div>
                                 <div class="absolute bottom-0 right-0 w-5 h-5 bg-emerald-500 border-4 border-[#1a1c1e] rounded-full" title="Active now"></div>
                             </div>
@@ -141,7 +149,7 @@
                     
                     <!-- Simplified Actions -->
                     <div class="p-2 border-t border-white/5">
-                        <a href="/User/ChangePassword" class="w-full flex items-center justify-center gap-3 p-3 text-sm font-bold text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all mb-1">
+                        <a href="/Auth/ChangePassword" class="w-full flex items-center justify-center gap-3 p-3 text-sm font-bold text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all mb-1">
                             <span class="material-symbols-outlined text-lg">password</span>
                             <span>Change Password</span>
                         </a>
