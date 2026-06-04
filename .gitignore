@@ -1,0 +1,20 @@
+# Build output
+**/bin/
+**/obj/
+
+# User and IDE-specific files
+*.user
+*.rsuser
+*.suo
+.vs/
+.vscode/
+
+# Tooling cache
+.codegraph/
+
+# Local environment overrides
+**/appsettings.Local.json
+
+# OS files
+.DS_Store
+Thumbs.db
