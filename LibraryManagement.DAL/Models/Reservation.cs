@@ -30,7 +30,9 @@ public class Reservation : BaseEntity
     public byte[] RowVersion { get; set; }
 
     // ================= QUAN HỆ NAVIGATIONS =================
-    public User User { get; set; }
+    public Account Account { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public Account User { get => Account; set => Account = value; }
     public Book Book { get; set; }
 }
 

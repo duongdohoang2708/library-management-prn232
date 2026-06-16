@@ -3,7 +3,7 @@
     ViewData["Title"] = "AdminDashboard";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
-    var recentUsers = ViewBag.RecentUsers as List<User> ?? new List<User>();
+    var recentUsers = ViewBag.RecentUsers as List<Account> ?? new List<Account>();
     var recentPayments = ViewBag.RecentPayments as List<Payment> ?? new List<Payment>();
 
     var monthlyLabels = ViewBag.MonthlyLabels as List<string> ?? new List<string>();

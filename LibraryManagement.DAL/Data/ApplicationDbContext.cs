@@ -12,9 +12,10 @@ namespace LibraryManagement.DAL.Data
 
         #region DbSets
 
-        public DbSet<User> Users => Set<User>();
+        public DbSet<Account> Accounts => Set<Account>();
+        public DbSet<Member> Members => Set<Member>();
+        public DbSet<Staff> Staffs => Set<Staff>();
         public DbSet<Role> Roles => Set<Role>();
-        public DbSet<UserRole> UserRoles => Set<UserRole>();
 
         public DbSet<Author> Authors => Set<Author>();
         public DbSet<Category> Categories => Set<Category>();
@@ -97,19 +98,39 @@ namespace LibraryManagement.DAL.Data
         // ================= RELATIONSHIP =================
         private void ConfigureRelationships(ModelBuilder modelBuilder)
         {
-            // USER ROLE
-            modelBuilder.Entity<UserRole>()
-                .HasKey(x => new { x.UserId, x.RoleId });
+            modelBuilder.Entity<Account>()
+                .ToTable("Accounts");
 
-            modelBuilder.Entity<UserRole>()
-                .HasOne(x => x.User)
-                .WithMany(x => x.UserRoles)
-                .HasForeignKey(x => x.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<BorrowTransaction>()
+                .Ignore(x => x.User);
 
-            modelBuilder.Entity<UserRole>()
+            modelBuilder.Entity<Payment>()
+                .Ignore(x => x.User);
+
+            modelBuilder.Entity<Notification>()
+                .Ignore(x => x.User);
+
+            modelBuilder.Entity<Reservation>()
+                .Ignore(x => x.User);
+
+            modelBuilder.Entity<BookReview>()
+                .Ignore(x => x.User);
+
+            modelBuilder.Entity<Member>()
+                .HasOne(x => x.Account)
+                .WithOne(x => x.Member)
+                .HasForeignKey<Member>(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Staff>()
+                .HasOne(x => x.Account)
+                .WithOne(x => x.Staff)
+                .HasForeignKey<Staff>(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Staff>()
                 .HasOne(x => x.Role)
-                .WithMany(x => x.UserRoles)
+                .WithMany(x => x.Staffs)
                 .HasForeignKey(x => x.RoleId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -133,8 +154,32 @@ namespace LibraryManagement.DAL.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // PAYMENT
+            modelBuilder.Entity<BorrowTransaction>()
+                .HasOne(x => x.Account)
+                .WithMany(x => x.BorrowTransactions)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BookReview>()
+                .HasOne(x => x.Account)
+                .WithMany(x => x.BookReviews)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Notification>()
+                .HasOne(x => x.Account)
+                .WithMany(x => x.Notifications)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Reservation>()
+                .HasOne(x => x.Account)
+                .WithMany(x => x.Reservations)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<Payment>()
-                .HasOne(x => x.User)
+                .HasOne(x => x.Account)
                 .WithMany(x => x.Payments)
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
@@ -169,7 +214,11 @@ namespace LibraryManagement.DAL.Data
         private void ConfigureIndexes(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Book>().HasIndex(x => x.ISBN).IsUnique();
-            modelBuilder.Entity<User>().HasIndex(x => x.Email).IsUnique();
+            modelBuilder.Entity<Account>().HasIndex(x => x.Email).IsUnique();
+            modelBuilder.Entity<Member>().HasIndex(x => x.UserId).IsUnique();
+            modelBuilder.Entity<Member>().HasIndex(x => x.MemberCode).IsUnique();
+            modelBuilder.Entity<Staff>().HasIndex(x => x.UserId).IsUnique();
+            modelBuilder.Entity<Staff>().HasIndex(x => x.StaffCode).IsUnique();
             modelBuilder.Entity<BookCopy>().HasIndex(x => x.Barcode).IsUnique();
 
             modelBuilder.Entity<Reservation>()

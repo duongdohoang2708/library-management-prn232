@@ -12,5 +12,8 @@ namespace LibraryManagement.BLL.Services.Interface
         Task<LoginResponse?> LoginAsync(LoginRequest request);
         Task<RegisterResponse> RegisterAsync(RegisterRequest request);
         Task<ChangePasswordResponse> ChangePasswordAsync(ChangePasswordRequest request);
+        Task<AuthActionResponse> SendPasswordResetCodeAsync(ForgotPasswordRequest request);
+        Task<AuthActionResponse> VerifyPasswordResetCodeAsync(VerifyResetCodeRequest request);
+        Task<AuthActionResponse> ResetPasswordAsync(ResetPasswordRequest request);
     }
 }

@@ -1,6 +1,6 @@
 ﻿@using LibraryManagementDAL.DTO.Pagination
 @using LibraryManagementDAL.Models
-@model PaginationResponseModel<User>
+@model PaginationResponseModel<Account>
 
 @{
     ViewData["Title"] = "User Management";
@@ -135,33 +135,21 @@
 
                                 <td class="p-4">
                                     <div class="flex flex-wrap gap-2">
-                                        @if (user.UserRoles != null && user.UserRoles.Any())
-                                        {
-                                            foreach (var ur in user.UserRoles)
+                                        @{
+                                            var role = user.Staff?.Role?.RoleName ?? (user.Member != null ? "Member" : "No Role");
+                                            var roleClass = role switch
                                             {
-                                                var role = ur.Role?.RoleName ?? "Unknown";
-
-                                                var roleClass = role switch
-                                                {
-                                                    "Admin" => "bg-red-500/10 text-red-400 border border-red-500/20",
-                                                    "Manager" => "bg-purple-500/10 text-purple-400 border border-purple-500/20",
-                                                    "Librarian" => "bg-blue-500/10 text-blue-400 border border-blue-500/20",
-                                                    "Reader" => "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
-                                                    _ => "bg-white/10 text-white/60 border border-white/10"
-                                                };
-
-                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider @roleClass">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
-                                                    @role
-                                                </span>
-                                            }
+                                                "Admin" => "bg-red-500/10 text-red-400 border border-red-500/20",
+                                                "Manager" => "bg-purple-500/10 text-purple-400 border border-purple-500/20",
+                                                "Librarian" => "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+                                                "Member" => "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+                                                _ => "bg-white/10 text-white/60 border border-white/10"
+                                            };
                                         }
-                                        else
-                                        {
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white/60 border border-white/10 text-[11px] font-bold uppercase tracking-wider">
-                                                No Role
-                                            </span>
-                                        }
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider @roleClass">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                            @role
+                                        </span>
                                     </div>
                                 </td>
                                 <td class="p-4">

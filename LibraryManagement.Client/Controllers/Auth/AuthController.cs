@@ -203,13 +203,83 @@ namespace LibraryManagement.Client.Controllers.Auth
         [HttpGet]
         public IActionResult ForgotPassword()
         {
-            return View();
+            return View(new LibraryManagementDAL.DTO.Auth.ForgotPasswordRequestDto());
         }
 
         [HttpGet]
-        public IActionResult ResetPassword()
+        public IActionResult ResetPassword(string? email = null, string? token = null)
         {
-            return View();
+            return View(new LibraryManagementDAL.DTO.Auth.ResetPasswordRequestDto
+            {
+                Email = email ?? string.Empty,
+                Token = token ?? string.Empty
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(LibraryManagementDAL.DTO.Auth.ForgotPasswordRequestDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var baseUrl = configuration["ApiSettings:BaseUrl"];
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                ModelState.AddModelError(string.Empty, "Chua cau hinh ApiSettings:BaseUrl");
+                return View(model);
+            }
+
+            var client = httpClientFactory.CreateClient();
+            var response = await client.PostAsJsonAsync($"{baseUrl}/api/auth/forgot-password", model);
+            var result = await response.Content.ReadFromJsonAsync<RegisterResponseDto>();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ModelState.AddModelError(string.Empty, result?.Message ?? "Gui ma xac nhan that bai");
+                return View(model);
+            }
+
+            TempData["SuccessMessage"] = result?.Message ?? "Ma xac nhan da duoc gui ve email";
+            return RedirectToAction(nameof(ResetPassword), new { email = model.Email });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(LibraryManagementDAL.DTO.Auth.ResetPasswordRequestDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var baseUrl = configuration["ApiSettings:BaseUrl"];
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                ModelState.AddModelError(string.Empty, "Chua cau hinh ApiSettings:BaseUrl");
+                return View(model);
+            }
+
+            var client = httpClientFactory.CreateClient();
+            var response = await client.PostAsJsonAsync($"{baseUrl}/api/auth/reset-password", new
+            {
+                email = model.Email,
+                code = model.Token,
+                newPassword = model.NewPassword,
+                confirmNewPassword = model.ConfirmNewPassword
+            });
+            var result = await response.Content.ReadFromJsonAsync<RegisterResponseDto>();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ModelState.AddModelError(string.Empty, result?.Message ?? "Doi mat khau that bai");
+                return View(model);
+            }
+
+            TempData["SuccessMessage"] = result?.Message ?? "Doi mat khau thanh cong";
+            return RedirectToAction(nameof(Login));
         }
 
         [HttpGet]

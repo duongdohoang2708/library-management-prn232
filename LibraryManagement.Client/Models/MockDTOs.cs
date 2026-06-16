@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace LibraryManagement.Client.Models
 {
     public class ErrorViewModel
@@ -68,14 +70,27 @@ namespace LibraryManagementDAL.DTO.Auth
 
     public class ForgotPasswordRequestDto
     {
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Email is invalid")]
         public string Email { get; set; } = string.Empty;
     }
 
     public class ResetPasswordRequestDto
     {
+        [Required]
+        [EmailAddress]
         public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Verification code is required")]
+        [RegularExpression(@"^\d{6}$", ErrorMessage = "Verification code must be 6 digits")]
         public string Token { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "New password is required")]
+        [MinLength(6, ErrorMessage = "New password must be at least 6 characters")]
         public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Confirm password is required")]
+        [Compare(nameof(NewPassword), ErrorMessage = "Confirm password does not match")]
         public string ConfirmNewPassword { get; set; } = string.Empty;
     }
 

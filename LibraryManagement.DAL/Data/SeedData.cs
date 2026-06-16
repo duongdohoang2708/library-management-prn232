@@ -38,8 +38,8 @@ namespace LibraryManagementDAL.Data
             );
 
             // USER
-            modelBuilder.Entity<User>().HasData(
-                new User
+            modelBuilder.Entity<Account>().HasData(
+                new Account
                 {
                     UserId = 1,
                     Username = "admin",
@@ -53,7 +53,7 @@ namespace LibraryManagementDAL.Data
                     LastLoginAt = null,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 2,
                     Username = "librarian1",
@@ -66,7 +66,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 3,
                     Username = "member1",
@@ -79,7 +79,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 4,
                     Username = "member2",
@@ -92,7 +92,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 5,
                     Username = "member3",
@@ -105,7 +105,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 6,
                     Username = "member4",
@@ -118,7 +118,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 7,
                     Username = "member5",
@@ -131,7 +131,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 8,
                     Username = "member6",
@@ -144,7 +144,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 9,
                     Username = "member7",
@@ -157,7 +157,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 10,
                     Username = "member8",
@@ -172,18 +172,20 @@ namespace LibraryManagementDAL.Data
                 }
             );
 
-            // USER ROLE
-            modelBuilder.Entity<UserRole>().HasData(
-                new UserRole { UserId = 1, RoleId = 1, CreatedAt = now },
-    new UserRole { UserId = 2, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 3, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 4, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 5, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 6, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 7, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 8, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 9, RoleId = 2, CreatedAt = now },
-    new UserRole { UserId = 10, RoleId = 3, CreatedAt = now }
+            modelBuilder.Entity<Member>().HasData(
+                new Member { MemberId = 1, UserId = 2, MemberCode = "MEM00001", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 2, UserId = 3, MemberCode = "MEM00002", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 3, UserId = 4, MemberCode = "MEM00003", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 4, UserId = 5, MemberCode = "MEM00004", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 5, UserId = 6, MemberCode = "MEM00005", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 6, UserId = 7, MemberCode = "MEM00006", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 7, UserId = 8, MemberCode = "MEM00007", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 8, UserId = 10, MemberCode = "MEM00008", JoinedAt = now, CreatedAt = now }
+            );
+
+            modelBuilder.Entity<Staff>().HasData(
+                new Staff { StaffId = 1, UserId = 1, RoleId = 1, StaffCode = "STF00001", HiredAt = now, CreatedAt = now },
+                new Staff { StaffId = 2, UserId = 9, RoleId = 2, StaffCode = "STF00002", HiredAt = now, CreatedAt = now }
             );
 
             // AUTHOR
@@ -290,16 +292,16 @@ namespace LibraryManagementDAL.Data
 
             // BOOK
             modelBuilder.Entity<Book>().HasData(
-                new Book { BookId = 1, Title = "Cho tôi xin một vé đi tuổi thơ", ISBN = "9786041000001", PublishYear = 2008, EditionNumber = 1, AuthorId = 1, CategoryId = 1, PublisherId = 1, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/chotoixinmotvedituoitho.jpg" },
-                new Book { BookId = 2, Title = "Nhà giả kim", ISBN = "9780061122415", PublishYear = 1988, EditionNumber = 1, AuthorId = 2, CategoryId = 9, PublisherId = 4, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/nhagialkim.jpg" },
-                new Book { BookId = 3, Title = "Rừng Na Uy", ISBN = "9780375704024", PublishYear = 1987, EditionNumber = 1, AuthorId = 3, CategoryId = 5, PublisherId = 6, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/rungnauy.webp" },
-                new Book { BookId = 4, Title = "Harry Potter", ISBN = "9780747532743", PublishYear = 1997, EditionNumber = 1, AuthorId = 4, CategoryId = 2, PublisherId = 9, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/harrypotter.jpg" },
-                new Book { BookId = 5, Title = "Mật mã Da Vinci", ISBN = "9780307474278", PublishYear = 2003, EditionNumber = 1, AuthorId = 5, CategoryId = 3, PublisherId = 5, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/matmadavinci.jpg" },
-                new Book { BookId = 6, Title = "Dế Mèn Phiêu Lưu Ký", ISBN = "9786041000018", PublishYear = 1941, EditionNumber = 1, AuthorId = 6, CategoryId = 8, PublisherId = 2, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/demen.jpg" },
-                new Book { BookId = 7, Title = "Chí Phèo", ISBN = "9786041000025", PublishYear = 1941, EditionNumber = 1, AuthorId = 7, CategoryId = 7, PublisherId = 3, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/chipheo.jpg" },
-                new Book { BookId = 8, Title = "1984", ISBN = "9780451524935", PublishYear = 1949, EditionNumber = 1, AuthorId = 8, CategoryId = 4, PublisherId = 8, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/1984.jpg" },
-                new Book { BookId = 9, Title = "The Shining", ISBN = "9780307743657", PublishYear = 1977, EditionNumber = 1, AuthorId = 9, CategoryId = 6, PublisherId = 6, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/theshining.jpg" },
-                new Book { BookId = 10, Title = "Án mạng trên chuyến tàu tốc hành", ISBN = "9780007119318", PublishYear = 1934, EditionNumber = 1, AuthorId = 10, CategoryId = 3, PublisherId = 10, CreatedAt = now, IsActive = true, ImageUrl = "/images/books/anmangtauhochanh.jpg" }
+                new Book { BookId = 1, Title = "Cho tôi xin một vé đi tuổi thơ", ISBN = "9786041000001", PublishYear = 2008, EditionNumber = 1, AuthorId = 1, CategoryId = 1, PublisherId = 1, CreatedAt = now, IsActive = true },
+                new Book { BookId = 2, Title = "Nhà giả kim", ISBN = "9780061122415", PublishYear = 1988, EditionNumber = 1, AuthorId = 2, CategoryId = 9, PublisherId = 4, CreatedAt = now, IsActive = true },
+                new Book { BookId = 3, Title = "Rừng Na Uy", ISBN = "9780375704024", PublishYear = 1987, EditionNumber = 1, AuthorId = 3, CategoryId = 5, PublisherId = 6, CreatedAt = now, IsActive = true },
+                new Book { BookId = 4, Title = "Harry Potter", ISBN = "9780747532743", PublishYear = 1997, EditionNumber = 1, AuthorId = 4, CategoryId = 2, PublisherId = 9, CreatedAt = now, IsActive = true },
+                new Book { BookId = 5, Title = "Mật mã Da Vinci", ISBN = "9780307474278", PublishYear = 2003, EditionNumber = 1, AuthorId = 5, CategoryId = 3, PublisherId = 5, CreatedAt = now, IsActive = true },
+                new Book { BookId = 6, Title = "Dế Mèn Phiêu Lưu Ký", ISBN = "9786041000018", PublishYear = 1941, EditionNumber = 1, AuthorId = 6, CategoryId = 8, PublisherId = 2, CreatedAt = now, IsActive = true },
+                new Book { BookId = 7, Title = "Chí Phèo", ISBN = "9786041000025", PublishYear = 1941, EditionNumber = 1, AuthorId = 7, CategoryId = 7, PublisherId = 3, CreatedAt = now, IsActive = true },
+                new Book { BookId = 8, Title = "1984", ISBN = "9780451524935", PublishYear = 1949, EditionNumber = 1, AuthorId = 8, CategoryId = 4, PublisherId = 8, CreatedAt = now, IsActive = true },
+                new Book { BookId = 9, Title = "The Shining", ISBN = "9780307743657", PublishYear = 1977, EditionNumber = 1, AuthorId = 9, CategoryId = 6, PublisherId = 6, CreatedAt = now, IsActive = true },
+                new Book { BookId = 10, Title = "Án mạng trên chuyến tàu tốc hành", ISBN = "9780007119318", PublishYear = 1934, EditionNumber = 1, AuthorId = 10, CategoryId = 3, PublisherId = 10, CreatedAt = now, IsActive = true }
             );
 
             // BOOK COPY

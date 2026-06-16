@@ -15,8 +15,6 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
-
 builder.Services.AddControllers()
     .AddOData(options => options
         .Select()
@@ -28,23 +26,21 @@ builder.Services.AddControllers()
         .AddRouteComponents("odata", GetEdmModel()))
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenRepository>();
 builder.Services.AddScoped<BookRepository>();
 builder.Services.AddScoped<InventoryRepository>();
 builder.Services.AddScoped<BookCatalogService>();
 builder.Services.AddScoped<InventoryService>();
-builder.Services.AddScoped<PasswordHasher<User>>();
-
+builder.Services.AddScoped<PasswordHasher<Account>>();
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"];
 
@@ -69,7 +65,6 @@ builder.Services.AddAuthentication(options =>
         )
     };
 });
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
