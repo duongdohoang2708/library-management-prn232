@@ -1,10 +1,11 @@
 @model LibraryManagementDAL.DTO.Circulation.ReturnRequest
 @using LibraryManagementDAL.Models
+@using LibraryManagementDAL.DTO.Circulation
 
 @{
     ViewData["Title"] = "Hoàn trả sách";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
-    var unreturnedDetails = ViewBag.UnreturnedDetails as List<BorrowDetail>;
+    var unreturnedDetails = ViewBag.UnreturnedDetails as List<CirculationBorrowDetailItem>;
 }
 
 <div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
@@ -68,8 +69,8 @@
                                 var now = DateTime.UtcNow.Date;
                                 foreach (var detail in unreturnedDetails)
                                 {
-                                    var isOverdue = now > detail.BorrowTransaction?.DueDate.Date;
-                                    var lateDays = isOverdue ? (now - detail.BorrowTransaction.DueDate.Date).Days : 0;
+                                    var isOverdue = now > detail.DueDate.Date;
+                                    var lateDays = isOverdue ? (now - detail.DueDate.Date).Days : 0;
                                     var expectedFine = lateDays * 5000;
 
                                     <div class="relative flex flex-col p-4 bg-white/5 rounded-xl border border-white/10 group transition-all">
@@ -82,8 +83,8 @@
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex items-start justify-between gap-2">
                                                     <div>
-                                                        <h4 class="text-sm font-bold text-white mb-1 leading-tight">@detail.BookCopy?.Book?.Title</h4>
-                                                        <p class="text-[11px] text-primary font-mono tracking-wider mb-2">Code: @detail.BookCopy?.Barcode</p>
+                                                        <h4 class="text-sm font-bold text-white mb-1 leading-tight">@detail.BookTitle</h4>
+                                                        <p class="text-[11px] text-primary font-mono tracking-wider mb-2">Code: @detail.Barcode</p>
                                                     </div>
                                                     <!-- Quick Report Actions -->
                                                     <div class="flex gap-1">

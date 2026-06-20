@@ -137,24 +137,6 @@ namespace LibraryManagementDAL.DTO.Notification
     }
 }
 
-namespace LibraryManagementDAL.DTO.Circulation
-{
-    public class BorrowRequest
-    {
-        public int UserId { get; set; }
-        public List<string> Barcodes { get; set; } = new();
-    }
-
-    public class ReturnRequest
-    {
-        public int BorrowDetailId { get; set; }
-        public DateTime ReturnDate { get; set; }
-        public string Condition { get; set; } = string.Empty;
-        public List<int> BorrowDetailIds { get; set; } = new();
-        public string ConditionRemarks { get; set; } = string.Empty;
-    }
-}
-
 namespace LibraryManagementDAL.DTO.Pagination
 {
     public class PaginationResponseModel<T>

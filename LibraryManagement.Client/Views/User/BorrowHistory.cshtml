@@ -99,7 +99,10 @@
                                 {
                                     <div class="flex items-center gap-4 p-4 bg-black/20 rounded-2xl border border-white/5 group/book">
                                         <div class="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-white/5 border border-white/10">
-                                            <img src="@(string.IsNullOrEmpty(detail.BookCopy?.Book?.ImageUrl) ? "https://lh3.googleusercontent.com/aida-public/AB6AXuAvK-cjH676fwE2CtPAaKeNs1CFkHzF117dsgnXA3wuDRqathH8u9Zff-Qy8ru3VTxc66TJe4aBEeR1gzvWg1Vi0r9Szi8ALKxif6kBgMSdEbjI8dr3hs3gyZdL0mk0Rjx-KU1jv3tmiDqnnA2Wf6Ar2eOgjiXiB9d8PVkgDaEhQGE9Vlq6nid3BI-XIbI6gseJsabnRZKqCi2WbVxDK4-OTDqAVWsUAyZTsgLjWVtvnsgd4Z1zymxCNpOoXgUSbL3Y25pTkW1i5Rq1" : detail.BookCopy.Book.ImageUrl)" class="w-full h-full object-cover" />
+                                            <img src="@BookImageHelper.Resolve(detail.BookCopy?.Book?.ImageUrl, detail.BookCopy?.Book?.Title)"
+                                                 alt="@detail.BookCopy?.Book?.Title"
+                                                 onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';"
+                                                 class="w-full h-full object-cover" />
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <h4 class="font-bold text-white group-hover/book:text-primary transition-colors truncate">@detail.BookCopy?.Book?.Title</h4>

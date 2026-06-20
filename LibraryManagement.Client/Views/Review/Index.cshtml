@@ -16,7 +16,9 @@
     <!-- Header Section -->
     <div class="relative h-[250px] w-full overflow-hidden mb-10">
         <div class="absolute inset-0 z-0">
-            <img src="@(string.IsNullOrEmpty(book.ImageUrl) ? "https://images.unsplash.com/photo-1543005139-ed1fbede6f0b?q=80&w=1000&auto=format&fit=crop" : book.ImageUrl)" 
+            <img src="@BookImageHelper.Resolve(book?.ImageUrl, book?.Title)"
+                 alt=""
+                 onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';"
                  class="w-full h-full object-cover blur-2xl opacity-20 scale-110" />
             <div class="absolute inset-0 bg-gradient-to-t from-[#0A0F1E] via-transparent to-transparent"></div>
         </div>
@@ -24,7 +26,9 @@
         <div class="relative z-10 h-full max-w-5xl mx-auto px-8 flex items-end pb-10">
             <div class="flex gap-8 items-center">
                 <div class="w-32 h-44 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 border border-white/10">
-                    <img src="@(string.IsNullOrEmpty(book.ImageUrl) ? "https://images.unsplash.com/photo-1543005139-ed1fbede6f0b?q=80&w=1000&auto=format&fit=crop" : book.ImageUrl)" 
+                    <img src="@BookImageHelper.Resolve(book?.ImageUrl, book?.Title)"
+                         alt="@book?.Title"
+                         onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';"
                          class="w-full h-full object-cover" />
                 </div>
                 <div>

@@ -162,7 +162,8 @@
                                         <div class="flex items-center gap-4">
                                             <div class="w-10 h-14 rounded bg-black/40 flex items-center justify-center p-0.5 flex-shrink-0 overflow-hidden shadow-lg border border-primary/20 group-hover:border-primary/50 transition-all">
                                                 <img alt="@book.Title"
-                                                     src="@(string.IsNullOrEmpty(book.ImageUrl) ? "/images/default-book.png" : book.ImageUrl)"
+                                                     src="@BookImageHelper.Resolve(book.ImageUrl, book.Title)"
+                                                     onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';"
                                                      class="w-full h-full object-contain rounded-sm">                                            </div>
                                             <div>
                                                 <p class="font-bold text-white group-hover:text-primary transition-colors">@book.Title</p>
@@ -273,7 +274,8 @@
                                 <div class="relative aspect-[3/4] rounded-xl overflow-hidden mb-4 shadow-xl">
                                     <img alt="@book.Title"
                                          class="w-full h-full object-cover"
-                                         src="@(string.IsNullOrEmpty(book.ImageUrl) ? "/images/default-book.png" : book.ImageUrl)" />
+                                         src="@BookImageHelper.Resolve(book.ImageUrl, book.Title)"
+                                         onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';" />
                                 </div>
 
                                 <div class="flex flex-col flex-grow">

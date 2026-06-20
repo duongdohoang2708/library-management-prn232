@@ -61,7 +61,10 @@
                                                 @if (fine.BookCopy?.Book != null)
                                                 {
                                                     <div class="w-10 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 shadow-lg">
-                                                        <img src="@(string.IsNullOrEmpty(fine.BookCopy.Book.ImageUrl) ? "https://images.unsplash.com/photo-1543005139-ed1fbede6f0b?q=80&w=1000&auto=format&fit=crop" : fine.BookCopy.Book.ImageUrl)" class="w-full h-full object-cover" />
+                                                        <img src="@BookImageHelper.Resolve(fine.BookCopy.Book.ImageUrl, fine.BookCopy.Book.Title)"
+                                                             alt="@fine.BookCopy.Book.Title"
+                                                             onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';"
+                                                             class="w-full h-full object-cover" />
                                                     </div>
                                                     <div>
                                                         <p class="text-white font-bold mb-0.5 group-hover:text-primary transition-colors">@fine.BookCopy.Book.Title</p>
