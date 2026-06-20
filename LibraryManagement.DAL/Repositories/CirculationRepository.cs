@@ -37,6 +37,31 @@ namespace LibraryManagement.DAL.Repositories
             return await db.Accounts.FirstOrDefaultAsync(x => x.UserId == userId && x.IsActive);
         }
 
+        public async Task<Account?> GetMemberAccountAsync(int userId)
+        {
+            return await db.Accounts
+                .Include(x => x.Member)
+                .FirstOrDefaultAsync(x => x.UserId == userId && x.IsActive);
+        }
+
+        public async Task<int> CountOpenBorrowedBooksAsync(int userId)
+        {
+            return await db.BorrowDetails
+                .Where(x =>
+                    x.BorrowTransaction.UserId == userId &&
+                    x.ActualReturnDate == null)
+                .CountAsync();
+        }
+
+        public async Task<BookCopy?> GetFirstAvailableCopyByBookIdAsync(int bookId)
+        {
+            return await db.BookCopies
+                .Include(x => x.Book)
+                .Where(x => x.BookId == bookId && x.Status == BookCopyStatus.Available)
+                .OrderBy(x => x.Barcode)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<List<Account>> SearchAccountsAsync(string query)
         {
             query = query.Trim();

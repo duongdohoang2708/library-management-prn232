@@ -9,6 +9,8 @@ namespace LibraryManagement.BLL.Services
     {
         private const int PageSize = 10;
         private const decimal OverdueFinePerDay = 5000m;
+        private const int DefaultLoanDays = 14;
+        private const int MaxOpenBorrowedBooks = 5;
         private readonly CirculationRepository circulationRepository;
 
         public CirculationService(CirculationRepository _circulationRepository)
@@ -177,6 +179,65 @@ namespace LibraryManagement.BLL.Services
                 Message = "Borrow transaction created successfully.",
                 TransactionId = transaction.BorrowTransactionId
             };
+        }
+
+        public async Task<CirculationActionResponse> MemberBorrowNowAsync(MemberBorrowRequest request)
+        {
+            var user = await circulationRepository.GetMemberAccountAsync(request.UserId);
+            if (user == null)
+            {
+                return Fail("Please login before borrowing.");
+            }
+
+            if (user.Member == null)
+            {
+                return Fail("Only member accounts can use Borrow Now.");
+            }
+
+            var openBorrowedBooks = await circulationRepository.CountOpenBorrowedBooksAsync(user.UserId);
+            if (openBorrowedBooks >= MaxOpenBorrowedBooks)
+            {
+                return Fail("You can borrow at most 5 books at the same time.");
+            }
+
+            var copy = await circulationRepository.GetFirstAvailableCopyByBookIdAsync(request.BookId);
+            if (copy == null)
+            {
+                return Fail("No available copy for this book. Please use Reserve Queue.");
+            }
+
+            var now = DateTime.UtcNow;
+            var dueDate = now.Date.AddDays(request.LoanDays <= 0 ? DefaultLoanDays : request.LoanDays);
+
+            copy.Status = BookCopyStatus.Borrowed;
+            copy.UpdatedAt = now;
+
+            var transaction = new BorrowTransaction
+            {
+                UserId = user.UserId,
+                BorrowDate = now,
+                DueDate = dueDate,
+                Status = "Borrowing",
+                CreatedAt = now,
+                BorrowDetails = new List<BorrowDetail>
+                {
+                    new BorrowDetail
+                    {
+                        BookCopyId = copy.BookCopyId,
+                        BorrowDate = now,
+                        DueDate = dueDate,
+                        FineAmount = 0,
+                        FinePaidAmount = 0,
+                        IsFinePaid = true,
+                        CreatedAt = now
+                    }
+                }
+            };
+
+            circulationRepository.AddTransaction(transaction);
+            await circulationRepository.SaveChangesAsync();
+
+            return Ok("Book borrowed successfully. Check your Borrowed Books list.", transaction.BorrowTransactionId);
         }
 
         public async Task<ReturnDetailsResult?> GetReturnDetailsAsync(int transactionId)

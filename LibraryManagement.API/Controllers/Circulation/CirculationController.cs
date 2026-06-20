@@ -61,6 +61,18 @@ namespace LibraryManagement.API.Controllers.Circulation
             return Ok(result);
         }
 
+        [HttpPost("member-borrow")]
+        public async Task<IActionResult> MemberBorrow(MemberBorrowRequest request)
+        {
+            var result = await circulationService.MemberBorrowNowAsync(request);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpGet("transactions/{transactionId:int}/return-details")]
         public async Task<IActionResult> GetReturnDetails(int transactionId)
         {

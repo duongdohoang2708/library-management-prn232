@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
+using LibraryManagementDAL.DTO.Circulation;
 using LibraryManagementDAL.DTO.Reservation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +48,12 @@ namespace LibraryManagement.Client.Controllers
                 result?.Message ?? (response.IsSuccessStatusCode
                     ? "Your reservation has been placed."
                     : "Failed to create reservation.");
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessLinkController"] = "Reservation";
+                TempData["SuccessLinkAction"] = "MyReservations";
+                TempData["SuccessLinkText"] = "View My Reservations";
+            }
 
             return RedirectToAction("Details", "Books", new { id = bookId });
         }
@@ -67,19 +74,26 @@ namespace LibraryManagement.Client.Controllers
 
             var client = httpClientFactory.CreateClient();
             var response = await client.PostAsJsonAsync(
-                $"{GetApiBaseUrl()}/api/reservations",
-                new ReservationCreateRequest
+                $"{GetApiBaseUrl()}/api/circulation/member-borrow",
+                new MemberBorrowRequest
                 {
                     UserId = userId,
-                    BookId = bookId
+                    BookId = bookId,
+                    LoanDays = 14
                 });
 
-            var result = await response.Content.ReadFromJsonAsync<ReservationActionResponse>();
+            var result = await response.Content.ReadFromJsonAsync<CirculationActionResponse>();
 
             TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
                 result?.Message ?? (response.IsSuccessStatusCode
-                    ? "Your reservation has been placed."
+                    ? "Book borrowed successfully."
                     : "Failed to submit borrow request.");
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessLinkController"] = "User";
+                TempData["SuccessLinkAction"] = "BorrowHistory";
+                TempData["SuccessLinkText"] = "View Borrowed Books";
+            }
 
             return RedirectToAction("Details", "Books", new { id = bookId });
         }
