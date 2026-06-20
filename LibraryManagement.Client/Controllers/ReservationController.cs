@@ -29,6 +29,23 @@ namespace LibraryManagement.Client.Controllers
             return View(reservations);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> MyReservations()
+        {
+            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdText, out var userId))
+            {
+                return RedirectToAction("Login", "Auth");
+            }
+
+            var client = httpClientFactory.CreateClient();
+            var reservations = await client.GetFromJsonAsync<List<ReservationItem>>(
+                $"{GetApiBaseUrl()}/api/reservations/users/{userId}")
+                ?? new List<ReservationItem>();
+
+            return View(reservations);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int bookId)

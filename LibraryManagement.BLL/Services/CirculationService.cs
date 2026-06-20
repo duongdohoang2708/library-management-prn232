@@ -92,6 +92,18 @@ namespace LibraryManagement.BLL.Services
             }).ToList();
         }
 
+        public async Task<List<CirculationTransactionItem>> GetUserBorrowHistoryAsync(int userId)
+        {
+            await RefreshOverdueTransactionsAsync();
+
+            var transactions = await circulationRepository.QueryTransactions()
+                .Where(x => x.UserId == userId)
+                .OrderByDescending(x => x.BorrowDate)
+                .ToListAsync();
+
+            return transactions.Select(MapTransaction).ToList();
+        }
+
         public async Task<CirculationActionResponse> BorrowAsync(BorrowRequest request)
         {
             var user = await circulationRepository.GetAccountAsync(request.UserId);
@@ -382,6 +394,7 @@ namespace LibraryManagement.BLL.Services
                 BorrowDetailId = detail.BorrowDetailId,
                 BookCopyId = detail.BookCopyId,
                 BookTitle = detail.BookCopy?.Book?.Title ?? string.Empty,
+                ImageUrl = detail.BookCopy?.Book?.ImageUrl,
                 Barcode = detail.BookCopy?.Barcode ?? string.Empty,
                 AuthorName = detail.BookCopy?.Book?.Author?.Name ?? string.Empty,
                 BorrowDate = detail.BorrowDate,

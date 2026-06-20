@@ -1,23 +1,22 @@
-@model IEnumerable<Reservation>
+@model IEnumerable<LibraryManagementDAL.DTO.Reservation.ReservationItem>
 @{
-    ViewData["Title"] = "Danh sách đặt trước";
+    ViewData["Title"] = "Reservation Requests";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 }
 
 <div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
-
     <div class="mb-8">
         <a asp-controller="Circulation" asp-action="Index" class="inline-flex items-center text-white/40 hover:text-primary transition-colors mb-4 text-sm font-medium">
             <span class="material-symbols-outlined text-[18px] mr-1">arrow_back</span>
-            Back to list
+            Back to circulation
         </a>
         <h1 class="text-4xl font-bold font-display text-white mb-2">Book Reservation Requests</h1>
-        <p class="text-white/60">Manage "Hold for Pickup" requests</p>
+        <p class="text-white/60">Manage hold requests and approve pickup loans.</p>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="mb-6 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-300">
+        <div class="mb-6 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between">
             <div class="flex items-center gap-3 text-emerald-400">
                 <span class="material-symbols-outlined">check_circle</span>
                 <span class="font-medium text-sm">@TempData["SuccessMessage"]</span>
@@ -27,10 +26,10 @@
             </button>
         </div>
     }
-    
+
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-300">
+        <div class="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between">
             <div class="flex items-center gap-3 text-red-400">
                 <span class="material-symbols-outlined">error</span>
                 <span class="font-medium text-sm">@TempData["ErrorMessage"]</span>
@@ -45,7 +44,7 @@
         <div class="p-6 border-b border-white/5 bg-black/20">
             <h3 class="text-lg font-bold text-white flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary">pending_actions</span>
-                Pending Requests
+                Open Requests
             </h3>
         </div>
 
@@ -67,16 +66,16 @@
                         {
                             <tr class="text-white/80 border-b border-white/5 hover:bg-white/5 transition-colors group">
                                 <td class="p-4">
-                                    <div class="font-semibold text-white group-hover:text-primary transition-colors">@item.User?.FullName</div>
-                                    <div class="text-[11px] text-white/40">@item.User?.Email</div>
+                                    <div class="font-semibold text-white group-hover:text-primary transition-colors">@item.UserFullName</div>
+                                    <div class="text-[11px] text-white/40">@item.UserEmail</div>
                                 </td>
                                 <td class="p-4">
-                                    <div class="text-white font-medium">@item.Book?.Title</div>
-                                    @if(item.BookCopy != null)
+                                    <div class="text-white font-medium">@item.BookTitle</div>
+                                    @if (!string.IsNullOrWhiteSpace(item.Barcode))
                                     {
                                         <div class="text-[11px] text-primary flex items-center gap-1 mt-0.5">
                                             <span class="material-symbols-outlined text-[12px]">barcode</span>
-                                            @item.BookCopy.Barcode
+                                            @item.Barcode
                                         </div>
                                     }
                                     else
@@ -84,26 +83,35 @@
                                         <div class="text-[11px] text-white/30 italic">Waiting for allocation...</div>
                                     }
                                 </td>
-                                <td class="p-4 text-white/60">@item.ReservedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="p-4 text-white/60">
+                                    <div>@item.ReservedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                    @if (item.ExpireAt.HasValue)
+                                    {
+                                        <div class="text-[11px] text-white/30 mt-0.5">Hold until @item.ExpireAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                    }
+                                </td>
                                 <td class="p-4">
-                                    @if(item.Status == ReservationStatus.Allocated)
+                                    @if (item.Status == ReservationStatus.Allocated)
                                     {
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-bold uppercase tracking-wider">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Ready for Pickup
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            Ready for Pickup
                                         </span>
                                     }
                                     else
                                     {
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[11px] font-bold uppercase tracking-wider">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Waiting for Book
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            Waiting for Book
                                         </span>
                                     }
                                 </td>
                                 <td class="p-4 text-right">
                                     <div class="flex items-center justify-end gap-2">
-                                        @if(item.Status == ReservationStatus.Allocated)
+                                        @if (item.Status == ReservationStatus.Allocated)
                                         {
                                             <form asp-action="Approve" asp-route-id="@item.ReservationId" method="post" class="inline">
+                                                @Html.AntiForgeryToken()
                                                 <button type="submit" class="p-2 bg-primary text-background-dark rounded-lg hover:scale-105 transition-all font-bold text-xs flex items-center gap-1 shadow-lg shadow-primary/20">
                                                     <span class="material-symbols-outlined text-sm">check</span>
                                                     Approve Loan
@@ -111,6 +119,7 @@
                                             </form>
                                         }
                                         <form asp-action="Cancel" asp-route-id="@item.ReservationId" method="post" class="inline" onsubmit="return confirm('Are you sure you want to cancel this request?')">
+                                            @Html.AntiForgeryToken()
                                             <button type="submit" class="p-2 bg-white/5 text-red-400 hover:bg-red-500/10 border border-white/10 hover:border-red-500/20 rounded-lg transition-all" title="Cancel Request">
                                                 <span class="material-symbols-outlined text-lg">delete</span>
                                             </button>

@@ -41,6 +41,29 @@ namespace LibraryManagement.BLL.Services
                 .ToListAsync();
         }
 
+        public async Task<List<ReservationItem>> GetUserReservationsAsync(int userId)
+        {
+            await RefreshReservationsAsync();
+
+            return await reservationRepository.QueryUserReservations(userId)
+                .OrderByDescending(x => x.ReservedAt)
+                .Select(x => new ReservationItem
+                {
+                    ReservationId = x.ReservationId,
+                    UserId = x.UserId,
+                    UserFullName = x.Account.FullName,
+                    UserEmail = x.Account.Email,
+                    BookId = x.BookId,
+                    BookTitle = x.Book.Title,
+                    BookCopyId = x.BookCopyId,
+                    Barcode = x.BookCopy == null ? null : x.BookCopy.Barcode,
+                    ReservedAt = x.ReservedAt,
+                    ExpireAt = x.ExpireAt,
+                    Status = x.Status
+                })
+                .ToListAsync();
+        }
+
         public async Task<ReservationActionResponse> CreateReservationAsync(ReservationCreateRequest request)
         {
             var user = await reservationRepository.GetAccountAsync(request.UserId);
@@ -67,6 +90,7 @@ namespace LibraryManagement.BLL.Services
 
             var now = DateTime.UtcNow;
             var availableCopy = await reservationRepository.GetFirstAvailableCopyAsync(request.BookId);
+            var queuePosition = await reservationRepository.CountPendingReservationsAsync(request.BookId) + 1;
             var reservation = new Reservation
             {
                 UserId = request.UserId,
@@ -92,9 +116,10 @@ namespace LibraryManagement.BLL.Services
             {
                 IsSuccess = true,
                 Message = reservation.Status == ReservationStatus.Allocated
-                    ? "Reservation created and a copy is ready for pickup."
-                    : "Reservation created and queued until a copy is available.",
-                ReservationId = reservation.ReservationId
+                    ? "Your reservation has been placed. A copy is ready for pickup."
+                    : $"Your reservation has been placed. You are number {queuePosition} in the queue.",
+                ReservationId = reservation.ReservationId,
+                QueuePosition = reservation.Status == ReservationStatus.Pending ? queuePosition : 0
             };
         }
 
@@ -205,6 +230,16 @@ namespace LibraryManagement.BLL.Services
         private async Task RefreshReservationsAsync()
         {
             var now = DateTime.UtcNow;
+            var allocatedWithoutCopy = await reservationRepository.QueryReservations()
+                .Where(x => x.Status == ReservationStatus.Allocated && x.BookCopyId == null)
+                .ToListAsync();
+
+            foreach (var reservation in allocatedWithoutCopy)
+            {
+                reservation.Status = ReservationStatus.Pending;
+                reservation.UpdatedAt = now;
+            }
+
             var allocated = await reservationRepository.QueryReservations()
                 .Where(x =>
                     x.Status == ReservationStatus.Allocated &&
@@ -227,7 +262,7 @@ namespace LibraryManagement.BLL.Services
                 }
             }
 
-            if (allocated.Any())
+            if (allocatedWithoutCopy.Any() || allocated.Any())
             {
                 await reservationRepository.SaveChangesAsync();
             }

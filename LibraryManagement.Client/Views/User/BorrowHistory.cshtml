@@ -1,13 +1,12 @@
-@model IEnumerable<LibraryManagementDAL.Models.BorrowTransaction>
-@using LibraryManagementDAL.Models
+@model IEnumerable<LibraryManagementDAL.DTO.Circulation.CirculationTransactionItem>
 @{
     ViewData["Title"] = "Borrow History";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var transactions = Model?.ToList() ?? new List<LibraryManagementDAL.DTO.Circulation.CirculationTransactionItem>();
 }
 
 <div class="p-8">
     <div class="max-w-6xl mx-auto">
-        <!-- Header Section -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
             <div>
                 <h2 class="text-4xl font-black text-white mb-2 tracking-tight">Borrow History</h2>
@@ -16,19 +15,18 @@
 
             <div class="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-2 backdrop-blur-md">
                 <div class="flex flex-col px-4 border-r border-white/10">
-                    <span class="text-[10px] text-white/30 font-black uppercase tracking-widest">Total Borrowed</span>
-                    <span class="text-xl font-black text-primary">@Model.Count()</span>
+                    <span class="text-[10px] text-white/30 font-black uppercase tracking-widest">Transactions</span>
+                    <span class="text-xl font-black text-primary">@transactions.Count</span>
                 </div>
                 <div class="flex flex-col px-4">
                     <span class="text-[10px] text-white/30 font-black uppercase tracking-widest">Currently Borrowing</span>
-                    <span class="text-xl font-black text-emerald-400">@Model.Count(t => t.Status == "Borrowing" || t.Status == "Overdue")</span>
+                    <span class="text-xl font-black text-emerald-400">@transactions.Count(t => t.Status == "Borrowing" || t.Status == "Overdue")</span>
                 </div>
             </div>
         </div>
 
-        <!-- Transactions List -->
         <div class="space-y-6">
-            @if (!Model.Any())
+            @if (!transactions.Any())
             {
                 <div class="bg-white/5 border border-white/10 rounded-3xl p-20 text-center">
                     <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -44,10 +42,17 @@
             }
             else
             {
-                @foreach (var transaction in Model)
+                foreach (var transaction in transactions)
                 {
+                    var statusClass = transaction.Status switch
+                    {
+                        "Borrowing" => "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                        "Returned" => "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                        "Overdue" => "bg-rose-500/10 text-rose-400 border-rose-500/20",
+                        _ => "bg-white/10 text-white/40 border-white/10"
+                    };
+
                     <div class="bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:border-white/20 transition-all group">
-                        <!-- Transaction Header -->
                         <div class="p-6 border-b border-white/5 flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-white/5 to-transparent">
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -69,44 +74,27 @@
                                     <div class="font-bold @(transaction.Status == "Overdue" ? "text-rose-400" : "text-white/80")">@transaction.DueDate.ToString("dd/MM/yyyy")</div>
                                 </div>
                                 <div>
-                                    @{
-                                        var statusClass = transaction.Status switch
-                                        {
-                                            "Borrowing" => "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-                                            "Returned" => "bg-blue-500/10 text-blue-400 border-blue-500/20",
-                                            "Overdue" => "bg-rose-500/10 text-rose-400 border-rose-500/20",
-                                            _ => "bg-white/10 text-white/40 border-white/10"
-                                        };
-                                        var statusText = transaction.Status switch
-                                        {
-                                            "Borrowing" => "Borrowing",
-                                            "Returned" => "Returned",
-                                            "Overdue" => "Overdue",
-                                            _ => transaction.Status
-                                        };
-                                    }
                                     <span class="px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider @statusClass">
-                                        @statusText
+                                        @transaction.Status
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Details Body -->
                         <div class="p-6">
                             <div class="space-y-4">
                                 @foreach (var detail in transaction.BorrowDetails)
                                 {
                                     <div class="flex items-center gap-4 p-4 bg-black/20 rounded-2xl border border-white/5 group/book">
                                         <div class="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-white/5 border border-white/10">
-                                            <img src="@BookImageHelper.Resolve(detail.BookCopy?.Book?.ImageUrl, detail.BookCopy?.Book?.Title)"
-                                                 alt="@detail.BookCopy?.Book?.Title"
+                                            <img src="@BookImageHelper.Resolve(detail.ImageUrl, detail.BookTitle)"
+                                                 alt="@detail.BookTitle"
                                                  onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';"
                                                  class="w-full h-full object-cover" />
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <h4 class="font-bold text-white group-hover/book:text-primary transition-colors truncate">@detail.BookCopy?.Book?.Title</h4>
-                                            <p class="text-xs text-white/40">Book Code: @detail.BookCopy?.Barcode</p>
+                                            <h4 class="font-bold text-white group-hover/book:text-primary transition-colors truncate">@detail.BookTitle</h4>
+                                            <p class="text-xs text-white/40">Book Code: @detail.Barcode</p>
                                         </div>
                                         <div class="text-right">
                                             @if (detail.ActualReturnDate.HasValue)
@@ -116,15 +104,15 @@
                                             }
                                             else
                                             {
-                                                <div class="text-[10px] text-white/20 font-black uppercase tracking-widest mb-0.5">Status</div>
-                                                <div class="text-sm font-bold text-white/40 italic">Not Returned</div>
+                                                <div class="text-[10px] text-white/20 font-black uppercase tracking-widest mb-0.5">Due Date</div>
+                                                <div class="text-sm font-bold @(detail.DueDate.Date < DateTime.UtcNow.Date ? "text-rose-400" : "text-white/50")">@detail.DueDate.ToString("dd/MM/yyyy")</div>
                                             }
                                         </div>
                                         @if (detail.FineAmount.HasValue && detail.FineAmount.Value > 0)
                                         {
                                             <div class="ml-4 pl-4 border-l border-white/10 text-right">
                                                 <div class="text-[10px] text-rose-400/60 font-black uppercase tracking-widest mb-0.5">Fine</div>
-                                                <div class="text-sm font-black text-rose-400">@detail.FineAmount.Value.ToString("N0") đ</div>
+                                                <div class="text-sm font-black text-rose-400">@detail.FineAmount.Value.ToString("N0") VND</div>
                                             </div>
                                         }
                                     </div>

@@ -1,0 +1,93 @@
+@model IEnumerable<LibraryManagementDAL.DTO.Reservation.ReservationItem>
+@{
+    ViewData["Title"] = "My Reservations";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    var reservations = Model?.ToList() ?? new List<LibraryManagementDAL.DTO.Reservation.ReservationItem>();
+}
+
+<div class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+            <div>
+                <h2 class="text-4xl font-black text-white mb-2 tracking-tight">My Reservations</h2>
+                <p class="text-white/40 font-medium">Track your reservation queue and pickup status.</p>
+            </div>
+
+            <a asp-controller="Books" asp-action="ViewBooks" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-background-dark font-black rounded-xl hover:bg-primary-hover transition-all">
+                <span class="material-symbols-outlined">auto_stories</span>
+                Browse Books
+            </a>
+        </div>
+
+        @if (!reservations.Any())
+        {
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-20 text-center">
+                <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="material-symbols-outlined text-4xl text-white/20">bookmark</span>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">No Reservations</h3>
+                <p class="text-white/40 mb-8 max-w-sm mx-auto">You have not reserved any books yet.</p>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                @foreach (var item in reservations)
+                {
+                    var statusClass = item.Status switch
+                    {
+                        ReservationStatus.Allocated => "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                        ReservationStatus.Pending => "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                        ReservationStatus.Completed => "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                        ReservationStatus.Cancelled => "bg-white/10 text-white/40 border-white/10",
+                        ReservationStatus.Expired => "bg-rose-500/10 text-rose-400 border-rose-500/20",
+                        _ => "bg-white/10 text-white/40 border-white/10"
+                    };
+
+                    var statusText = item.Status switch
+                    {
+                        ReservationStatus.Allocated => "Ready for Pickup",
+                        ReservationStatus.Pending => "Waiting in Queue",
+                        ReservationStatus.Completed => "Loan Approved",
+                        ReservationStatus.Cancelled => "Cancelled",
+                        ReservationStatus.Expired => "Expired",
+                        _ => item.Status.ToString()
+                    };
+
+                    <div class="bg-white/5 border border-white/10 rounded-3xl p-6 hover:border-primary/30 transition-all">
+                        <div class="flex items-start justify-between gap-4 mb-5">
+                            <div>
+                                <h3 class="text-xl font-black text-white mb-1">@item.BookTitle</h3>
+                                <p class="text-xs text-white/40 font-bold uppercase tracking-widest">Reserved @item.ReservedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                            </div>
+                            <span class="px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider @statusClass">
+                                @statusText
+                            </span>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(item.Barcode))
+                        {
+                            <div class="p-4 rounded-2xl bg-black/20 border border-white/5 mb-4">
+                                <p class="text-[10px] text-white/30 font-black uppercase tracking-widest mb-1">Reserved Copy</p>
+                                <p class="text-primary font-bold">@item.Barcode</p>
+                            </div>
+                        }
+
+                        @if (item.Status == ReservationStatus.Allocated && item.ExpireAt.HasValue)
+                        {
+                            <div class="text-sm text-emerald-300/80">
+                                Please pick up this book before <span class="font-bold text-emerald-300">@item.ExpireAt.Value.ToString("dd/MM/yyyy HH:mm")</span>.
+                            </div>
+                        }
+                        else if (item.Status == ReservationStatus.Pending)
+                        {
+                            <div class="text-sm text-white/40">
+                                You are in the queue. The library will hold a copy for you when one becomes available.
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

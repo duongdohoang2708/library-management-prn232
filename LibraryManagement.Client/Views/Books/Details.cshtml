@@ -22,6 +22,24 @@
 <div class="p-10">
 
     <div class="max-w-6xl mx-auto">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="mb-8 px-5 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span class="font-bold">@TempData["SuccessMessage"]</span>
+                </div>
+                <a asp-controller="Reservation" asp-action="MyReservations" class="text-xs font-black uppercase tracking-widest text-primary hover:underline">View My Reservations</a>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="mb-8 px-5 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 flex items-center gap-3">
+                <span class="material-symbols-outlined">error</span>
+                <span class="font-bold">@TempData["ErrorMessage"]</span>
+            </div>
+        }
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
 

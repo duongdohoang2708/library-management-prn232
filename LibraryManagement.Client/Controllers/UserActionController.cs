@@ -45,7 +45,7 @@ namespace LibraryManagement.Client.Controllers
 
             TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
                 result?.Message ?? (response.IsSuccessStatusCode
-                    ? "Reservation created successfully."
+                    ? "Your reservation has been placed."
                     : "Failed to create reservation.");
 
             return RedirectToAction("Details", "Books", new { id = bookId });
@@ -78,7 +78,7 @@ namespace LibraryManagement.Client.Controllers
 
             TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
                 result?.Message ?? (response.IsSuccessStatusCode
-                    ? "Borrow request submitted successfully."
+                    ? "Your reservation has been placed."
                     : "Failed to submit borrow request.");
 
             return RedirectToAction("Details", "Books", new { id = bookId });

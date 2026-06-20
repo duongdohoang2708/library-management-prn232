@@ -50,6 +50,19 @@ namespace LibraryManagement.DAL.Repositories
                 (x.Status == ReservationStatus.Pending || x.Status == ReservationStatus.Allocated));
         }
 
+        public async Task<int> CountPendingReservationsAsync(int bookId)
+        {
+            return await db.Reservations.CountAsync(x =>
+                x.BookId == bookId &&
+                x.Status == ReservationStatus.Pending);
+        }
+
+        public IQueryable<Reservation> QueryUserReservations(int userId)
+        {
+            return QueryReservations()
+                .Where(x => x.UserId == userId);
+        }
+
         public async Task<Reservation?> GetReservationAsync(int reservationId)
         {
             return await QueryReservations()

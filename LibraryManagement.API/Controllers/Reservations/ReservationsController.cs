@@ -21,6 +21,12 @@ namespace LibraryManagement.API.Controllers.Reservations
             return Ok(await reservationService.GetReservationsAsync());
         }
 
+        [HttpGet("users/{userId:int}")]
+        public async Task<IActionResult> GetUserReservations(int userId)
+        {
+            return Ok(await reservationService.GetUserReservationsAsync(userId));
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateReservation(ReservationCreateRequest request)
         {

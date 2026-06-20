@@ -43,6 +43,12 @@ namespace LibraryManagement.API.Controllers.Circulation
             return Ok(await circulationService.GetAvailableCopiesAsync());
         }
 
+        [HttpGet("users/{userId:int}/borrow-history")]
+        public async Task<IActionResult> GetUserBorrowHistory(int userId)
+        {
+            return Ok(await circulationService.GetUserBorrowHistoryAsync(userId));
+        }
+
         [HttpPost("borrow")]
         public async Task<IActionResult> Borrow(BorrowRequest request)
         {
