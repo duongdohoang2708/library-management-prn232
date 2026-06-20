@@ -4,6 +4,8 @@ using LibraryManagementDAL.DTO.Circulation;
 using LibraryManagementDAL.DTO.Pagination;
 using LibraryManagementDAL.DTO.User;
 using LibraryManagementDAL.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -171,6 +173,11 @@ namespace LibraryManagement.Client.Controllers
             TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
                 result?.Message ?? (response.IsSuccessStatusCode ? "Profile updated successfully." : "Profile update failed.");
 
+            if (response.IsSuccessStatusCode)
+            {
+                await RefreshCurrentUserClaimsAsync(model.FullName);
+            }
+
             return RedirectToAction(nameof(Profile));
         }
 
@@ -203,6 +210,22 @@ namespace LibraryManagement.Client.Controllers
             {
                 query.Add($"{name}={Uri.EscapeDataString(value)}");
             }
+        }
+
+        private async Task RefreshCurrentUserClaimsAsync(string fullName)
+        {
+            var claims = User.Claims
+                .Where(x => x.Type != "FullName")
+                .ToList();
+
+            claims.Add(new Claim("FullName", fullName ?? string.Empty));
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(identity));
+
+            HttpContext.Session.SetString("FullName", fullName ?? string.Empty);
         }
 
         private class ApiActionResponse
