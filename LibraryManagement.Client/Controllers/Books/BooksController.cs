@@ -1,9 +1,11 @@
 using System.Net.Http.Json;
 using LibraryManagement.Client.DTO.Books;
+using LibraryManagement.Client.Helpers;
 using LibraryManagementDAL.DTO.Book;
 using LibraryManagementDAL.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OfficeOpenXml;
 
 namespace LibraryManagement.Client.Controllers.Books
 {
@@ -116,6 +118,7 @@ namespace LibraryManagement.Client.Controllers.Books
             model.ImageUrl = await SaveCoverImageAsync(imageFile) ?? string.Empty;
 
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/books", model);
             if (!response.IsSuccessStatusCode)
             {
@@ -182,6 +185,7 @@ namespace LibraryManagement.Client.Controllers.Books
             }
 
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PutAsJsonAsync($"{GetApiBaseUrl()}/api/books/{id}", model);
             if (!response.IsSuccessStatusCode)
             {
@@ -198,8 +202,100 @@ namespace LibraryManagement.Client.Controllers.Books
         public async Task<IActionResult> ToggleStatus(int id)
         {
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             await client.PostAsync($"{GetApiBaseUrl()}/api/books/{id}/toggle-status", null);
             return RedirectToAction(nameof(AllBooks));
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
+        public IActionResult DownloadTemplate()
+        {
+            ExcelPackage.License.SetNonCommercialPersonal("LMS Standard");
+            using var package = new ExcelPackage();
+            var sheet = package.Workbook.Worksheets.Add("Books");
+            var headers = new[]
+            {
+                "Title",
+                "ISBN",
+                "Description",
+                "PublishYear",
+                "EditionNumber",
+                "AuthorName",
+                "CategoryName",
+                "PublisherName",
+                "PublisherAddress",
+                "ImageUrl",
+                "IsActive"
+            };
+
+            for (var i = 0; i < headers.Length; i++)
+            {
+                sheet.Cells[1, i + 1].Value = headers[i];
+                sheet.Cells[1, i + 1].Style.Font.Bold = true;
+            }
+
+            sheet.Cells[2, 1].Value = "Example Book";
+            sheet.Cells[2, 2].Value = "9780000000000";
+            sheet.Cells[2, 3].Value = "Short description";
+            sheet.Cells[2, 4].Value = DateTime.UtcNow.Year;
+            sheet.Cells[2, 5].Value = 1;
+            sheet.Cells[2, 6].Value = "Author Name";
+            sheet.Cells[2, 7].Value = "Category Name";
+            sheet.Cells[2, 8].Value = "Publisher Name";
+            sheet.Cells[2, 9].Value = "Publisher Address";
+            sheet.Cells[2, 10].Value = "/uploads/books/example.jpg";
+            sheet.Cells[2, 11].Value = "true";
+            sheet.Cells[sheet.Dimension.Address].AutoFitColumns();
+
+            return File(
+                package.GetAsByteArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Books_Import_Template.xlsx");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
+        public async Task<IActionResult> Import(IFormFile? file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                TempData["ImportError"] = "Please choose an Excel file.";
+                return RedirectToAction(nameof(AddBook), new { mode = "import" });
+            }
+
+            if (!Path.GetExtension(file.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ImportError"] = "Only .xlsx files are supported.";
+                return RedirectToAction(nameof(AddBook), new { mode = "import" });
+            }
+
+            var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
+
+            using var form = new MultipartFormDataContent();
+            await using var stream = file.OpenReadStream();
+            using var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            form.Add(fileContent, "file", file.FileName);
+
+            var response = await client.PostAsync($"{GetApiBaseUrl()}/api/books/import", form);
+            var result = await response.Content.ReadFromJsonAsync<BookImportApiResult>() ?? new BookImportApiResult();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                TempData["ImportError"] = result.Errors.FirstOrDefault() ?? "Import books failed.";
+                return RedirectToAction(nameof(AddBook), new { mode = "import" });
+            }
+
+            TempData["ImportSuccess"] = $"Imported {result.ImportedCount} books. Skipped {result.SkippedCount} rows.";
+            if (result.Errors.Count > 0)
+            {
+                TempData["ImportErrors"] = string.Join("\n", result.Errors.Take(20));
+            }
+
+            return RedirectToAction(nameof(AddBook), new { mode = "import" });
         }
 
         private async Task<BookListApiResult> GetBookListAsync(

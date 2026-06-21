@@ -8,6 +8,7 @@ using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
+using System.Net;
 
 namespace LibraryManagement.BLL.Services
 {
@@ -128,10 +129,11 @@ namespace LibraryManagement.BLL.Services
             emailMessage.From.Add(new MailboxAddress(senderName, senderEmail));
             emailMessage.To.Add(new MailboxAddress(fullName, email));
             emailMessage.Subject = title;
-            emailMessage.Body = new TextPart("plain")
+            emailMessage.Body = new BodyBuilder
             {
-                Text = $"Hello {fullName},\n\n{message}\n\nLMS Standard"
-            };
+                TextBody = $"Hello {fullName},\n\n{message}\n\nLMS Standard",
+                HtmlBody = BuildHtmlEmail(fullName, title, message)
+            }.ToMessageBody();
 
             using var smtpClient = new SmtpClient();
             await smtpClient.ConnectAsync(smtpServer, smtpPort, SecureSocketOptions.StartTls);
@@ -147,6 +149,31 @@ namespace LibraryManagement.BLL.Services
                 IsSuccess = false,
                 Message = message
             };
+        }
+
+        private static string BuildHtmlEmail(string fullName, string title, string message)
+        {
+            var safeName = WebUtility.HtmlEncode(fullName);
+            var safeTitle = WebUtility.HtmlEncode(title);
+            var safeMessage = WebUtility.HtmlEncode(message).Replace("\n", "<br>");
+
+            return $"""
+                <div style="margin:0;padding:32px;background:#071f1c;font-family:Arial,sans-serif;color:#f8fafc">
+                  <div style="max-width:560px;margin:0 auto;background:#0b1220;border:1px solid rgba(255,255,255,.12);border-radius:18px;overflow:hidden">
+                    <div style="padding:24px 28px;background:#0f302b;border-bottom:1px solid rgba(255,255,255,.1)">
+                      <div style="font-size:20px;font-weight:800;color:#ffea00">LMS Standard</div>
+                    </div>
+                    <div style="padding:28px">
+                      <p style="margin:0 0 12px;color:#94a3b8">Hello {safeName},</p>
+                      <h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;color:#ffffff">{safeTitle}</h1>
+                      <p style="margin:0;color:#cbd5e1;font-size:15px;line-height:1.7">{safeMessage}</p>
+                    </div>
+                    <div style="padding:18px 28px;color:#64748b;font-size:12px;border-top:1px solid rgba(255,255,255,.1)">
+                      This is an automated notification from LMS Standard.
+                    </div>
+                  </div>
+                </div>
+                """;
         }
     }
 }

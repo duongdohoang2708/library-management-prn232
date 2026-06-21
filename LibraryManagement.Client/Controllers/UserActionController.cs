@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
+using LibraryManagement.Client.Helpers;
 using LibraryManagementDAL.DTO.Circulation;
 using LibraryManagementDAL.DTO.Reservation;
 using Microsoft.AspNetCore.Authorization;
@@ -35,6 +36,7 @@ namespace LibraryManagement.Client.Controllers
             }
 
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsJsonAsync(
                 $"{GetApiBaseUrl()}/api/reservations",
                 new ReservationCreateRequest
@@ -75,6 +77,7 @@ namespace LibraryManagement.Client.Controllers
             }
 
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsJsonAsync(
                 $"{GetApiBaseUrl()}/api/circulation/member-borrow",
                 new MemberBorrowRequest

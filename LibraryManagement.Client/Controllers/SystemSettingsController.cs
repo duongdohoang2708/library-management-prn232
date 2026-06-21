@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using LibraryManagement.Client.DTO.Admin;
+using LibraryManagement.Client.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,6 +32,7 @@ namespace LibraryManagement.Client.Controllers
         public async Task<IActionResult> Index(LibraryPolicySettingsDto model)
         {
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PutAsJsonAsync($"{GetApiBaseUrl()}/api/settings/policy", model);
             var result = await response.Content.ReadFromJsonAsync<ActionResponseDto>();
             TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
@@ -44,6 +46,7 @@ namespace LibraryManagement.Client.Controllers
         public async Task<IActionResult> RunDueReminders()
         {
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsync($"{GetApiBaseUrl()}/api/reminders/due", null);
             var result = await response.Content.ReadFromJsonAsync<ReminderRunResultDto>();
             TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =

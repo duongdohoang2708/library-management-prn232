@@ -1,0 +1,196 @@
+@model LibraryManagementDAL.DTO.Catalog.CatalogIndexResult
+@{
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="flex-1 p-8 overflow-y-auto custom-scrollbar">
+    <div class="mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-black text-white mb-2">Catalog Management</h1>
+            <p class="text-white/50">Manage authors, categories, and publishers used by the book catalog.</p>
+        </div>
+        <div class="grid grid-cols-3 gap-3 min-w-full lg:min-w-[420px]">
+            <button type="button" data-tab-button="authors" class="catalog-tab px-4 py-3 rounded-xl border border-primary bg-primary text-background-dark font-black text-left">
+                <span class="block text-xs uppercase">Authors</span>
+                <span class="text-xl">@Model.Authors.Count</span>
+            </button>
+            <button type="button" data-tab-button="categories" class="catalog-tab px-4 py-3 rounded-xl border border-white/10 bg-black/20 text-white font-black text-left">
+                <span class="block text-xs uppercase text-white/50">Categories</span>
+                <span class="text-xl">@Model.Categories.Count</span>
+            </button>
+            <button type="button" data-tab-button="publishers" class="catalog-tab px-4 py-3 rounded-xl border border-white/10 bg-black/20 text-white font-black text-left">
+                <span class="block text-xs uppercase text-white/50">Publishers</span>
+                <span class="text-xl">@Model.Publishers.Count</span>
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-5 py-4 font-bold">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 px-5 py-4 font-bold">@TempData["ErrorMessage"]</div>
+    }
+
+    <section data-tab-panel="authors" class="catalog-panel">
+        <div class="bg-black/20 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="p-5 border-b border-white/10 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-black text-white">Authors</h2>
+                    <p class="text-sm text-white/45 mt-1">Create and edit author profile data.</p>
+                </div>
+                <form asp-action="CreateAuthor" method="post" class="grid grid-cols-1 md:grid-cols-[220px_1fr_auto] gap-3 flex-1 xl:max-w-4xl">
+                    @Html.AntiForgeryToken()
+                    <input name="Name" required maxlength="150" placeholder="Author name" class="h-11 rounded-lg bg-black/40 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                    <input name="Biography" placeholder="Biography" class="h-11 rounded-lg bg-black/40 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                    <button class="h-11 px-5 rounded-lg bg-primary text-background-dark font-black">Add</button>
+                </form>
+            </div>
+
+            <div class="divide-y divide-white/5">
+                @foreach (var author in Model.Authors)
+                {
+                    <div class="p-4 grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-3 items-center">
+                        <form asp-action="UpdateAuthor" asp-route-id="@author.AuthorId" method="post" class="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-3">
+                            @Html.AntiForgeryToken()
+                            <input name="Name" value="@author.Name" required maxlength="150" class="h-10 rounded-lg bg-white/5 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                            <input name="Biography" value="@author.Biography" class="h-10 rounded-lg bg-white/5 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                            <button class="xl:hidden h-10 rounded-lg bg-primary/15 border border-primary/30 text-primary font-black">Save</button>
+                        </form>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="this.closest('.grid').querySelector('form').requestSubmit()" class="hidden xl:inline-flex h-10 px-4 rounded-lg bg-primary/15 border border-primary/30 text-primary font-black items-center">Save</button>
+                            <form asp-action="DeleteAuthor" asp-route-id="@author.AuthorId" method="post">
+                                @Html.AntiForgeryToken()
+                                <button class="h-10 px-4 rounded-lg bg-red-500/10 border border-red-500/25 text-red-300 font-black">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                @if (!Model.Authors.Any())
+                {
+                    <div class="p-8 text-center text-white/45">No authors yet.</div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section data-tab-panel="categories" class="catalog-panel hidden">
+        <div class="bg-black/20 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="p-5 border-b border-white/10 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-black text-white">Categories</h2>
+                    <p class="text-sm text-white/45 mt-1">Keep genres and subject groups clean.</p>
+                </div>
+                <form asp-action="CreateCategory" method="post" class="grid grid-cols-1 md:grid-cols-[220px_1fr_auto] gap-3 flex-1 xl:max-w-4xl">
+                    @Html.AntiForgeryToken()
+                    <input name="CategoryName" required maxlength="100" placeholder="Category name" class="h-11 rounded-lg bg-black/40 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                    <input name="Description" maxlength="255" placeholder="Description" class="h-11 rounded-lg bg-black/40 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                    <button class="h-11 px-5 rounded-lg bg-primary text-background-dark font-black">Add</button>
+                </form>
+            </div>
+
+            <div class="divide-y divide-white/5">
+                @foreach (var category in Model.Categories)
+                {
+                    <div class="p-4 grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-3 items-center">
+                        <form asp-action="UpdateCategory" asp-route-id="@category.CategoryId" method="post" class="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-3">
+                            @Html.AntiForgeryToken()
+                            <input name="CategoryName" value="@category.CategoryName" required maxlength="100" class="h-10 rounded-lg bg-white/5 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                            <input name="Description" value="@category.Description" maxlength="255" class="h-10 rounded-lg bg-white/5 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                            <button class="xl:hidden h-10 rounded-lg bg-primary/15 border border-primary/30 text-primary font-black">Save</button>
+                        </form>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="this.closest('.grid').querySelector('form').requestSubmit()" class="hidden xl:inline-flex h-10 px-4 rounded-lg bg-primary/15 border border-primary/30 text-primary font-black items-center">Save</button>
+                            <form asp-action="DeleteCategory" asp-route-id="@category.CategoryId" method="post">
+                                @Html.AntiForgeryToken()
+                                <button class="h-10 px-4 rounded-lg bg-red-500/10 border border-red-500/25 text-red-300 font-black">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                @if (!Model.Categories.Any())
+                {
+                    <div class="p-8 text-center text-white/45">No categories yet.</div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section data-tab-panel="publishers" class="catalog-panel hidden">
+        <div class="bg-black/20 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="p-5 border-b border-white/10 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-black text-white">Publishers</h2>
+                    <p class="text-sm text-white/45 mt-1">Manage publisher names and addresses.</p>
+                </div>
+                <form asp-action="CreatePublisher" method="post" class="grid grid-cols-1 md:grid-cols-[220px_1fr_auto] gap-3 flex-1 xl:max-w-4xl">
+                    @Html.AntiForgeryToken()
+                    <input name="PublisherName" required maxlength="150" placeholder="Publisher name" class="h-11 rounded-lg bg-black/40 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                    <input name="Address" maxlength="255" placeholder="Address" class="h-11 rounded-lg bg-black/40 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                    <button class="h-11 px-5 rounded-lg bg-primary text-background-dark font-black">Add</button>
+                </form>
+            </div>
+
+            <div class="divide-y divide-white/5">
+                @foreach (var publisher in Model.Publishers)
+                {
+                    <div class="p-4 grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-3 items-center">
+                        <form asp-action="UpdatePublisher" asp-route-id="@publisher.PublisherId" method="post" class="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-3">
+                            @Html.AntiForgeryToken()
+                            <input name="PublisherName" value="@publisher.PublisherName" required maxlength="150" class="h-10 rounded-lg bg-white/5 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                            <input name="Address" value="@publisher.Address" maxlength="255" class="h-10 rounded-lg bg-white/5 border border-white/10 text-white px-3 outline-none focus:border-primary" />
+                            <button class="xl:hidden h-10 rounded-lg bg-primary/15 border border-primary/30 text-primary font-black">Save</button>
+                        </form>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="this.closest('.grid').querySelector('form').requestSubmit()" class="hidden xl:inline-flex h-10 px-4 rounded-lg bg-primary/15 border border-primary/30 text-primary font-black items-center">Save</button>
+                            <form asp-action="DeletePublisher" asp-route-id="@publisher.PublisherId" method="post">
+                                @Html.AntiForgeryToken()
+                                <button class="h-10 px-4 rounded-lg bg-red-500/10 border border-red-500/25 text-red-300 font-black">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                @if (!Model.Publishers.Any())
+                {
+                    <div class="p-8 text-center text-white/45">No publishers yet.</div>
+                }
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        const buttons = document.querySelectorAll("[data-tab-button]");
+        const panels = document.querySelectorAll("[data-tab-panel]");
+
+        function showCatalogTab(tab) {
+            buttons.forEach(button => {
+                const active = button.dataset.tabButton === tab;
+                button.classList.toggle("bg-primary", active);
+                button.classList.toggle("text-background-dark", active);
+                button.classList.toggle("border-primary", active);
+                button.classList.toggle("bg-black/20", !active);
+                button.classList.toggle("text-white", !active);
+                button.classList.toggle("border-white/10", !active);
+            });
+
+            panels.forEach(panel => {
+                panel.classList.toggle("hidden", panel.dataset.tabPanel !== tab);
+            });
+
+            history.replaceState(null, "", `#${tab}`);
+        }
+
+        buttons.forEach(button => {
+            button.addEventListener("click", () => showCatalogTab(button.dataset.tabButton));
+        });
+
+        const initialTab = location.hash.replace("#", "");
+        if (initialTab && document.querySelector(`[data-tab-button="${initialTab}"]`)) {
+            showCatalogTab(initialTab);
+        }
+    </script>
+}

@@ -2,6 +2,7 @@ using LibraryManagement.BLL.DTO.Books;
 using LibraryManagement.DAL.Repositories;
 using LibraryManagementDAL.Models;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 
 namespace LibraryManagement.BLL.Services
 {
@@ -217,9 +218,186 @@ namespace LibraryManagement.BLL.Services
             return (book.BookId, book.IsActive);
         }
 
+        public async Task<BookImportResult> ImportAsync(Stream stream)
+        {
+            var result = new BookImportResult();
+            var importIsbns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            ExcelPackage.License.SetNonCommercialPersonal("LMS Standard");
+
+            using var package = new ExcelPackage(stream);
+            var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+            if (worksheet?.Dimension == null)
+            {
+                result.Errors.Add("The Excel file is empty.");
+                return result;
+            }
+
+            var rowCount = worksheet.Dimension.End.Row;
+            for (var row = 2; row <= rowCount; row++)
+            {
+                var title = GetCell(worksheet, row, 1);
+                var isbn = GetCell(worksheet, row, 2);
+                var description = GetCell(worksheet, row, 3);
+                var publishYearText = GetCell(worksheet, row, 4);
+                var editionText = GetCell(worksheet, row, 5);
+                var authorName = GetCell(worksheet, row, 6);
+                var categoryName = GetCell(worksheet, row, 7);
+                var publisherName = GetCell(worksheet, row, 8);
+                var publisherAddress = GetCell(worksheet, row, 9);
+                var imageUrl = GetCell(worksheet, row, 10);
+                var isActiveText = GetCell(worksheet, row, 11);
+
+                if (string.IsNullOrWhiteSpace(title)
+                    && string.IsNullOrWhiteSpace(isbn)
+                    && string.IsNullOrWhiteSpace(authorName)
+                    && string.IsNullOrWhiteSpace(categoryName)
+                    && string.IsNullOrWhiteSpace(publisherName))
+                {
+                    continue;
+                }
+
+                var rowErrors = new List<string>();
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    rowErrors.Add("Title is required");
+                }
+
+                if (string.IsNullOrWhiteSpace(authorName))
+                {
+                    rowErrors.Add("AuthorName is required");
+                }
+
+                if (string.IsNullOrWhiteSpace(categoryName))
+                {
+                    rowErrors.Add("CategoryName is required");
+                }
+
+                if (string.IsNullOrWhiteSpace(publisherName))
+                {
+                    rowErrors.Add("PublisherName is required");
+                }
+
+                int? publishYear = null;
+                if (!string.IsNullOrWhiteSpace(publishYearText))
+                {
+                    if (!int.TryParse(publishYearText, out var parsedYear) || parsedYear < 1000 || parsedYear > DateTime.UtcNow.Year + 1)
+                    {
+                        rowErrors.Add("PublishYear is invalid");
+                    }
+                    else
+                    {
+                        publishYear = parsedYear;
+                    }
+                }
+
+                var editionNumber = 1;
+                if (!string.IsNullOrWhiteSpace(editionText)
+                    && (!int.TryParse(editionText, out editionNumber) || editionNumber <= 0))
+                {
+                    rowErrors.Add("EditionNumber must be greater than 0");
+                }
+
+                if (!string.IsNullOrWhiteSpace(isbn) && !importIsbns.Add(isbn.Trim()))
+                {
+                    rowErrors.Add($"ISBN \"{isbn}\" is duplicated in this file");
+                }
+                else if (!string.IsNullOrWhiteSpace(isbn) && await bookRepository.IsbnExistsAsync(isbn))
+                {
+                    rowErrors.Add($"ISBN \"{isbn}\" already exists");
+                }
+
+                if (rowErrors.Count > 0)
+                {
+                    result.SkippedCount++;
+                    result.Errors.Add($"Row {row}: {string.Join("; ", rowErrors)}.");
+                    continue;
+                }
+
+                var author = await bookRepository.GetAuthorByNameAsync(authorName);
+                if (author == null)
+                {
+                    author = new Author
+                    {
+                        Name = authorName.Trim(),
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    bookRepository.AddAuthor(author);
+                }
+
+                var category = await bookRepository.GetCategoryByNameAsync(categoryName);
+                if (category == null)
+                {
+                    category = new Category
+                    {
+                        CategoryName = categoryName.Trim(),
+                        Description = string.Empty,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    bookRepository.AddCategory(category);
+                }
+
+                var publisher = await bookRepository.GetPublisherByNameAsync(publisherName);
+                if (publisher == null)
+                {
+                    publisher = new Publisher
+                    {
+                        PublisherName = publisherName.Trim(),
+                        Address = publisherAddress?.Trim() ?? string.Empty,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    bookRepository.AddPublisher(publisher);
+                }
+
+                bookRepository.AddBook(new Book
+                {
+                    Title = title.Trim(),
+                    ISBN = string.IsNullOrWhiteSpace(isbn) ? GenerateIsbn() : isbn.Trim(),
+                    Description = description,
+                    PublishYear = publishYear,
+                    EditionNumber = editionNumber,
+                    Author = author,
+                    Category = category,
+                    Publisher = publisher,
+                    ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim(),
+                    IsActive = ParseBool(isActiveText, true),
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                result.ImportedCount++;
+            }
+
+            if (result.ImportedCount > 0)
+            {
+                await bookRepository.SaveChangesAsync();
+                await auditLogService.LogAsync("ImportBooks", "Book", null, $"{result.ImportedCount} books imported from Excel.");
+            }
+
+            return result;
+        }
+
         private static string GenerateIsbn()
         {
             return DateTime.UtcNow.Ticks.ToString();
+        }
+
+        private static string GetCell(ExcelWorksheet worksheet, int row, int column)
+        {
+            return worksheet.Cells[row, column].Text?.Trim() ?? string.Empty;
+        }
+
+        private static bool ParseBool(string value, bool defaultValue)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return defaultValue;
+            }
+
+            return value.Trim().ToLowerInvariant() switch
+            {
+                "true" or "1" or "yes" or "y" or "active" => true,
+                "false" or "0" or "no" or "n" or "inactive" => false,
+                _ => defaultValue
+            };
         }
     }
 }

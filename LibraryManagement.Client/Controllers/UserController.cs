@@ -1,7 +1,10 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
+using LibraryManagement.Client.Helpers;
+using LibraryManagement.Client.DTO.User;
 using LibraryManagementDAL.DTO.Circulation;
 using LibraryManagementDAL.DTO.Pagination;
+using LibraryManagementDAL.DTO.Reservation;
 using LibraryManagementDAL.DTO.User;
 using LibraryManagementDAL.Models;
 using Microsoft.AspNetCore.Authentication;
@@ -81,6 +84,7 @@ namespace LibraryManagement.Client.Controllers
             model.Role = "Librarian";
 
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/users", model);
             var result = await response.Content.ReadFromJsonAsync<ApiActionResponse>();
 
@@ -100,6 +104,7 @@ namespace LibraryManagement.Client.Controllers
         public async Task<IActionResult> ToggleStatus(int id)
         {
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsync($"{GetApiBaseUrl()}/api/users/{id}/toggle-status", null);
             var result = await response.Content.ReadFromJsonAsync<ApiActionResponse>();
 
@@ -179,6 +184,46 @@ namespace LibraryManagement.Client.Controllers
             }
 
             return RedirectToAction(nameof(Profile));
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Member")]
+        public async Task<IActionResult> MemberDashboard()
+        {
+            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdText, out var userId))
+            {
+                return RedirectToAction("Login", "Auth");
+            }
+
+            var client = httpClientFactory.CreateClient();
+            var transactions = await client.GetFromJsonAsync<List<CirculationTransactionItem>>(
+                $"{GetApiBaseUrl()}/api/circulation/users/{userId}/borrow-history")
+                ?? new List<CirculationTransactionItem>();
+            var reservations = await client.GetFromJsonAsync<List<ReservationItem>>(
+                $"{GetApiBaseUrl()}/api/reservations/users/{userId}")
+                ?? new List<ReservationItem>();
+            var notifications = await client.GetFromJsonAsync<PaginationResponseModel<Notification>>(
+                $"{GetApiBaseUrl()}/api/notifications/users/{userId}?page=1")
+                ?? new PaginationResponseModel<Notification>();
+
+            var openDetails = transactions
+                .SelectMany(x => x.BorrowDetails)
+                .Where(x => x.ActualReturnDate == null)
+                .ToList();
+
+            var model = new MemberDashboardViewModel
+            {
+                BorrowTransactions = transactions.Take(5).ToList(),
+                Reservations = reservations.Take(5).ToList(),
+                Notifications = notifications.Items.Take(5).ToList(),
+                CurrentlyBorrowedCount = openDetails.Count,
+                OverdueCount = openDetails.Count(x => x.DueDate.Date < DateTime.UtcNow.Date),
+                UnpaidFineAmount = transactions.SelectMany(x => x.BorrowDetails).Sum(x => x.FineAmount ?? 0),
+                ActiveReservationCount = reservations.Count(x => x.Status == ReservationStatus.Pending || x.Status == ReservationStatus.Allocated)
+            };
+
+            return View(model);
         }
 
         [HttpGet]

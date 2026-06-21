@@ -33,12 +33,14 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenRepository>();
 builder.Services.AddScoped<BookRepository>();
+builder.Services.AddScoped<CatalogManagementRepository>();
 builder.Services.AddScoped<InventoryRepository>();
 builder.Services.AddScoped<CirculationRepository>();
 builder.Services.AddScoped<ReservationRepository>();
@@ -51,6 +53,7 @@ builder.Services.AddScoped<SystemSettingRepository>();
 builder.Services.AddScoped<ReportRepository>();
 builder.Services.AddScoped<ReminderRepository>();
 builder.Services.AddScoped<BookCatalogService>();
+builder.Services.AddScoped<CatalogManagementService>();
 builder.Services.AddScoped<InventoryService>();
 builder.Services.AddScoped<CirculationService>();
 builder.Services.AddScoped<ReservationService>();

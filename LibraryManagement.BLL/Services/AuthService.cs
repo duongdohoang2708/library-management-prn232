@@ -328,10 +328,28 @@ namespace LibraryManagement.BLL.Services
             message.From.Add(new MailboxAddress(senderName, senderEmail));
             message.To.Add(MailboxAddress.Parse(email));
             message.Subject = "LMS password reset code";
-            message.Body = new TextPart("plain")
+            message.Body = new BodyBuilder
             {
-                Text = $"Xin chao {fullName},\n\nMa xac nhan dat lai mat khau cua ban la: {code}\nMa co hieu luc trong 10 phut.\n\nLMS System"
-            };
+                TextBody = $"Xin chao {fullName},\n\nMa xac nhan dat lai mat khau cua ban la: {code}\nMa co hieu luc trong 10 phut.\n\nLMS System",
+                HtmlBody = $"""
+                    <div style="margin:0;padding:32px;background:#071f1c;font-family:Arial,sans-serif;color:#f8fafc">
+                      <div style="max-width:560px;margin:0 auto;background:#0b1220;border:1px solid rgba(255,255,255,.12);border-radius:18px;overflow:hidden">
+                        <div style="padding:24px 28px;background:#0f302b;border-bottom:1px solid rgba(255,255,255,.1)">
+                          <div style="font-size:20px;font-weight:800;color:#ffea00">LMS Standard</div>
+                        </div>
+                        <div style="padding:28px">
+                          <p style="margin:0 0 12px;color:#94a3b8">Xin chao {System.Net.WebUtility.HtmlEncode(fullName)},</p>
+                          <h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;color:#ffffff">Password reset code</h1>
+                          <div style="letter-spacing:8px;font-size:34px;font-weight:900;color:#ffea00;background:#111827;border:1px solid rgba(255,234,0,.35);border-radius:14px;padding:18px 20px;text-align:center">{code}</div>
+                          <p style="margin:18px 0 0;color:#cbd5e1;font-size:15px;line-height:1.7">Ma co hieu luc trong 10 phut. Khong chia se ma nay voi nguoi khac.</p>
+                        </div>
+                        <div style="padding:18px 28px;color:#64748b;font-size:12px;border-top:1px solid rgba(255,255,255,.1)">
+                          This email was sent automatically by LMS Standard.
+                        </div>
+                      </div>
+                    </div>
+                    """
+            }.ToMessageBody();
 
             using var smtpClient = new SmtpClient();
             await smtpClient.ConnectAsync(smtpServer, smtpPort, SecureSocketOptions.StartTls);

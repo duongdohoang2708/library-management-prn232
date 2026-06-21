@@ -52,6 +52,16 @@
             @if (isAuthenticated)
             {
                 <div class="w-full h-px bg-white/10 my-1"></div>
+                <a asp-controller="User" asp-action="MemberDashboard"
+                   class="@nav("User") relative group"
+                   title="My Dashboard">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
+                                 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 border border-white/10
+                                 shadow-xl translate-x-1 group-hover:translate-x-0">
+                        My Dashboard
+                    </span>
+                </a>
                 <!-- My Borrow History -->
                 <a asp-controller="User" asp-action="BorrowHistory"
                    class="p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all relative group"

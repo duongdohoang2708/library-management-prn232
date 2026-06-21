@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
+using LibraryManagement.Client.Helpers;
 using LibraryManagementDAL.DTO.Reservation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -60,6 +61,7 @@ namespace LibraryManagement.Client.Controllers
             }
 
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/reservations", new ReservationCreateRequest
             {
                 UserId = userId,
@@ -79,6 +81,7 @@ namespace LibraryManagement.Client.Controllers
         public async Task<IActionResult> Approve(int id)
         {
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsync($"{GetApiBaseUrl()}/api/reservations/{id}/approve", null);
             var result = await response.Content.ReadFromJsonAsync<ReservationActionResponse>();
 
@@ -94,6 +97,7 @@ namespace LibraryManagement.Client.Controllers
         public async Task<IActionResult> Cancel(int id)
         {
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsync($"{GetApiBaseUrl()}/api/reservations/{id}/cancel", null);
             var result = await response.Content.ReadFromJsonAsync<ReservationActionResponse>();
 

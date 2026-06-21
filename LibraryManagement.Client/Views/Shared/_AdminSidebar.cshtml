@@ -69,6 +69,16 @@
                         Manage Books List
                     </span>
                 </a>
+                <a asp-controller="Catalog" asp-action="Index"
+                   class="@nav("Catalog") relative group"
+                   title="Catalog Data">
+                    <span class="material-symbols-outlined">category</span>
+                    <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
+                                 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 border border-white/10
+                                 shadow-xl translate-x-1 group-hover:translate-x-0">
+                        Catalog Data
+                    </span>
+                </a>
                 <!-- Inventory (Physical Books) -->
                 <a asp-controller="Inventory" asp-action="Index"
                    class="@nav("Inventory") relative group"

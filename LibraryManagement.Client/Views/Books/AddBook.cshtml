@@ -258,6 +258,23 @@
                         Upload your Excel file using our template format.
                     </p>
 
+                    @if (TempData["ImportSuccess"] != null)
+                    {
+                        <div class="mb-5 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-green-300 font-semibold">
+                            @TempData["ImportSuccess"]
+                        </div>
+                    }
+                    @if (TempData["ImportError"] != null)
+                    {
+                        <div class="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-300 font-semibold">
+                            @TempData["ImportError"]
+                        </div>
+                    }
+                    @if (TempData["ImportErrors"] != null)
+                    {
+                        <pre class="mb-5 whitespace-pre-wrap rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-yellow-200 text-sm">@TempData["ImportErrors"]</pre>
+                    }
+
                     <!-- Download Template -->
                     <a asp-action="DownloadTemplate"
                        asp-controller="Books"
@@ -400,4 +417,3 @@
 
 </script>
 }
-
