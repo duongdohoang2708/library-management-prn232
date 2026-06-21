@@ -1,0 +1,54 @@
+@{
+    ViewData["Title"] = "Payment Result";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    bool success = ViewBag.Success ?? false;
+    string message = ViewBag.Message;
+    string transactionId = ViewBag.TransactionId;
+}
+
+<div class="flex-1 p-8 min-w-0 flex items-center justify-center">
+    <div class="max-w-md w-full bg-white/5 border border-white/10 rounded-[2.5rem] p-10 text-center backdrop-blur-xl shadow-2xl">
+        @if (success)
+        {
+            <div class="w-24 h-24 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-8 border border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+                <span class="material-symbols-outlined text-5xl">check_circle</span>
+            </div>
+            <h1 class="text-3xl font-black text-white mb-4">Payment Successful!</h1>
+            <p class="text-white/60 mb-8 leading-relaxed">Your payment has been processed successfully. Thank you for settling your fines.</p>
+            
+            if (!string.IsNullOrEmpty(transactionId))
+            {
+                <div class="p-4 bg-black/20 rounded-2xl border border-white/5 mb-8">
+                    <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">Transaction ID</p>
+                    <p class="text-white font-mono">@transactionId</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="w-24 h-24 mx-auto rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-8 border border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.2)]">
+                <span class="material-symbols-outlined text-5xl">error</span>
+            </div>
+            <h1 class="text-3xl font-black text-white mb-4">Payment Failed</h1>
+            <p class="text-white/60 mb-8 leading-relaxed">@(message ?? "There was an error processing your payment. Please try again.")</p>
+        }
+
+        @{
+            int? targetUserId = ViewBag.TargetUserId;
+            bool isAdminOrLibrarian = User.IsInRole("Admin") || User.IsInRole("Librarian");
+        }
+
+        @if (isAdminOrLibrarian)
+        {
+            <a asp-action="Index" class="block w-full py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/10">
+                Back to Fines Management
+            </a>
+        }
+        else
+        {
+            <a asp-action="MyFines" class="block w-full py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/10">
+                Back to My Fines
+            </a>
+        }
+    </div>
+</div>

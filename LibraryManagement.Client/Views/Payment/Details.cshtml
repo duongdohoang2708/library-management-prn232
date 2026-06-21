@@ -60,8 +60,8 @@
                 <div>
                     <label class="block text-sm font-medium text-white/60 mb-2">Payment Method</label>
                     <select name="method" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors">
-                        <option value="@PaymentMethod.Cash">Cash</option>
-                        <option value="@PaymentMethod.VnPay">VnPay Gateway</option>
+                        <option value="Cash">Cash</option>
+                        <option value="VnPay">VnPay Gateway</option>
                     </select>
                 </div>
 
@@ -121,7 +121,7 @@
                                 <tr class="hover:bg-white/[0.02] transition-colors relative group">
                                     <td class="py-4 px-6">
                                         <p class="font-medium text-white line-clamp-1 mb-1" title="@detail.BookCopy?.Book?.Title">
-                                            @detail.BookCopy?.Book?.Title
+                                            @(detail.BookCopy?.Book?.Title ?? "Manual Fine")
                                         </p>
                                         <div class="flex items-center gap-3 text-sm text-white/60">
                                             <span class="flex items-center gap-1">
@@ -130,7 +130,7 @@
                                             </span>
                                             <span class="flex items-center gap-1">
                                                 <span class="material-symbols-outlined text-[14px]">event</span>
-                                                @detail.ActualReturnDate?.ToString("dd/MM/yyyy")
+                                                @detail.CreatedAt.ToString("dd/MM/yyyy")
                                             </span>
                                         </div>
                                     </td>
@@ -157,9 +157,6 @@
 
 @section Scripts {
     <script>
-        // Simple logic: if user changes amount manually, ensure it's not negative or over TotalOwed.
-        // Also if they want to uncheck fines, that's possible but for simplicity, we pass all unpaid Fine IDs
-        // and let the backend distribute the amount.
         const totalOwed = @totalOwed;
         const amountInput = document.getElementById('amountPaid');
 
