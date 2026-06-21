@@ -110,15 +110,18 @@
                         </p>
                     </div>
 
-                    <!-- Description -->
-                    <div class="relative mb-12">
-                        <div class="absolute -left-6 top-0 bottom-0 w-1 bg-primary/20 rounded-full"></div>
-                        <h3 class="text-xs font-black text-white/30 uppercase tracking-[0.2em] mb-4">Summary</h3>
-                        <p class="text-lg text-white/70 leading-relaxed font-light">
-                            @(string.IsNullOrEmpty(Model.Description)
-                                                        ? "No detailed description available for this book."
-                                                        : Model.Description)
-                        </p>
+
+                    <!-- AI Summary -->
+                    <div class="relative mb-12 bg-[#0b3b39]/30 border border-[#e7d80f]/30 rounded-3xl p-6 shadow-lg" id="ai-summary-container">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[#e7d80f]">auto_awesome</span>
+                                <h3 class="text-xs font-black text-[#e7d80f] uppercase tracking-[0.2em]">AI Summary</h3>
+                            </div>
+                        </div>
+                        <div id="ai-summary-text" class="text-sm text-white/80 leading-relaxed font-light prose prose-invert prose-sm max-w-none">
+                            <span class="animate-pulse text-[#e7d80f]/60">AI đang đọc sách và tạo tóm tắt (có thể mất vài giây)...</span>
+                        </div>
                     </div>
 
                     <!-- Meta Grid -->
@@ -254,3 +257,32 @@
     </div>
 
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            loadAISummary(@Model.BookId);
+        });
+
+        function loadAISummary(bookId) {
+            $.ajax({
+                url: `/api/ai/books/${bookId}/summary`,
+                type: 'GET',
+                success: function(res) {
+                    if (res && res.summaryText) {
+                        if (typeof marked !== 'undefined') {
+                            $('#ai-summary-text').html(marked.parse(res.summaryText));
+                        } else {
+                            $('#ai-summary-text').html(res.summaryText.replace(/\n/g, '<br/>'));
+                        }
+                    } else {
+                        $('#ai-summary-text').html('<span class="text-white/40 italic">Chưa có tóm tắt AI cho sách này.</span>');
+                    }
+                },
+                error: function() {
+                    $('#ai-summary-text').html('<span class="text-white/40 italic">Chưa có tóm tắt AI cho sách này.</span>');
+                }
+            });
+        }
+    </script>
+}

@@ -41,7 +41,7 @@ public class HomeController : Controller
         {
             var client = httpClientFactory.CreateClient();
             var result = await client.GetFromJsonAsync<BookListApiResult>(
-                $"{baseUrl.TrimEnd('/')}/api/books?isActive=true&sort=newest&page=1")
+                $"{baseUrl.TrimEnd('/')}/api/books?isActive=true&sort=newest&page=1&pageSize=12")
                 ?? new BookListApiResult();
 
             ViewBag.Categories = result.Categories;
@@ -50,7 +50,7 @@ public class HomeController : Controller
                     ? book.BookReviews.Average(review => review.Rating)
                     : 0)
                 .ThenBy(book => book.Title)
-                .Take(8)
+                .Take(12)
                 .ToList();
 
             return View(result.Items);

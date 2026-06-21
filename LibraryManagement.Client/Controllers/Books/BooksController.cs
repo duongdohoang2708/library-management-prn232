@@ -311,7 +311,8 @@ namespace LibraryManagement.Client.Controllers.Books
         {
             var query = new List<string>
             {
-                $"page={page}"
+                $"page={page}",
+                "pageSize=10"
             };
 
             AddQuery(query, "keyword", keyword);

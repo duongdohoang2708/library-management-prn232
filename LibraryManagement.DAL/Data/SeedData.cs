@@ -259,6 +259,69 @@ namespace LibraryManagementDAL.Data
                     Name = "Agatha Christie",
                     Biography = "Nữ hoàng truyện trinh thám với nhân vật thám tử Hercule Poirot.",
                     CreatedAt = now
+                },
+                new Author
+                {
+                    AuthorId = 11,
+                    Name = "Walter Isaacson",
+                    Biography = "Nhà tiểu sử học người Mỹ, tác giả tiểu sử Steve Jobs, Einstein.",
+                    CreatedAt = now
+                },
+                new Author
+                {
+                    AuthorId = 12,
+                    Name = "Antoine de Saint-Exupéry",
+                    Biography = "Nhà văn và phi công người Pháp, tác giả 'Hoàng tử bé'.",
+                    CreatedAt = now
+                },
+                new Author
+                {
+                    AuthorId = 13,
+                    Name = "Arthur Conan Doyle",
+                    Biography = "Nhà văn người Scotland nổi tiếng với thám tử Sherlock Holmes.",
+                    CreatedAt = now
+                },
+                new Author
+                {
+                    AuthorId = 14,
+                    Name = "Dale Carnegie",
+                    Biography = "Nhà văn và nhà thuyết trình người Mỹ, tác giả Đắc Nhân Tâm.",
+                    CreatedAt = now
+                },
+                new Author
+                {
+                    AuthorId = 15,
+                    Name = "Jules Verne",
+                    Biography = "Nhà văn Pháp đi tiên phong trong thể loại khoa học viễn tưởng.",
+                    CreatedAt = now
+                },
+                new Author
+                {
+                    AuthorId = 16,
+                    Name = "Jane Austen",
+                    Biography = "Nữ văn sĩ người Anh với những tác phẩm kinh điển.",
+                    CreatedAt = now
+                },
+                new Author
+                {
+                    AuthorId = 17,
+                    Name = "Nicholas Sparks",
+                    Biography = "Nhà văn Mỹ nổi tiếng với tiểu thuyết tình cảm lãng mạn.",
+                    CreatedAt = now
+                },
+                new Author
+                {
+                    AuthorId = 18,
+                    Name = "Ngô Tất Tố",
+                    Biography = "Nhà văn, nhà báo hiện thực xuất sắc của văn học Việt Nam.",
+                    CreatedAt = now
+                },
+                new Author
+                {
+                    AuthorId = 19,
+                    Name = "Đoàn Giỏi",
+                    Biography = "Nhà văn Việt Nam với các tác phẩm viết về thiên nhiên Nam Bộ.",
+                    CreatedAt = now
                 }
             );
 
@@ -301,7 +364,57 @@ namespace LibraryManagementDAL.Data
                 new Book { BookId = 7, Title = "Chí Phèo", ISBN = "9786041000025", PublishYear = 1941, EditionNumber = 1, AuthorId = 7, CategoryId = 7, PublisherId = 3, CreatedAt = now, IsActive = true },
                 new Book { BookId = 8, Title = "1984", ISBN = "9780451524935", PublishYear = 1949, EditionNumber = 1, AuthorId = 8, CategoryId = 4, PublisherId = 8, CreatedAt = now, IsActive = true },
                 new Book { BookId = 9, Title = "The Shining", ISBN = "9780307743657", PublishYear = 1977, EditionNumber = 1, AuthorId = 9, CategoryId = 6, PublisherId = 6, CreatedAt = now, IsActive = true },
-                new Book { BookId = 10, Title = "Án mạng trên chuyến tàu tốc hành", ISBN = "9780007119318", PublishYear = 1934, EditionNumber = 1, AuthorId = 10, CategoryId = 3, PublisherId = 10, CreatedAt = now, IsActive = true }
+                new Book { BookId = 10, Title = "Án mạng trên chuyến tàu tốc hành", ISBN = "9780007119318", PublishYear = 1934, EditionNumber = 1, AuthorId = 10, CategoryId = 3, PublisherId = 10, CreatedAt = now, IsActive = true },
+                
+                // Category 1: Novel (General fiction)
+                new Book { BookId = 11, Title = "Mắt biếc", ISBN = "9786041000032", PublishYear = 1990, EditionNumber = 1, AuthorId = 1, CategoryId = 1, PublisherId = 1, CreatedAt = now, IsActive = true },
+                new Book { BookId = 12, Title = "Cô gái đến từ hôm qua", ISBN = "9786041000049", PublishYear = 1989, EditionNumber = 1, AuthorId = 1, CategoryId = 1, PublisherId = 1, CreatedAt = now, IsActive = true },
+                new Book { BookId = 13, Title = "Tôi thấy hoa vàng trên cỏ xanh", ISBN = "9786041000056", PublishYear = 2010, EditionNumber = 1, AuthorId = 1, CategoryId = 1, PublisherId = 1, CreatedAt = now, IsActive = true },
+
+                // Category 2: Fantasy
+                new Book { BookId = 14, Title = "Harry Potter và Phòng chứa Bí mật", ISBN = "9780747538493", PublishYear = 1998, EditionNumber = 1, AuthorId = 4, CategoryId = 2, PublisherId = 9, CreatedAt = now, IsActive = true },
+                new Book { BookId = 15, Title = "Harry Potter và Tên tù nhân ngục Azkaban", ISBN = "9780747542155", PublishYear = 1999, EditionNumber = 1, AuthorId = 4, CategoryId = 2, PublisherId = 9, CreatedAt = now, IsActive = true },
+                new Book { BookId = 16, Title = "Hoàng tử bé", ISBN = "9780156012195", PublishYear = 1943, EditionNumber = 1, AuthorId = 12, CategoryId = 2, PublisherId = 4, CreatedAt = now, IsActive = true },
+
+                // Category 3: Mystery
+                new Book { BookId = 17, Title = "Sherlock Holmes - Chiếc nhẫn tình cờ", ISBN = "9780141036137", PublishYear = 1887, EditionNumber = 1, AuthorId = 13, CategoryId = 3, PublisherId = 4, CreatedAt = now, IsActive = true },
+                new Book { BookId = 18, Title = "Vụ án mạng dòng sông Nile", ISBN = "9780007119325", PublishYear = 1937, EditionNumber = 1, AuthorId = 10, CategoryId = 3, PublisherId = 10, CreatedAt = now, IsActive = true },
+                new Book { BookId = 19, Title = "Biểu tượng thất truyền", ISBN = "9780307474285", PublishYear = 2009, EditionNumber = 1, AuthorId = 5, CategoryId = 3, PublisherId = 5, CreatedAt = now, IsActive = true },
+
+                // Category 4: Science Fiction
+                new Book { BookId = 20, Title = "Hai vạn dặm dưới đáy biển", ISBN = "9780553212525", PublishYear = 1870, EditionNumber = 1, AuthorId = 15, CategoryId = 4, PublisherId = 8, CreatedAt = now, IsActive = true },
+                new Book { BookId = 21, Title = "Hành trình vào tâm Trái Đất", ISBN = "9780140624250", PublishYear = 1864, EditionNumber = 1, AuthorId = 15, CategoryId = 4, PublisherId = 8, CreatedAt = now, IsActive = true },
+                new Book { BookId = 22, Title = "Từ Trái Đất lên Mặt Trăng", ISBN = "9780143125754", PublishYear = 1865, EditionNumber = 1, AuthorId = 15, CategoryId = 4, PublisherId = 8, CreatedAt = now, IsActive = true },
+
+                // Category 5: Romance
+                new Book { BookId = 23, Title = "Kiêu hãnh và Định kiến", ISBN = "9780141439518", PublishYear = 1813, EditionNumber = 1, AuthorId = 16, CategoryId = 5, PublisherId = 4, CreatedAt = now, IsActive = true },
+                new Book { BookId = 24, Title = "Phía Nam biên giới, phía Tây mặt trời", ISBN = "9780099448570", PublishYear = 1992, EditionNumber = 1, AuthorId = 3, CategoryId = 5, PublisherId = 6, CreatedAt = now, IsActive = true },
+                new Book { BookId = 25, Title = "Nhật ký son trẻ", ISBN = "9780446605236", PublishYear = 1996, EditionNumber = 1, AuthorId = 17, CategoryId = 5, PublisherId = 5, CreatedAt = now, IsActive = true },
+
+                // Category 6: Horror
+                new Book { BookId = 26, Title = "It (Chú hề ma quái)", ISBN = "9781501142970", PublishYear = 1986, EditionNumber = 1, AuthorId = 9, CategoryId = 6, PublisherId = 6, CreatedAt = now, IsActive = true },
+                new Book { BookId = 27, Title = "Pet Sematary (Nghĩa địa thú cưng)", ISBN = "9781501156700", PublishYear = 1983, EditionNumber = 1, AuthorId = 9, CategoryId = 6, PublisherId = 6, CreatedAt = now, IsActive = true },
+                new Book { BookId = 28, Title = "Misery", ISBN = "9781501156748", PublishYear = 1987, EditionNumber = 1, AuthorId = 9, CategoryId = 6, PublisherId = 6, CreatedAt = now, IsActive = true },
+
+                // Category 7: Classic
+                new Book { BookId = 29, Title = "Lão Hạc", ISBN = "9786041000063", PublishYear = 1943, EditionNumber = 1, AuthorId = 7, CategoryId = 7, PublisherId = 3, CreatedAt = now, IsActive = true },
+                new Book { BookId = 30, Title = "Sống mòn", ISBN = "9786041000070", PublishYear = 1944, EditionNumber = 1, AuthorId = 7, CategoryId = 7, PublisherId = 3, CreatedAt = now, IsActive = true },
+                new Book { BookId = 31, Title = "Tắt đèn", ISBN = "9786041000087", PublishYear = 1937, EditionNumber = 1, AuthorId = 18, CategoryId = 7, PublisherId = 3, CreatedAt = now, IsActive = true },
+
+                // Category 8: Adventure
+                new Book { BookId = 32, Title = "Đất rừng phương Nam", ISBN = "9786041000094", PublishYear = 1957, EditionNumber = 1, AuthorId = 19, CategoryId = 8, PublisherId = 2, CreatedAt = now, IsActive = true },
+                new Book { BookId = 33, Title = "Vợ chồng A Phủ", ISBN = "9786041000100", PublishYear = 1952, EditionNumber = 1, AuthorId = 6, CategoryId = 8, PublisherId = 2, CreatedAt = now, IsActive = true },
+                new Book { BookId = 34, Title = "Tre Phong Ba", ISBN = "9786041000117", PublishYear = 1960, EditionNumber = 1, AuthorId = 6, CategoryId = 8, PublisherId = 2, CreatedAt = now, IsActive = true },
+
+                // Category 9: Self-help
+                new Book { BookId = 35, Title = "Đắc Nhân Tâm", ISBN = "9780671733353", PublishYear = 1936, EditionNumber = 1, AuthorId = 14, CategoryId = 9, PublisherId = 10, CreatedAt = now, IsActive = true },
+                new Book { BookId = 36, Title = "Quẳng gánh lo đi và vui sống", ISBN = "9780671733360", PublishYear = 1948, EditionNumber = 1, AuthorId = 14, CategoryId = 9, PublisherId = 10, CreatedAt = now, IsActive = true },
+                new Book { BookId = 37, Title = "Chiến thắng con quỷ trong bạn", ISBN = "9781454900672", PublishYear = 2011, EditionNumber = 1, AuthorId = 2, CategoryId = 9, PublisherId = 4, CreatedAt = now, IsActive = true },
+
+                // Category 10: Biography
+                new Book { BookId = 38, Title = "Steve Jobs", ISBN = "9781451648539", PublishYear = 2011, EditionNumber = 1, AuthorId = 11, CategoryId = 10, PublisherId = 10, CreatedAt = now, IsActive = true },
+                new Book { BookId = 39, Title = "Einstein: Cuộc đời và Vũ trụ", ISBN = "9780743264747", PublishYear = 2007, EditionNumber = 1, AuthorId = 11, CategoryId = 10, PublisherId = 10, CreatedAt = now, IsActive = true },
+                new Book { BookId = 40, Title = "Leonardo da Vinci", ISBN = "9781501139154", PublishYear = 2017, EditionNumber = 1, AuthorId = 11, CategoryId = 10, PublisherId = 10, CreatedAt = now, IsActive = true }
             );
 
             // BOOK COPY
@@ -325,7 +438,78 @@ namespace LibraryManagementDAL.Data
                 new BookCopy { BookCopyId = 17, BookId = 4, Barcode = "BC017", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "D2", CreatedAt = now },
                 new BookCopy { BookCopyId = 18, BookId = 4, Barcode = "BC018", Status = BookCopyStatus.Borrowed, Condition = BookCondition.Fair, Location = "D3", CreatedAt = now },
                 new BookCopy { BookCopyId = 19, BookId = 4, Barcode = "BC019", Status = BookCopyStatus.Reserved, Condition = BookCondition.Good, Location = "D4", CreatedAt = now },
-                new BookCopy { BookCopyId = 20, BookId = 4, Barcode = "BC020", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "D5", CreatedAt = now }
+                new BookCopy { BookCopyId = 20, BookId = 4, Barcode = "BC020", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "D5", CreatedAt = now },
+                
+                // Copies for Books 11-40
+                new BookCopy { BookCopyId = 21, BookId = 11, Barcode = "BC021", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 1", CreatedAt = now },
+                new BookCopy { BookCopyId = 22, BookId = 11, Barcode = "BC022", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 1", CreatedAt = now },
+                new BookCopy { BookCopyId = 23, BookId = 12, Barcode = "BC023", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 1", CreatedAt = now },
+                new BookCopy { BookCopyId = 24, BookId = 12, Barcode = "BC024", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 1", CreatedAt = now },
+                new BookCopy { BookCopyId = 25, BookId = 13, Barcode = "BC025", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 1", CreatedAt = now },
+                new BookCopy { BookCopyId = 26, BookId = 13, Barcode = "BC026", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 1", CreatedAt = now },
+                
+                new BookCopy { BookCopyId = 27, BookId = 14, Barcode = "BC027", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 2", CreatedAt = now },
+                new BookCopy { BookCopyId = 28, BookId = 14, Barcode = "BC028", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 2", CreatedAt = now },
+                new BookCopy { BookCopyId = 29, BookId = 15, Barcode = "BC029", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 2", CreatedAt = now },
+                new BookCopy { BookCopyId = 30, BookId = 15, Barcode = "BC030", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 2", CreatedAt = now },
+                new BookCopy { BookCopyId = 31, BookId = 16, Barcode = "BC031", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 2", CreatedAt = now },
+                new BookCopy { BookCopyId = 32, BookId = 16, Barcode = "BC032", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 2", CreatedAt = now },
+
+                new BookCopy { BookCopyId = 33, BookId = 17, Barcode = "BC033", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 3", CreatedAt = now },
+                new BookCopy { BookCopyId = 34, BookId = 17, Barcode = "BC034", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 3", CreatedAt = now },
+                new BookCopy { BookCopyId = 35, BookId = 18, Barcode = "BC035", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 3", CreatedAt = now },
+                new BookCopy { BookCopyId = 36, BookId = 18, Barcode = "BC036", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 3", CreatedAt = now },
+                new BookCopy { BookCopyId = 37, BookId = 19, Barcode = "BC037", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 3", CreatedAt = now },
+                new BookCopy { BookCopyId = 38, BookId = 19, Barcode = "BC038", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 3", CreatedAt = now },
+
+                new BookCopy { BookCopyId = 39, BookId = 20, Barcode = "BC039", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 4", CreatedAt = now },
+                new BookCopy { BookCopyId = 40, BookId = 20, Barcode = "BC040", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 4", CreatedAt = now },
+                new BookCopy { BookCopyId = 41, BookId = 21, Barcode = "BC041", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 4", CreatedAt = now },
+                new BookCopy { BookCopyId = 42, BookId = 21, Barcode = "BC042", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 4", CreatedAt = now },
+                new BookCopy { BookCopyId = 43, BookId = 22, Barcode = "BC043", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 4", CreatedAt = now },
+                new BookCopy { BookCopyId = 44, BookId = 22, Barcode = "BC044", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 4", CreatedAt = now },
+
+                new BookCopy { BookCopyId = 45, BookId = 23, Barcode = "BC045", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 5", CreatedAt = now },
+                new BookCopy { BookCopyId = 46, BookId = 23, Barcode = "BC046", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 5", CreatedAt = now },
+                new BookCopy { BookCopyId = 47, BookId = 24, Barcode = "BC047", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 5", CreatedAt = now },
+                new BookCopy { BookCopyId = 48, BookId = 24, Barcode = "BC048", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 5", CreatedAt = now },
+                new BookCopy { BookCopyId = 49, BookId = 25, Barcode = "BC049", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 5", CreatedAt = now },
+                new BookCopy { BookCopyId = 50, BookId = 25, Barcode = "BC050", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 5", CreatedAt = now },
+
+                new BookCopy { BookCopyId = 51, BookId = 26, Barcode = "BC051", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 6", CreatedAt = now },
+                new BookCopy { BookCopyId = 52, BookId = 26, Barcode = "BC052", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 6", CreatedAt = now },
+                new BookCopy { BookCopyId = 53, BookId = 27, Barcode = "BC053", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 6", CreatedAt = now },
+                new BookCopy { BookCopyId = 54, BookId = 27, Barcode = "BC054", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 6", CreatedAt = now },
+                new BookCopy { BookCopyId = 55, BookId = 28, Barcode = "BC055", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 6", CreatedAt = now },
+                new BookCopy { BookCopyId = 56, BookId = 28, Barcode = "BC056", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 6", CreatedAt = now },
+
+                new BookCopy { BookCopyId = 57, BookId = 29, Barcode = "BC057", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 7", CreatedAt = now },
+                new BookCopy { BookCopyId = 58, BookId = 29, Barcode = "BC058", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 7", CreatedAt = now },
+                new BookCopy { BookCopyId = 59, BookId = 30, Barcode = "BC059", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 7", CreatedAt = now },
+                new BookCopy { BookCopyId = 60, BookId = 30, Barcode = "BC060", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 7", CreatedAt = now },
+                new BookCopy { BookCopyId = 61, BookId = 31, Barcode = "BC061", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 7", CreatedAt = now },
+                new BookCopy { BookCopyId = 62, BookId = 31, Barcode = "BC062", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 7", CreatedAt = now },
+
+                new BookCopy { BookCopyId = 63, BookId = 32, Barcode = "BC063", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 8", CreatedAt = now },
+                new BookCopy { BookCopyId = 64, BookId = 32, Barcode = "BC064", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 8", CreatedAt = now },
+                new BookCopy { BookCopyId = 65, BookId = 33, Barcode = "BC065", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 8", CreatedAt = now },
+                new BookCopy { BookCopyId = 66, BookId = 33, Barcode = "BC066", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 8", CreatedAt = now },
+                new BookCopy { BookCopyId = 67, BookId = 34, Barcode = "BC067", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 8", CreatedAt = now },
+                new BookCopy { BookCopyId = 68, BookId = 34, Barcode = "BC068", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 8", CreatedAt = now },
+
+                new BookCopy { BookCopyId = 69, BookId = 35, Barcode = "BC069", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 9", CreatedAt = now },
+                new BookCopy { BookCopyId = 70, BookId = 35, Barcode = "BC070", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 9", CreatedAt = now },
+                new BookCopy { BookCopyId = 71, BookId = 36, Barcode = "BC071", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 9", CreatedAt = now },
+                new BookCopy { BookCopyId = 72, BookId = 36, Barcode = "BC072", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 9", CreatedAt = now },
+                new BookCopy { BookCopyId = 73, BookId = 37, Barcode = "BC073", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 9", CreatedAt = now },
+                new BookCopy { BookCopyId = 74, BookId = 37, Barcode = "BC074", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 9", CreatedAt = now },
+
+                new BookCopy { BookCopyId = 75, BookId = 38, Barcode = "BC075", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 10", CreatedAt = now },
+                new BookCopy { BookCopyId = 76, BookId = 38, Barcode = "BC076", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 10", CreatedAt = now },
+                new BookCopy { BookCopyId = 77, BookId = 39, Barcode = "BC077", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 10", CreatedAt = now },
+                new BookCopy { BookCopyId = 78, BookId = 39, Barcode = "BC078", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 10", CreatedAt = now },
+                new BookCopy { BookCopyId = 79, BookId = 40, Barcode = "BC079", Status = BookCopyStatus.Available, Condition = BookCondition.New, Location = "Shelf 10", CreatedAt = now },
+                new BookCopy { BookCopyId = 80, BookId = 40, Barcode = "BC080", Status = BookCopyStatus.Available, Condition = BookCondition.Good, Location = "Shelf 10", CreatedAt = now }
             );
 
             // BORROW TRANSACTION

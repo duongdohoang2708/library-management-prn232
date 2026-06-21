@@ -21,7 +21,7 @@ namespace LibraryManagementDAL.DTO.Book
     public class BookCreateModelRequest
     {
         public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
+        public string? Description { get; set; }
         public int PublishYear { get; set; }
         public int EditionNumber { get; set; }
         public int? AuthorId { get; set; }

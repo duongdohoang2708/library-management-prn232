@@ -8,7 +8,7 @@ namespace LibraryManagement.BLL.Services
 {
     public class BookCatalogService
     {
-        private const int PageSize = 10;
+        private const int PageSize = 12;
         private readonly BookRepository bookRepository;
         private readonly AuditLogService auditLogService;
 
@@ -27,7 +27,8 @@ namespace LibraryManagement.BLL.Services
             string? availability,
             int? minRating,
             string? sort,
-            int page)
+            int page,
+            int pageSize = PageSize)
         {
             page = page < 1 ? 1 : page;
             var query = bookRepository.QueryBooks();
@@ -89,12 +90,12 @@ namespace LibraryManagement.BLL.Services
             };
 
             var totalItems = await query.CountAsync();
-            var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)PageSize));
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)pageSize));
             page = Math.Min(page, totalPages);
 
             return new BookListResult
             {
-                Items = await query.Skip((page - 1) * PageSize).Take(PageSize).ToListAsync(),
+                Items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(),
                 TotalPages = totalPages,
                 Page = page,
                 Categories = await bookRepository.GetCategoriesAsync(),

@@ -25,9 +25,10 @@ namespace LibraryManagement.API.Controllers.Books
             string? availability,
             int? minRating,
             string? sort,
-            int page = 1)
+            int page = 1,
+            int pageSize = 12)
         {
-            return Ok(await bookCatalogService.GetBooksAsync(keyword, category, publisherId, publishYear, isActive, availability, minRating, sort, page));
+            return Ok(await bookCatalogService.GetBooksAsync(keyword, category, publisherId, publishYear, isActive, availability, minRating, sort, page, pageSize));
         }
 
         [HttpGet("{id:int}")]
