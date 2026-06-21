@@ -19,6 +19,7 @@ namespace LibraryManagement.Client.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> Index()
         {
             var client = httpClientFactory.CreateClient();
@@ -30,6 +31,7 @@ namespace LibraryManagement.Client.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Member")]
         public async Task<IActionResult> MyReservations()
         {
             var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -48,6 +50,7 @@ namespace LibraryManagement.Client.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Member")]
         public async Task<IActionResult> Create(int bookId)
         {
             var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -72,6 +75,7 @@ namespace LibraryManagement.Client.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> Approve(int id)
         {
             var client = httpClientFactory.CreateClient();
@@ -86,6 +90,7 @@ namespace LibraryManagement.Client.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> Cancel(int id)
         {
             var client = httpClientFactory.CreateClient();

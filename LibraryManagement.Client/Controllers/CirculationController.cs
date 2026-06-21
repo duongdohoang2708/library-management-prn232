@@ -1,10 +1,12 @@
 using System.Net.Http.Json;
 using LibraryManagementDAL.DTO.Circulation;
 using LibraryManagementDAL.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LibraryManagement.Client.Controllers
 {
+    [Authorize(Roles = "Admin,Manager,Librarian")]
     public class CirculationController : Controller
     {
         private readonly IHttpClientFactory httpClientFactory;

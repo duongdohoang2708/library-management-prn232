@@ -12,10 +12,12 @@ namespace LibraryManagement.BLL.Services
         private const int DefaultLoanDays = 14;
         private const int MaxOpenBorrowedBooks = 5;
         private readonly CirculationRepository circulationRepository;
+        private readonly ReservationService reservationService;
 
-        public CirculationService(CirculationRepository _circulationRepository)
+        public CirculationService(CirculationRepository _circulationRepository, ReservationService _reservationService)
         {
             circulationRepository = _circulationRepository;
+            reservationService = _reservationService;
         }
 
         public async Task<CirculationListResult> GetTransactionsAsync(
@@ -292,6 +294,12 @@ namespace LibraryManagement.BLL.Services
                 return Fail("One or more selected books were already returned.");
             }
 
+            var returnedBookIds = selectedDetails
+                .Where(x => x.BookCopy != null)
+                .Select(x => x.BookCopy!.BookId)
+                .Distinct()
+                .ToList();
+
             foreach (var detail in selectedDetails)
             {
                 detail.ActualReturnDate = now;
@@ -311,6 +319,7 @@ namespace LibraryManagement.BLL.Services
 
             UpdateTransactionStatus(transaction, now);
             await circulationRepository.SaveChangesAsync();
+            await reservationService.AllocatePendingReservationsForBooksAsync(returnedBookIds);
 
             return Ok("Books returned successfully.", transaction.BorrowTransactionId);
         }

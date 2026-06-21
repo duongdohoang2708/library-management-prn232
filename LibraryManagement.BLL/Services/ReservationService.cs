@@ -1,4 +1,5 @@
 using LibraryManagement.DAL.Repositories;
+using LibraryManagement.BLL.DTO.Notification;
 using LibraryManagementDAL.DTO.Reservation;
 using LibraryManagementDAL.Models;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +11,12 @@ namespace LibraryManagement.BLL.Services
         private const int HoldDays = 3;
         private const int LoanDays = 14;
         private readonly ReservationRepository reservationRepository;
+        private readonly NotificationService notificationService;
 
-        public ReservationService(ReservationRepository _reservationRepository)
+        public ReservationService(ReservationRepository _reservationRepository, NotificationService _notificationService)
         {
             reservationRepository = _reservationRepository;
+            notificationService = _notificationService;
         }
 
         public async Task<List<ReservationItem>> GetReservationsAsync()
@@ -111,6 +114,11 @@ namespace LibraryManagement.BLL.Services
 
             reservationRepository.AddReservation(reservation);
             await reservationRepository.SaveChangesAsync();
+
+            if (reservation.Status == ReservationStatus.Allocated)
+            {
+                await NotifyReservationAllocatedAsync(reservation);
+            }
 
             return new ReservationActionResponse
             {
@@ -302,7 +310,32 @@ namespace LibraryManagement.BLL.Services
                 reservation.Status = ReservationStatus.Allocated;
                 reservation.ExpireAt = now.AddDays(HoldDays);
                 reservation.UpdatedAt = now;
+                await NotifyReservationAllocatedAsync(reservation);
             }
+        }
+
+        public async Task AllocatePendingReservationsForBooksAsync(IEnumerable<int> bookIds)
+        {
+            var now = DateTime.UtcNow;
+            foreach (var bookId in bookIds.Distinct())
+            {
+                await AllocatePendingReservationsAsync(bookId, now);
+            }
+
+            await reservationRepository.SaveChangesAsync();
+        }
+
+        private async Task NotifyReservationAllocatedAsync(Reservation reservation)
+        {
+            var bookTitle = reservation.Book?.Title ?? "your reserved book";
+            var expireText = reservation.ExpireAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "soon";
+            await notificationService.CreateAsync(new NotificationRequest
+            {
+                UserId = reservation.UserId,
+                Title = "Reserved book is ready",
+                Message = $"Your reserved book \"{bookTitle}\" is ready for pickup. Please collect it before {expireText}.",
+                Type = "Reservation"
+            });
         }
 
         private static ReservationActionResponse Fail(string message)

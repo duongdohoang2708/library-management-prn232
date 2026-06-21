@@ -78,7 +78,7 @@ namespace LibraryManagement.Client.Controllers
                 return View(model);
             }
 
-            model.Role = string.IsNullOrWhiteSpace(model.Role) ? "Librarian" : model.Role;
+            model.Role = "Librarian";
 
             var client = httpClientFactory.CreateClient();
             var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/users", model);

@@ -6,6 +6,7 @@
     var userReview = ViewBag.UserReview as BookReview;
     var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     bool isAuthenticated = !string.IsNullOrEmpty(userIdClaim);
+    bool isMember = User.IsInRole("Member");
     
     ViewData["Title"] = $"Reviews - {book?.Title}";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -47,11 +48,24 @@
     </div>
 
     <div class="max-w-5xl mx-auto w-full px-8 grid grid-cols-1 lg:grid-cols-3 gap-12">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="lg:col-span-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-emerald-300 font-bold">
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="lg:col-span-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-5 py-4 text-rose-300 font-bold">
+                @TempData["ErrorMessage"]
+            </div>
+        }
         
         <!-- Review Submission Form -->
         <div class="lg:col-span-1">
             <div class="sticky top-10 p-8 rounded-[2.5rem] bg-white/5 border border-white/10 backdrop-blur-xl h-fit shadow-2xl">
-                @if (isAuthenticated)
+                @if (isAuthenticated && isMember)
                 {
                     <h2 class="text-xl font-black text-white mb-2">@(userReview != null ? "Your Review" : "Write a Review")</h2>
                     <p class="text-white/40 text-xs mb-8">Tell us what you think about this book.</p>
@@ -86,6 +100,14 @@
                         </button>
                     </form>
                 }
+                else if (isAuthenticated)
+                {
+                    <div class="text-center py-10">
+                        <span class="material-symbols-outlined text-4xl text-white/20 mb-4">visibility</span>
+                        <h3 class="text-white font-bold mb-3">Review is for members</h3>
+                        <p class="text-white/40 text-xs">Staff accounts can read community reviews but cannot submit member ratings.</p>
+                    </div>
+                }
                 else
                 {
                     <div class="text-center py-10">
@@ -112,10 +134,13 @@
                         <div class="flex justify-between items-start mb-6">
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-teal-500/20 flex items-center justify-center text-primary font-black text-xl border border-primary/20">
-                                    @review.User?.FullName.Substring(0, 1)
+                                    @{
+                                        var reviewerName = review.User?.FullName ?? review.Account?.FullName ?? "Reader";
+                                    }
+                                    @(string.IsNullOrWhiteSpace(reviewerName) ? "R" : reviewerName.Substring(0, 1))
                                 </div>
                                 <div>
-                                    <h4 class="text-white font-bold">@review.User?.FullName</h4>
+                                    <h4 class="text-white font-bold">@reviewerName</h4>
                                     <div class="flex items-center gap-2 mt-0.5">
                                         <div class="flex text-amber-400">
                                             @for (int i = 1; i <= 5; i++)

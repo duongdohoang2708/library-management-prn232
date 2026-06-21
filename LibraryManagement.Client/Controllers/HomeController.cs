@@ -4,6 +4,7 @@ using LibraryManagement.Client.DTO.Books;
 using Microsoft.AspNetCore.Mvc;
 using LibraryManagement.Client.Models;
 using LibraryManagement.Client.DTO.Auth;
+using LibraryManagementDAL.DTO.Dashboard;
 using LibraryManagementDAL.Models;
 
 namespace LibraryManagement.Client.Controllers;
@@ -74,7 +75,7 @@ public class HomeController : Controller
         return View();
     }
 
-    public IActionResult AdminDashboard()
+    public async Task<IActionResult> AdminDashboard()
     {
         var roles = HttpContext.Session.GetString("Roles");
 
@@ -83,11 +84,12 @@ public class HomeController : Controller
             return RedirectToAction("Login", "Auth");
         }
 
-        if (!roles.Split(',').Contains("Admin"))
+        if (!roles.Split(',').Any(role => role == "Admin" || role == "Manager"))
         {
             return RedirectToAction("AccessDenied", "Auth");
         }
 
+        await LoadAdminDashboardStatsAsync();
         return View();
     }
 
@@ -100,6 +102,49 @@ public class HomeController : Controller
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+
+    private async Task LoadAdminDashboardStatsAsync()
+    {
+        var stats = new DashboardStatsResult();
+        var baseUrl = configuration["ApiSettings:BaseUrl"];
+
+        if (!string.IsNullOrWhiteSpace(baseUrl))
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient();
+                stats = await client.GetFromJsonAsync<DashboardStatsResult>(
+                    $"{baseUrl.TrimEnd('/')}/api/dashboard/admin")
+                    ?? new DashboardStatsResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not load admin dashboard statistics from API.");
+                ViewBag.DashboardDataError = "Could not load dashboard statistics right now.";
+            }
+        }
+        else
+        {
+            ViewBag.DashboardDataError = "ApiSettings:BaseUrl is not configured.";
+        }
+
+        ViewBag.TotalBooks = stats.TotalBooks;
+        ViewBag.TotalUsers = stats.TotalUsers;
+        ViewBag.TotalTransactions = stats.TotalTransactions;
+        ViewBag.TotalActiveBorrows = stats.TotalActiveBorrows;
+        ViewBag.OverdueBooksCount = stats.OverdueBooksCount;
+        ViewBag.TotalUnpaidFines = stats.TotalUnpaidFines;
+        ViewBag.MonthlyLabels = stats.MonthlyLabels;
+        ViewBag.MonthlyBorrows = stats.MonthlyBorrows;
+        ViewBag.MonthlyReturns = stats.MonthlyReturns;
+        ViewBag.MonthlyRegistrations = stats.MonthlyRegistrations;
+        ViewBag.CategoryLabels = stats.CategoryStats.Select(x => x.Label).ToList();
+        ViewBag.CategoryCounts = stats.CategoryStats.Select(x => x.Count).ToList();
+        ViewBag.BookStatusLabels = stats.BookStatusStats.Select(x => x.Label).ToList();
+        ViewBag.BookStatusCounts = stats.BookStatusStats.Select(x => x.Count).ToList();
+        ViewBag.RecentUsers = stats.RecentUsers;
+        ViewBag.RecentPayments = stats.RecentPayments;
     }
 
 }

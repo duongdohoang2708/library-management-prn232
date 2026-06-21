@@ -119,6 +119,11 @@ namespace LibraryManagement.BLL.Services
                 ? "Librarian"
                 : request.Role.Trim();
 
+            if (roleName != "Member" && roleName != "Librarian")
+            {
+                return Fail("User Manager can only create Member or Librarian accounts.");
+            }
+
             Role? staffRole = null;
             if (roleName != "Member")
             {

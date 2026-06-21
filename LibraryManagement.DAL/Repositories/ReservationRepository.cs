@@ -72,6 +72,7 @@ namespace LibraryManagement.DAL.Repositories
         public async Task<List<Reservation>> GetPendingReservationsForBookAsync(int bookId)
         {
             return await db.Reservations
+                .Include(x => x.Book)
                 .Where(x => x.BookId == bookId && x.Status == ReservationStatus.Pending)
                 .OrderBy(x => x.ReservedAt)
                 .ToListAsync();

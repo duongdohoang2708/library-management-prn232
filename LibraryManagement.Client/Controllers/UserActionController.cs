@@ -25,6 +25,7 @@ namespace LibraryManagement.Client.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Member")]
         public async Task<IActionResult> RequestReserve(int bookId)
         {
             var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -64,6 +65,7 @@ namespace LibraryManagement.Client.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Member")]
         public async Task<IActionResult> RequestBorrow(int bookId)
         {
             var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);

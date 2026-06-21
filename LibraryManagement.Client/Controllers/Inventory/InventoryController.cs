@@ -1,10 +1,12 @@
 using System.Net.Http.Json;
 using LibraryManagement.Client.DTO.Inventory;
 using LibraryManagementDAL.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LibraryManagement.Client.Controllers.Inventory
 {
+    [Authorize(Roles = "Admin,Manager,Librarian")]
     public class InventoryController : Controller
     {
         private readonly IHttpClientFactory httpClientFactory;

@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using LibraryManagement.Client.DTO.Books;
 using LibraryManagementDAL.DTO.Book;
 using LibraryManagementDAL.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LibraryManagement.Client.Controllers.Books
@@ -18,6 +19,7 @@ namespace LibraryManagement.Client.Controllers.Books
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> AllBooks(
             string? keyword,
             string? category,
@@ -71,6 +73,7 @@ namespace LibraryManagement.Client.Controllers.Books
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> AddBook(string mode = "single")
         {
             await LoadBookOptionsAsync();
@@ -80,6 +83,7 @@ namespace LibraryManagement.Client.Controllers.Books
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> AddBook(BookCreateModelRequest model, IFormFile? imageFile)
         {
             await LoadBookOptionsAsync();
@@ -108,6 +112,7 @@ namespace LibraryManagement.Client.Controllers.Books
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> Update(int id)
         {
             var client = httpClientFactory.CreateClient();
@@ -136,6 +141,7 @@ namespace LibraryManagement.Client.Controllers.Books
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> Update(int id, BookUpdateModelRequest model, IFormFile? imageFile)
         {
             if (id != model.BookId)
@@ -171,6 +177,7 @@ namespace LibraryManagement.Client.Controllers.Books
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> ToggleStatus(int id)
         {
             var client = httpClientFactory.CreateClient();
