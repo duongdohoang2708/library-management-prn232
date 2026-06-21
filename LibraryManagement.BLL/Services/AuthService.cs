@@ -1,13 +1,17 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using LibraryManagement.BLL.DTO.Auth;
 using LibraryManagement.BLL.Services.Interface;
 using LibraryManagement.DAL.Repositories;
 using LibraryManagementDAL.Models;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using MimeKit;
 
 namespace LibraryManagement.BLL.Services
 {
@@ -15,9 +19,9 @@ namespace LibraryManagement.BLL.Services
     {
         private readonly AuthenRepository authenRepository;
         private readonly IConfiguration configuration;
-        private readonly PasswordHasher<User> passwordHasher;
+        private readonly PasswordHasher<Account> passwordHasher;
 
-        public AuthService(AuthenRepository _authenRepository, IConfiguration _configuration, PasswordHasher<User> _passwordHasher)
+        public AuthService(AuthenRepository _authenRepository, IConfiguration _configuration, PasswordHasher<Account> _passwordHasher)
         {
             authenRepository = _authenRepository;
             configuration = _configuration;
@@ -81,9 +85,15 @@ namespace LibraryManagement.BLL.Services
                 return null;
             }
 
-            var roles = user.UserRoles?
-                .Select(ur => ur.Role.RoleName)
-                .ToList() ?? new List<string>();
+            var roles = new List<string>();
+            if (user.Staff?.Role != null)
+            {
+                roles.Add(user.Staff.Role.RoleName);
+            }
+            else if (user.Member != null)
+            {
+                roles.Add("Member");
+            }
 
             var accessToken = GenerateJwtToken(user, roles);
 
@@ -141,7 +151,7 @@ namespace LibraryManagement.BLL.Services
                 };
             }
 
-            var user = new User
+            var user = new Account
             {
                 Username = request.Username.Trim(),
                 Email = request.Email.Trim(),
@@ -174,7 +184,163 @@ namespace LibraryManagement.BLL.Services
             };
         }
 
-        private string GenerateJwtToken(User user, List<string> roles)
+        public async Task<AuthActionResponse> SendPasswordResetCodeAsync(ForgotPasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return new AuthActionResponse
+                {
+                    IsSuccess = false,
+                    Message = "Vui long nhap email"
+                };
+            }
+
+            var user = await authenRepository.GetUserByEmailAsync(request.Email.Trim());
+            if (user == null || !user.IsActive)
+            {
+                return new AuthActionResponse
+                {
+                    IsSuccess = false,
+                    Message = "Khong tim thay tai khoan"
+                };
+            }
+
+            var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
+            user.PasswordResetCode = code;
+            user.PasswordResetCodeExpiresAt = DateTime.UtcNow.AddMinutes(10);
+            user.PasswordResetCodeVerifiedAt = null;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await authenRepository.SaveChangesAsync();
+
+            try
+            {
+                await SendResetCodeEmailAsync(user.Email, user.FullName, code);
+            }
+            catch (Exception ex)
+            {
+                user.PasswordResetCode = null;
+                user.PasswordResetCodeExpiresAt = null;
+                user.PasswordResetCodeVerifiedAt = null;
+                user.UpdatedAt = DateTime.UtcNow;
+                await authenRepository.SaveChangesAsync();
+
+                return new AuthActionResponse
+                {
+                    IsSuccess = false,
+                    Message = ex.Message
+                };
+            }
+
+            return new AuthActionResponse
+            {
+                IsSuccess = true,
+                Message = "Ma xac nhan da duoc gui ve email"
+            };
+        }
+
+        public async Task<AuthActionResponse> VerifyPasswordResetCodeAsync(VerifyResetCodeRequest request)
+        {
+            var user = await authenRepository.GetUserByEmailAsync(request.Email.Trim());
+            if (user == null || !IsValidResetCode(user, request.Code))
+            {
+                return new AuthActionResponse
+                {
+                    IsSuccess = false,
+                    Message = "Ma xac nhan khong dung hoac da het han"
+                };
+            }
+
+            user.PasswordResetCodeVerifiedAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
+            await authenRepository.SaveChangesAsync();
+
+            return new AuthActionResponse
+            {
+                IsSuccess = true,
+                Message = "Xac nhan ma thanh cong"
+            };
+        }
+
+        public async Task<AuthActionResponse> ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            if (request.NewPassword != request.ConfirmNewPassword)
+            {
+                return new AuthActionResponse
+                {
+                    IsSuccess = false,
+                    Message = "Mat khau xac nhan khong khop"
+                };
+            }
+
+            var user = await authenRepository.GetUserByEmailAsync(request.Email.Trim());
+            if (user == null || !IsValidResetCode(user, request.Code))
+            {
+                return new AuthActionResponse
+                {
+                    IsSuccess = false,
+                    Message = "Ma xac nhan khong dung hoac da het han"
+                };
+            }
+
+            user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
+            user.IsPasswordSet = true;
+            user.PasswordResetCode = null;
+            user.PasswordResetCodeExpiresAt = null;
+            user.PasswordResetCodeVerifiedAt = null;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await authenRepository.SaveChangesAsync();
+
+            return new AuthActionResponse
+            {
+                IsSuccess = true,
+                Message = "Doi mat khau thanh cong"
+            };
+        }
+
+        private static bool IsValidResetCode(Account user, string code)
+        {
+            return !string.IsNullOrWhiteSpace(code)
+                && user.PasswordResetCode == code.Trim()
+                && user.PasswordResetCodeExpiresAt.HasValue
+                && user.PasswordResetCodeExpiresAt.Value >= DateTime.UtcNow;
+        }
+
+        private async Task SendResetCodeEmailAsync(string email, string fullName, string code)
+        {
+            var smtpServer = configuration["EmailSettings:SmtpServer"];
+            var smtpPortText = configuration["EmailSettings:SmtpPort"];
+            var senderEmail = configuration["EmailSettings:SenderEmail"];
+            var senderPassword = configuration["EmailSettings:SenderPassword"];
+            var senderName = configuration["EmailSettings:DisplaySenderName"] ?? "LMS System";
+
+            if (string.IsNullOrWhiteSpace(smtpServer)
+                || string.IsNullOrWhiteSpace(smtpPortText)
+                || string.IsNullOrWhiteSpace(senderEmail)
+                || string.IsNullOrWhiteSpace(senderPassword)
+                || !int.TryParse(smtpPortText, out var smtpPort))
+            {
+                throw new InvalidOperationException("Chua cau hinh EmailSettings SMTP de gui ma xac nhan.");
+            }
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(senderName, senderEmail));
+            message.To.Add(MailboxAddress.Parse(email));
+            message.Subject = "LMS password reset code";
+            message.Body = new TextPart("plain")
+            {
+                Text = $"Xin chao {fullName},\n\nMa xac nhan dat lai mat khau cua ban la: {code}\nMa co hieu luc trong 10 phut.\n\nLMS System"
+            };
+
+            using var smtpClient = new SmtpClient();
+            await smtpClient.ConnectAsync(smtpServer, smtpPort, SecureSocketOptions.StartTls);
+            await smtpClient.AuthenticateAsync(senderEmail, senderPassword);
+            await smtpClient.SendAsync(message);
+            await smtpClient.DisconnectAsync(true);
+        }
+
+        private string GenerateJwtToken(Account user, List<string> roles)
         {
             var jwtSettings = configuration.GetSection("JwtSettings");
 

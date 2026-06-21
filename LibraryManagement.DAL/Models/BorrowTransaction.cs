@@ -9,7 +9,9 @@ namespace LibraryManagementDAL.Models
 
         // Người mượn
         public int UserId { get; set; }
-        public User User { get; set; }
+        public Account Account { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public Account User { get => Account; set => Account = value; }
 
         // Ngày tạo phiếu mượn
         public DateTime BorrowDate { get; set; } = DateTime.UtcNow;

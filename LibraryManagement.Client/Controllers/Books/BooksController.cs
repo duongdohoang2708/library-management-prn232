@@ -1,22 +1,25 @@
-using LibraryManagement.DAL.Repositories;
+using System.Net.Http.Json;
+using LibraryManagement.Client.DTO.Books;
 using LibraryManagementDAL.DTO.Book;
 using LibraryManagementDAL.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LibraryManagement.Client.Controllers.Books
 {
     public class BooksController : Controller
     {
-        private const int PageSize = 10;
-        private readonly BookRepository bookRepository;
+        private readonly IHttpClientFactory httpClientFactory;
+        private readonly IConfiguration configuration;
 
-        public BooksController(BookRepository _bookRepository)
+        public BooksController(IHttpClientFactory _httpClientFactory, IConfiguration _configuration)
         {
-            bookRepository = _bookRepository;
+            httpClientFactory = _httpClientFactory;
+            configuration = _configuration;
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> AllBooks(
             string? keyword,
             string? category,
@@ -26,67 +29,21 @@ namespace LibraryManagement.Client.Controllers.Books
             string? sort,
             int page = 1)
         {
-            page = page < 1 ? 1 : page;
+            var result = await GetBookListAsync(keyword, category, publisherId, publishYear, isActive, sort, page);
 
-            var query = bookRepository.QueryBooks();
-
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                var key = keyword.Trim();
-                query = query.Where(b =>
-                    b.Title.Contains(key) ||
-                    b.ISBN.Contains(key) ||
-                    b.Author.Name.Contains(key));
-            }
-
-            if (!string.IsNullOrWhiteSpace(category))
-            {
-                query = query.Where(b => b.Category.CategoryName == category);
-            }
-
-            if (publisherId.HasValue)
-            {
-                query = query.Where(b => b.PublisherId == publisherId.Value);
-            }
-
-            if (publishYear.HasValue)
-            {
-                query = query.Where(b => b.PublishYear == publishYear.Value);
-            }
-
-            if (isActive.HasValue)
-            {
-                query = query.Where(b => b.IsActive == isActive.Value);
-            }
-
-            query = sort switch
-            {
-                "newest" => query.OrderByDescending(b => b.CreatedAt),
-                "year" => query.OrderByDescending(b => b.PublishYear),
-                "az" => query.OrderBy(b => b.Title),
-                _ => query.OrderBy(b => b.Title)
-            };
-
-            var totalItems = await query.CountAsync();
-            var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)PageSize));
-            page = Math.Min(page, totalPages);
-
-            var books = await query
-                .Skip((page - 1) * PageSize)
-                .Take(PageSize)
-                .ToListAsync();
-
-            await LoadSearchOptionsAsync();
             ViewBag.Keyword = keyword;
             ViewBag.Category = category;
             ViewBag.PublisherId = publisherId;
             ViewBag.PublishYear = publishYear;
             ViewBag.IsActive = isActive;
             ViewBag.Sort = sort;
-            ViewBag.TotalPages = totalPages;
-            ViewBag.Request = new { Page = page };
+            ViewBag.Categories = result.Categories;
+            ViewBag.Publishers = result.Publishers;
+            ViewBag.PublishYears = result.PublishYears;
+            ViewBag.TotalPages = result.TotalPages;
+            ViewBag.Request = new { Page = result.Page };
 
-            return View(books);
+            return View(result.Items);
         }
 
         [HttpGet]
@@ -105,7 +62,8 @@ namespace LibraryManagement.Client.Controllers.Books
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
-            var book = await bookRepository.GetBookDetailsAsync(id);
+            var client = httpClientFactory.CreateClient();
+            var book = await client.GetFromJsonAsync<Book>($"{GetApiBaseUrl()}/api/books/{id}");
             if (book == null)
             {
                 return NotFound();
@@ -115,6 +73,7 @@ namespace LibraryManagement.Client.Controllers.Books
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> AddBook(string mode = "single")
         {
             await LoadBookOptionsAsync();
@@ -124,6 +83,7 @@ namespace LibraryManagement.Client.Controllers.Books
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> AddBook(BookCreateModelRequest model, IFormFile? imageFile)
         {
             await LoadBookOptionsAsync();
@@ -136,43 +96,27 @@ namespace LibraryManagement.Client.Controllers.Books
                 return View(model);
             }
 
-            var authorId = model.AuthorId;
-            if (!authorId.HasValue && !string.IsNullOrWhiteSpace(model.AuthorName))
-            {
-                var author = await bookRepository.CreateAuthorAsync(model.AuthorName);
-                authorId = author.AuthorId;
-            }
+            model.ImageUrl = await SaveCoverImageAsync(imageFile) ?? string.Empty;
 
-            if (!authorId.HasValue || !model.CategoryId.HasValue || !model.PublisherId.HasValue)
+            var client = httpClientFactory.CreateClient();
+            var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/books", model);
+            if (!response.IsSuccessStatusCode)
             {
-                ModelState.AddModelError(string.Empty, "Please select author, category, and publisher.");
+                ModelState.AddModelError(string.Empty, "Create book failed.");
                 return View(model);
             }
 
-            var book = new Book
-            {
-                Title = model.Title.Trim(),
-                Description = model.Description,
-                PublishYear = model.PublishYear,
-                EditionNumber = model.EditionNumber <= 0 ? 1 : model.EditionNumber,
-                AuthorId = authorId.Value,
-                CategoryId = model.CategoryId.Value,
-                PublisherId = model.PublisherId.Value,
-                ISBN = string.IsNullOrWhiteSpace(model.ISBN) ? GenerateIsbn() : model.ISBN.Trim(),
-                ImageUrl = await SaveCoverImageAsync(imageFile),
-                IsActive = model.IsActive,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            var bookId = await bookRepository.CreateBookAsync(book);
-            TempData["NewBookId"] = bookId;
+            var result = await response.Content.ReadFromJsonAsync<BookSaveResult>();
+            TempData["NewBookId"] = result?.BookId;
             return RedirectToAction(nameof(AllBooks));
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> Update(int id)
         {
-            var book = await bookRepository.GetBookByIdAsync(id);
+            var client = httpClientFactory.CreateClient();
+            var book = await client.GetFromJsonAsync<Book>($"{GetApiBaseUrl()}/api/books/{id}");
             if (book == null)
             {
                 return NotFound();
@@ -197,6 +141,7 @@ namespace LibraryManagement.Client.Controllers.Books
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> Update(int id, BookUpdateModelRequest model, IFormFile? imageFile)
         {
             if (id != model.BookId)
@@ -213,64 +158,68 @@ namespace LibraryManagement.Client.Controllers.Books
                 return View(model);
             }
 
-            var book = await bookRepository.GetBookByIdAsync(id);
-            if (book == null)
-            {
-                return NotFound();
-            }
-
-            model.ImageUrl = book.ImageUrl ?? string.Empty;
-
-            book.Title = model.Title.Trim();
-            book.Description = model.Description;
-            book.PublishYear = model.PublishYear;
-            book.EditionNumber = model.EditionNumber <= 0 ? 1 : model.EditionNumber;
-            book.AuthorId = model.AuthorId ?? book.AuthorId;
-            book.CategoryId = model.CategoryId ?? book.CategoryId;
-            book.PublisherId = model.PublisherId ?? book.PublisherId;
-            book.ISBN = string.IsNullOrWhiteSpace(model.ISBN) ? book.ISBN : model.ISBN.Trim();
-            book.IsActive = model.IsActive;
-            book.UpdatedAt = DateTime.UtcNow;
-
             var imageUrl = await SaveCoverImageAsync(imageFile);
             if (!string.IsNullOrWhiteSpace(imageUrl))
             {
-                book.ImageUrl = imageUrl;
+                model.ImageUrl = imageUrl;
             }
 
-            await bookRepository.SaveChangesAsync();
-            return RedirectToAction(nameof(Details), new { id = book.BookId });
+            var client = httpClientFactory.CreateClient();
+            var response = await client.PutAsJsonAsync($"{GetApiBaseUrl()}/api/books/{id}", model);
+            if (!response.IsSuccessStatusCode)
+            {
+                ModelState.AddModelError(string.Empty, "Update book failed.");
+                return View(model);
+            }
+
+            return RedirectToAction(nameof(Details), new { id = model.BookId });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Librarian")]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            var book = await bookRepository.GetBookByIdAsync(id);
-            if (book == null)
-            {
-                return NotFound();
-            }
-
-            book.IsActive = !book.IsActive;
-            book.UpdatedAt = DateTime.UtcNow;
-            await bookRepository.SaveChangesAsync();
-
+            var client = httpClientFactory.CreateClient();
+            await client.PostAsync($"{GetApiBaseUrl()}/api/books/{id}/toggle-status", null);
             return RedirectToAction(nameof(AllBooks));
         }
 
-        private async Task LoadSearchOptionsAsync()
+        private async Task<BookListApiResult> GetBookListAsync(
+            string? keyword,
+            string? category,
+            int? publisherId,
+            int? publishYear,
+            bool? isActive,
+            string? sort,
+            int page)
         {
-            ViewBag.Categories = await bookRepository.GetCategoriesAsync();
-            ViewBag.Publishers = await bookRepository.GetPublishersAsync();
-            ViewBag.PublishYears = await bookRepository.GetPublishYearsAsync();
+            var query = new List<string>
+            {
+                $"page={page}"
+            };
+
+            AddQuery(query, "keyword", keyword);
+            AddQuery(query, "category", category);
+            AddQuery(query, "publisherId", publisherId?.ToString());
+            AddQuery(query, "publishYear", publishYear?.ToString());
+            AddQuery(query, "isActive", isActive?.ToString().ToLowerInvariant());
+            AddQuery(query, "sort", sort);
+
+            var client = httpClientFactory.CreateClient();
+            return await client.GetFromJsonAsync<BookListApiResult>($"{GetApiBaseUrl()}/api/books?{string.Join("&", query)}")
+                ?? new BookListApiResult();
         }
 
         private async Task LoadBookOptionsAsync()
         {
-            ViewBag.Authors = await bookRepository.GetAuthorsAsync();
-            ViewBag.Categories = await bookRepository.GetCategoriesAsync();
-            ViewBag.Publishers = await bookRepository.GetPublishersAsync();
+            var client = httpClientFactory.CreateClient();
+            var options = await client.GetFromJsonAsync<BookOptionsApiResult>($"{GetApiBaseUrl()}/api/books/options")
+                ?? new BookOptionsApiResult();
+
+            ViewBag.Authors = options.Authors;
+            ViewBag.Categories = options.Categories;
+            ViewBag.Publishers = options.Publishers;
         }
 
         private async Task<string?> SaveCoverImageAsync(IFormFile? imageFile)
@@ -293,9 +242,19 @@ namespace LibraryManagement.Client.Controllers.Books
             return "/" + relativeFolder.Replace("\\", "/") + "/" + fileName;
         }
 
-        private static string GenerateIsbn()
+        private string GetApiBaseUrl()
         {
-            return DateTime.UtcNow.Ticks.ToString();
+            return configuration["ApiSettings:BaseUrl"]?.TrimEnd('/')
+                ?? throw new InvalidOperationException("ApiSettings:BaseUrl is not configured.");
         }
+
+        private static void AddQuery(List<string> query, string name, string? value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                query.Add($"{name}={Uri.EscapeDataString(value)}");
+            }
+        }
+
     }
 }

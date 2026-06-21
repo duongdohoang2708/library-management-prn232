@@ -274,6 +274,246 @@ namespace LibraryManagement.DAL.Migrations
                         });
                 });
 
+            modelBuilder.Entity("LibraryManagementDAL.Models.Account", b =>
+                {
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("GoogleId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPasswordSet")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordResetCode")
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
+                    b.Property<DateTime?>("PasswordResetCodeExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("PasswordResetCodeVerifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)");
+
+                    b.Property<string>("RefreshToken")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTime?>("RefreshTokenExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("Accounts", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            UserId = 1,
+                            Address = "Hanoi, Vietnam",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(1995, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "admin@lms.com",
+                            FullName = "System Administrator",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEEFkbWluU2FsdDEyMzQ1Njel4yPDX+DW0RDQGojuqKgDm9LCHqF6JL2jjZxcKy0h1A==",
+                            Phone = "0900000001",
+                            Username = "admin"
+                        },
+                        new
+                        {
+                            UserId = 2,
+                            Address = "Ho Chi Minh City",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(1994, 5, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "librarian1@lms.com",
+                            FullName = "Nguyen Van A",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
+                            Phone = "0900000002",
+                            Username = "librarian1"
+                        },
+                        new
+                        {
+                            UserId = 3,
+                            Address = "Da Nang",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(2000, 3, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "member1@mail.com",
+                            FullName = "Tran Thi B",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
+                            Phone = "0900000003",
+                            Username = "member1"
+                        },
+                        new
+                        {
+                            UserId = 4,
+                            Address = "Hai Phong",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(1999, 8, 22, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "member2@mail.com",
+                            FullName = "Le Van C",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
+                            Phone = "0900000004",
+                            Username = "member2"
+                        },
+                        new
+                        {
+                            UserId = 5,
+                            Address = "Can Tho",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(2001, 6, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "member3@mail.com",
+                            FullName = "Pham Thi D",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
+                            Phone = "0900000005",
+                            Username = "member3"
+                        },
+                        new
+                        {
+                            UserId = 6,
+                            Address = "Quang Ninh",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(1998, 11, 2, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "member4@mail.com",
+                            FullName = "Hoang Van E",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
+                            Phone = "0900000006",
+                            Username = "member4"
+                        },
+                        new
+                        {
+                            UserId = 7,
+                            Address = "Hue",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(2002, 2, 18, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "member5@mail.com",
+                            FullName = "Do Thi F",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
+                            Phone = "0900000007",
+                            Username = "member5"
+                        },
+                        new
+                        {
+                            UserId = 8,
+                            Address = "Binh Duong",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(1997, 9, 30, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "member6@mail.com",
+                            FullName = "Vu Van G",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
+                            Phone = "0900000008",
+                            Username = "member6"
+                        },
+                        new
+                        {
+                            UserId = 9,
+                            Address = "Dong Nai",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(2003, 4, 5, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "member7@mail.com",
+                            FullName = "Dang Thi H",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
+                            Phone = "0900000009",
+                            Username = "member7"
+                        },
+                        new
+                        {
+                            UserId = 10,
+                            Address = "Nam Dinh",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DateOfBirth = new DateTime(1996, 12, 25, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "member8@mail.com",
+                            FullName = "Bui Van I",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPasswordSet = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
+                            Phone = "0900000010",
+                            Username = "member8"
+                        });
+                });
+
             modelBuilder.Entity("LibraryManagementDAL.Models.Author", b =>
                 {
                     b.Property<int>("AuthorId")
@@ -1392,6 +1632,122 @@ namespace LibraryManagement.DAL.Migrations
                         });
                 });
 
+            modelBuilder.Entity("LibraryManagementDAL.Models.Member", b =>
+                {
+                    b.Property<int>("MemberId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MemberId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MemberCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("MemberId");
+
+                    b.HasIndex("MemberCode")
+                        .IsUnique();
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Members");
+
+                    b.HasData(
+                        new
+                        {
+                            MemberId = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            JoinedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            MemberCode = "MEM00001",
+                            UserId = 2
+                        },
+                        new
+                        {
+                            MemberId = 2,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            JoinedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            MemberCode = "MEM00002",
+                            UserId = 3
+                        },
+                        new
+                        {
+                            MemberId = 3,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            JoinedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            MemberCode = "MEM00003",
+                            UserId = 4
+                        },
+                        new
+                        {
+                            MemberId = 4,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            JoinedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            MemberCode = "MEM00004",
+                            UserId = 5
+                        },
+                        new
+                        {
+                            MemberId = 5,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            JoinedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            MemberCode = "MEM00005",
+                            UserId = 6
+                        },
+                        new
+                        {
+                            MemberId = 6,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            JoinedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            MemberCode = "MEM00006",
+                            UserId = 7
+                        },
+                        new
+                        {
+                            MemberId = 7,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            JoinedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            MemberCode = "MEM00007",
+                            UserId = 8
+                        },
+                        new
+                        {
+                            MemberId = 8,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
+                            JoinedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            MemberCode = "MEM00008",
+                            UserId = 10
+                        });
+                });
+
             modelBuilder.Entity("LibraryManagementDAL.Models.Notification", b =>
                 {
                     b.Property<int>("NotificationId")
@@ -1720,12 +2076,7 @@ namespace LibraryManagement.DAL.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
                     b.HasKey("RoleId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Roles");
 
@@ -1802,332 +2153,72 @@ namespace LibraryManagement.DAL.Migrations
                         });
                 });
 
-            modelBuilder.Entity("LibraryManagementDAL.Models.User", b =>
+            modelBuilder.Entity("LibraryManagementDAL.Models.Staff", b =>
                 {
-                    b.Property<int>("UserId")
+                    b.Property<int>("StaffId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
-
-                    b.Property<string>("Address")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StaffId"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("GoogleId")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                    b.Property<DateTime>("HiredAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<bool>("IsPasswordSet")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastLoginAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)");
-
-                    b.Property<string>("RefreshToken")
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.Property<DateTime?>("RefreshTokenExpiry")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("UserId");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.ToTable("Users");
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = 1,
-                            Address = "Hanoi, Vietnam",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(1995, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "admin@lms.com",
-                            FullName = "System Administrator",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEEFkbWluU2FsdDEyMzQ1Njel4yPDX+DW0RDQGojuqKgDm9LCHqF6JL2jjZxcKy0h1A==",
-                            Phone = "0900000001",
-                            Username = "admin"
-                        },
-                        new
-                        {
-                            UserId = 2,
-                            Address = "Ho Chi Minh City",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(1994, 5, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "librarian1@lms.com",
-                            FullName = "Nguyen Van A",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
-                            Phone = "0900000002",
-                            Username = "librarian1"
-                        },
-                        new
-                        {
-                            UserId = 3,
-                            Address = "Da Nang",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(2000, 3, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "member1@mail.com",
-                            FullName = "Tran Thi B",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
-                            Phone = "0900000003",
-                            Username = "member1"
-                        },
-                        new
-                        {
-                            UserId = 4,
-                            Address = "Hai Phong",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(1999, 8, 22, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "member2@mail.com",
-                            FullName = "Le Van C",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
-                            Phone = "0900000004",
-                            Username = "member2"
-                        },
-                        new
-                        {
-                            UserId = 5,
-                            Address = "Can Tho",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(2001, 6, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "member3@mail.com",
-                            FullName = "Pham Thi D",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
-                            Phone = "0900000005",
-                            Username = "member3"
-                        },
-                        new
-                        {
-                            UserId = 6,
-                            Address = "Quang Ninh",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(1998, 11, 2, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "member4@mail.com",
-                            FullName = "Hoang Van E",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
-                            Phone = "0900000006",
-                            Username = "member4"
-                        },
-                        new
-                        {
-                            UserId = 7,
-                            Address = "Hue",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(2002, 2, 18, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "member5@mail.com",
-                            FullName = "Do Thi F",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
-                            Phone = "0900000007",
-                            Username = "member5"
-                        },
-                        new
-                        {
-                            UserId = 8,
-                            Address = "Binh Duong",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(1997, 9, 30, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "member6@mail.com",
-                            FullName = "Vu Van G",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
-                            Phone = "0900000008",
-                            Username = "member6"
-                        },
-                        new
-                        {
-                            UserId = 9,
-                            Address = "Dong Nai",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(2003, 4, 5, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "member7@mail.com",
-                            FullName = "Dang Thi H",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
-                            Phone = "0900000009",
-                            Username = "member7"
-                        },
-                        new
-                        {
-                            UserId = 10,
-                            Address = "Nam Dinh",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DateOfBirth = new DateTime(1996, 12, 25, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "member8@mail.com",
-                            FullName = "Bui Van I",
-                            IsActive = true,
-                            IsDeleted = false,
-                            IsPasswordSet = true,
-                            PasswordHash = "AQAAAAIAAYagAAAAEE1lbWJlclNhbHQxMjM0NTbb4nq3kD8GRaid1Zudm+jWWubakx0Gsks/vCV1LxDpBQ==",
-                            Phone = "0900000010",
-                            Username = "member8"
-                        });
-                });
-
-            modelBuilder.Entity("LibraryManagementDAL.Models.UserRole", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
 
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                    b.Property<string>("StaffCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("UserId", "RoleId");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("StaffId");
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("UserRoles");
+                    b.HasIndex("StaffCode")
+                        .IsUnique();
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Staffs");
 
                     b.HasData(
                         new
                         {
-                            UserId = 1,
+                            StaffId = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            HiredAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
                             RoleId = 1,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
+                            StaffCode = "STF00001",
+                            UserId = 1
                         },
                         new
                         {
-                            UserId = 2,
-                            RoleId = 3,
+                            StaffId = 2,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
-                        },
-                        new
-                        {
-                            UserId = 3,
-                            RoleId = 3,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
-                        },
-                        new
-                        {
-                            UserId = 4,
-                            RoleId = 3,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
-                        },
-                        new
-                        {
-                            UserId = 5,
-                            RoleId = 3,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
-                        },
-                        new
-                        {
-                            UserId = 6,
-                            RoleId = 3,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
-                        },
-                        new
-                        {
-                            UserId = 7,
-                            RoleId = 3,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
-                        },
-                        new
-                        {
-                            UserId = 8,
-                            RoleId = 3,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
-                        },
-                        new
-                        {
-                            UserId = 9,
+                            HiredAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsDeleted = false,
                             RoleId = 2,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
-                        },
-                        new
-                        {
-                            UserId = 10,
-                            RoleId = 3,
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false
+                            StaffCode = "STF00002",
+                            UserId = 9
                         });
                 });
 
@@ -2435,15 +2526,15 @@ namespace LibraryManagement.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LibraryManagementDAL.Models.User", "User")
+                    b.HasOne("LibraryManagementDAL.Models.Account", "Account")
                         .WithMany("BookReviews")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Book");
+                    b.Navigation("Account");
 
-                    b.Navigation("User");
+                    b.Navigation("Book");
                 });
 
             modelBuilder.Entity("LibraryManagementDAL.Models.Book", b =>
@@ -2503,24 +2594,35 @@ namespace LibraryManagement.DAL.Migrations
 
             modelBuilder.Entity("LibraryManagementDAL.Models.BorrowTransaction", b =>
                 {
-                    b.HasOne("LibraryManagementDAL.Models.User", "User")
+                    b.HasOne("LibraryManagementDAL.Models.Account", "Account")
                         .WithMany("BorrowTransactions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("LibraryManagementDAL.Models.Member", b =>
+                {
+                    b.HasOne("LibraryManagementDAL.Models.Account", "Account")
+                        .WithOne("Member")
+                        .HasForeignKey("LibraryManagementDAL.Models.Member", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
                 });
 
             modelBuilder.Entity("LibraryManagementDAL.Models.Notification", b =>
                 {
-                    b.HasOne("LibraryManagementDAL.Models.User", "User")
+                    b.HasOne("LibraryManagementDAL.Models.Account", "Account")
                         .WithMany("Notifications")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Account");
                 });
 
             modelBuilder.Entity("LibraryManagementDAL.Models.Payment", b =>
@@ -2530,15 +2632,15 @@ namespace LibraryManagement.DAL.Migrations
                         .HasForeignKey("BorrowTransactionId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("LibraryManagementDAL.Models.User", "User")
+                    b.HasOne("LibraryManagementDAL.Models.Account", "Account")
                         .WithMany("Payments")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.Navigation("BorrowTransaction");
+                    b.Navigation("Account");
 
-                    b.Navigation("User");
+                    b.Navigation("BorrowTransaction");
                 });
 
             modelBuilder.Entity("LibraryManagementDAL.Models.PaymentDetail", b =>
@@ -2560,30 +2662,23 @@ namespace LibraryManagement.DAL.Migrations
                     b.Navigation("Payment");
                 });
 
-            modelBuilder.Entity("LibraryManagementDAL.Models.Role", b =>
-                {
-                    b.HasOne("LibraryManagementDAL.Models.User", null)
-                        .WithMany("Role")
-                        .HasForeignKey("UserId");
-                });
-
-            modelBuilder.Entity("LibraryManagementDAL.Models.UserRole", b =>
+            modelBuilder.Entity("LibraryManagementDAL.Models.Staff", b =>
                 {
                     b.HasOne("LibraryManagementDAL.Models.Role", "Role")
-                        .WithMany("UserRoles")
+                        .WithMany("Staffs")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("LibraryManagementDAL.Models.User", "User")
-                        .WithMany("UserRoles")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("LibraryManagementDAL.Models.Account", "Account")
+                        .WithOne("Staff")
+                        .HasForeignKey("LibraryManagementDAL.Models.Staff", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Role");
+                    b.Navigation("Account");
 
-                    b.Navigation("User");
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("Reservation", b =>
@@ -2598,23 +2693,40 @@ namespace LibraryManagement.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LibraryManagementDAL.Models.User", "User")
+                    b.HasOne("LibraryManagementDAL.Models.Account", "Account")
                         .WithMany("Reservations")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Account");
+
                     b.Navigation("Book");
 
                     b.Navigation("BookCopy");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AIRequestLog", b =>
                 {
                     b.Navigation("Detail")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("LibraryManagementDAL.Models.Account", b =>
+                {
+                    b.Navigation("BookReviews");
+
+                    b.Navigation("BorrowTransactions");
+
+                    b.Navigation("Member");
+
+                    b.Navigation("Notifications");
+
+                    b.Navigation("Payments");
+
+                    b.Navigation("Reservations");
+
+                    b.Navigation("Staff");
                 });
 
             modelBuilder.Entity("LibraryManagementDAL.Models.Author", b =>
@@ -2659,24 +2771,7 @@ namespace LibraryManagement.DAL.Migrations
 
             modelBuilder.Entity("LibraryManagementDAL.Models.Role", b =>
                 {
-                    b.Navigation("UserRoles");
-                });
-
-            modelBuilder.Entity("LibraryManagementDAL.Models.User", b =>
-                {
-                    b.Navigation("BookReviews");
-
-                    b.Navigation("BorrowTransactions");
-
-                    b.Navigation("Notifications");
-
-                    b.Navigation("Payments");
-
-                    b.Navigation("Reservations");
-
-                    b.Navigation("Role");
-
-                    b.Navigation("UserRoles");
+                    b.Navigation("Staffs");
                 });
 
             modelBuilder.Entity("Publisher", b =>

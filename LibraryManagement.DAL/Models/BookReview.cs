@@ -10,6 +10,8 @@ public class BookReview : BaseEntity
     public string? Comment { get; set; }
 
     // Navigation Properties
-    public User User { get; set; }
+    public Account Account { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public Account User { get => Account; set => Account = value; }
     public Book Book { get; set; }
 }

@@ -9,7 +9,6 @@ namespace LibraryManagementDAL.Models
         [Required, MaxLength(50)]
         public string RoleName { get; set; }
 
-        public ICollection<UserRole> UserRoles { get; set; }
+        public ICollection<Staff> Staffs { get; set; } = new List<Staff>();
     }
 }
-

@@ -87,9 +87,8 @@
                         <div class="relative aspect-[3/4] rounded-xl overflow-hidden mb-4 shadow-xl">
                             <img alt="@book.Title"
                                  class="w-full h-full object-cover"
-                                 src="@(string.IsNullOrEmpty(book.ImageUrl) 
-                                        ? "https://via.placeholder.com/300x400?text=No+Image" 
-                                        : book.ImageUrl)" />
+                                 src="@BookImageHelper.Resolve(book.ImageUrl, book.Title)"
+                                 onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';" />
                         </div>
 
                         <!-- Info -->

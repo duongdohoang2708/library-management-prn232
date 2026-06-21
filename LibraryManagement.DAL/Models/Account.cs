@@ -1,10 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 // Thông tin người dùng hệ thống
 namespace LibraryManagementDAL.Models
 {
-    public class User : BaseEntity
+    [Table("Accounts")]
+    public class Account : BaseEntity
     {
+        [Key]
         public int UserId { get; set; }
 
         // Tên đăng nhập (bắt buộc, tối đa 50 ký tự)
@@ -55,12 +58,19 @@ namespace LibraryManagementDAL.Models
         // Thời điểm hết hạn của Refresh Token
         public DateTime? RefreshTokenExpiry { get; set; }
 
+        [MaxLength(6)]
+        public string? PasswordResetCode { get; set; }
+
+        public DateTime? PasswordResetCodeExpiresAt { get; set; }
+
+        public DateTime? PasswordResetCodeVerifiedAt { get; set; }
+
         // ================= QUAN HỆ NAVIGATIONS =================
-        public ICollection<Role>? Role { get; set; }
+        public Member? Member { get; set; }
+
+        public Staff? Staff { get; set; }
 
         // Danh sách vai trò của người dùng (N-N)
-        public ICollection<UserRole>? UserRoles { get; set; }
-
         // Lịch sử mượn sách
         public ICollection<BorrowTransaction>? BorrowTransactions { get; set; }
 

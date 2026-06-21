@@ -38,8 +38,8 @@ namespace LibraryManagementDAL.Data
             );
 
             // USER
-            modelBuilder.Entity<User>().HasData(
-                new User
+            modelBuilder.Entity<Account>().HasData(
+                new Account
                 {
                     UserId = 1,
                     Username = "admin",
@@ -53,7 +53,7 @@ namespace LibraryManagementDAL.Data
                     LastLoginAt = null,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 2,
                     Username = "librarian1",
@@ -66,7 +66,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 3,
                     Username = "member1",
@@ -79,7 +79,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 4,
                     Username = "member2",
@@ -92,7 +92,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 5,
                     Username = "member3",
@@ -105,7 +105,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 6,
                     Username = "member4",
@@ -118,7 +118,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 7,
                     Username = "member5",
@@ -131,7 +131,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 8,
                     Username = "member6",
@@ -144,7 +144,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 9,
                     Username = "member7",
@@ -157,7 +157,7 @@ namespace LibraryManagementDAL.Data
                     IsActive = true,
                     CreatedAt = now
                 },
-                new User
+                new Account
                 {
                     UserId = 10,
                     Username = "member8",
@@ -172,18 +172,20 @@ namespace LibraryManagementDAL.Data
                 }
             );
 
-            // USER ROLE
-            modelBuilder.Entity<UserRole>().HasData(
-                new UserRole { UserId = 1, RoleId = 1, CreatedAt = now },
-    new UserRole { UserId = 2, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 3, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 4, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 5, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 6, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 7, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 8, RoleId = 3, CreatedAt = now },
-    new UserRole { UserId = 9, RoleId = 2, CreatedAt = now },
-    new UserRole { UserId = 10, RoleId = 3, CreatedAt = now }
+            modelBuilder.Entity<Member>().HasData(
+                new Member { MemberId = 1, UserId = 2, MemberCode = "MEM00001", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 2, UserId = 3, MemberCode = "MEM00002", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 3, UserId = 4, MemberCode = "MEM00003", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 4, UserId = 5, MemberCode = "MEM00004", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 5, UserId = 6, MemberCode = "MEM00005", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 6, UserId = 7, MemberCode = "MEM00006", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 7, UserId = 8, MemberCode = "MEM00007", JoinedAt = now, CreatedAt = now },
+                new Member { MemberId = 8, UserId = 10, MemberCode = "MEM00008", JoinedAt = now, CreatedAt = now }
+            );
+
+            modelBuilder.Entity<Staff>().HasData(
+                new Staff { StaffId = 1, UserId = 1, RoleId = 1, StaffCode = "STF00001", HiredAt = now, CreatedAt = now },
+                new Staff { StaffId = 2, UserId = 9, RoleId = 2, StaffCode = "STF00002", HiredAt = now, CreatedAt = now }
             );
 
             // AUTHOR

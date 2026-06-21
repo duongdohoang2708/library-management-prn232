@@ -13,7 +13,11 @@
     // Check available copies
     var copies = Model.BookCopies ?? new List<BookCopy>();
     var availableCount = copies.Count(c => c.Status == BookCopyStatus.Available);
-    var isOutOffStock = availableCount == 0;
+    var canBorrowNow = Model.IsActive && availableCount > 0;
+    var isOutOffStock = Model.IsActive && availableCount == 0;
+    var successLinkController = TempData["SuccessLinkController"]?.ToString();
+    var successLinkAction = TempData["SuccessLinkAction"]?.ToString();
+    var successLinkText = TempData["SuccessLinkText"]?.ToString();
 
     // Check login status
     var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
@@ -22,6 +26,29 @@
 <div class="p-10">
 
     <div class="max-w-6xl mx-auto">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="mb-8 px-5 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span class="font-bold">@TempData["SuccessMessage"]</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(successLinkController) && !string.IsNullOrWhiteSpace(successLinkAction))
+                {
+                    <a asp-controller="@successLinkController" asp-action="@successLinkAction" class="text-xs font-black uppercase tracking-widest text-primary hover:underline">
+                        @(string.IsNullOrWhiteSpace(successLinkText) ? "View Details" : successLinkText)
+                    </a>
+                }
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="mb-8 px-5 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 flex items-center gap-3">
+                <span class="material-symbols-outlined">error</span>
+                <span class="font-bold">@TempData["ErrorMessage"]</span>
+            </div>
+        }
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
 
@@ -30,9 +57,17 @@
                 <div class="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-slate-900 flex items-center justify-center p-8">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <img class="w-full h-full object-contain drop-shadow-2xl rounded-lg scale-100 group-hover:scale-105 transition-transform duration-700"
-                         src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "https://lh3.googleusercontent.com/aida-public/AB6AXuAvK-cjH676fwE2CtPAaKeNs1CFkHzF117dsgnXA3wuDRqathH8u9Zff-Qy8ru3VTxc66TJe4aBEeR1gzvWg1Vi0r9Szi8ALKxif6kBgMSdEbjI8dr3hs3gyZdL0mk0Rjx-KU1jv3tmiDqnnA2Wf6Ar2eOgjiXiB9d8PVkgDaEhQGE9Vlq6nid3BI-XIbI6gseJsabnRZKqCi2WbVxDK4-OTDqAVWsUAyZTsgLjWVtvnsgd4Z1zymxCNpOoXgUSbL3Y25pTkW1i5Rq1" : Model.ImageUrl)" />
+                         alt="@Model.Title"
+                         src="@BookImageHelper.Resolve(Model.ImageUrl, Model.Title)"
+                         onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';" />
 
-                    @if (isOutOffStock)
+                    @if (!Model.IsActive)
+                    {
+                        <div class="absolute top-6 right-6 px-4 py-2 bg-slate-500/90 backdrop-blur-md text-white text-xs font-black uppercase tracking-widest rounded-full shadow-lg border border-white/20">
+                            Discontinued
+                        </div>
+                    }
+                    else if (isOutOffStock)
                     {
                         <div class="absolute top-6 right-6 px-4 py-2 bg-rose-500/90 backdrop-blur-md text-white text-xs font-black uppercase tracking-widest rounded-full shadow-lg border border-white/20">
                             Out of Stock
@@ -102,7 +137,18 @@
                         </div>
                         <div>
                             <p class="text-[10px] text-white/30 font-black uppercase tracking-widest mb-1">Status</p>
-                            <p class="@(Model.IsActive ? "text-emerald-400" : "text-rose-400") font-bold text-lg">@(Model.IsActive ? "Available" : "Discontinued")</p>
+                            @if (!Model.IsActive)
+                            {
+                                <p class="text-rose-400 font-bold text-lg">Discontinued</p>
+                            }
+                            else if (canBorrowNow)
+                            {
+                                <p class="text-emerald-400 font-bold text-lg">Available</p>
+                            }
+                            else
+                            {
+                                <p class="text-rose-400 font-bold text-lg">Out of Stock</p>
+                            }
                         </div>
                     </div>
 
@@ -141,7 +187,17 @@
                     {
                         @if (isAuthenticated)
                         {
-                            @if (isOutOffStock)
+                            @if (canBorrowNow)
+                            {
+                                <form asp-action="RequestBorrow" asp-controller="UserAction" method="post" class="flex-1">
+                                    <input type="hidden" name="bookId" value="@Model.BookId" />
+                                    <button type="submit" class="w-full px-10 py-5 bg-primary text-background-dark font-black rounded-2xl hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+                                        <span class="material-symbols-outlined">book_5</span>
+                                        <span>Borrow Now</span>
+                                    </button>
+                                </form>
+                            }
+                            else if (Model.IsActive)
                             {
                                 <form asp-action="RequestReserve" asp-controller="UserAction" method="post" class="flex-1">
                                     <input type="hidden" name="bookId" value="@Model.BookId" />
@@ -153,13 +209,12 @@
                             }
                             else
                             {
-                                <form asp-action="RequestBorrow" asp-controller="UserAction" method="post" class="flex-1">
-                                    <input type="hidden" name="bookId" value="@Model.BookId" />
-                                    <button type="submit" class="w-full px-10 py-5 bg-primary text-background-dark font-black rounded-2xl hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
-                                        <span class="material-symbols-outlined">book_5</span>
-                                        <span>Borrow Now</span>
+                                <div class="flex-1">
+                                    <button type="button" disabled class="w-full px-10 py-5 bg-white/5 text-white/30 font-black rounded-2xl border border-white/10 cursor-not-allowed flex items-center justify-center gap-3">
+                                        <span class="material-symbols-outlined">block</span>
+                                        <span>Not Available</span>
                                     </button>
-                                </form>
+                                </div>
                             }
                         }
                         else

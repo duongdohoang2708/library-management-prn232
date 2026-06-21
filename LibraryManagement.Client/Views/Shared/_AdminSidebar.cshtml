@@ -8,24 +8,40 @@
     var primaryRole = userRoles.FirstOrDefault() ?? "Staff";
     var isAdminOrManager = userRoles.Any(r => r == "Admin" || r == "Manager");
     var isLibrarian = userRoles.Any(r => r == "Librarian");
+    var homeAction = isAdminOrManager ? "AdminDashboard" : "Index";
 
     // Active controller helpers
     var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     string nav(string c) => controller == c ? "p-3 bg-primary text-background-dark rounded-xl shadow-lg shadow-primary/20" : "p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all";
+    string navAction(string c, string a) => controller == c && action == a ? "p-3 bg-primary text-background-dark rounded-xl shadow-lg shadow-primary/20" : "p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all";
 }
 
 <aside class="fixed left-0 top-0 h-full w-20 flex flex-col items-center py-8 border-r border-white/10 bg-black/20 backdrop-blur-xl z-50 justify-between">
 
     <!-- Top: Logo -->
     <div>
-        <a asp-controller="Home" asp-action="Index" class="block mb-8 text-primary" title="Admin Dashboard">
+        <a asp-controller="Home" asp-action="@homeAction" class="block mb-8 text-primary" title="Admin Dashboard">
             <span class="material-symbols-outlined text-4xl font-bold">admin_panel_settings</span>
         </a>
 
         <!-- Nav icons -->
         <nav class="flex flex-col gap-3">
-            @if (isLibrarian)
+            @if (isAdminOrManager)
+            {
+                <!-- Dashboard (Admin / Manager) -->
+                <a asp-controller="Home" asp-action="AdminDashboard"
+                   class="@navAction("Home", "AdminDashboard") relative group"
+                   title="System Statistics">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
+                                 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 border border-white/10
+                                 shadow-xl translate-x-1 group-hover:translate-x-0">
+                        System Statistics
+                    </span>
+                </a>
+            }
+            else if (isLibrarian)
             {
                 <!-- Dashboard (Librarian Specific) -->
                 <a asp-controller="Home" asp-action="Index"

@@ -1,10 +1,10 @@
-@using LibraryManagementDAL.Models
+@using LibraryManagementDAL.DTO.Dashboard
 @{
     ViewData["Title"] = "AdminDashboard";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
-    var recentUsers = ViewBag.RecentUsers as List<User> ?? new List<User>();
-    var recentPayments = ViewBag.RecentPayments as List<Payment> ?? new List<Payment>();
+    var recentUsers = ViewBag.RecentUsers as List<DashboardUserItem> ?? new List<DashboardUserItem>();
+    var recentPayments = ViewBag.RecentPayments as List<DashboardPaymentItem> ?? new List<DashboardPaymentItem>();
 
     var monthlyLabels = ViewBag.MonthlyLabels as List<string> ?? new List<string>();
     var monthlyBorrows = ViewBag.MonthlyBorrows as List<int> ?? new List<int>();
@@ -19,6 +19,13 @@
 }
 
 <div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
+
+    @if (ViewBag.DashboardDataError != null)
+    {
+        <div class="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-300">
+            @ViewBag.DashboardDataError
+        </div>
+    }
 
     <div class="mb-10 flex justify-between items-end">
         <div>
@@ -154,7 +161,7 @@
                             </div>
                             <div>
                                 <h4 class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">@p.Amount.ToString("N0") đ</h4>
-                                <p class="text-[10px] text-white/40 font-mono">@p.User?.FullName</p>
+                                <p class="text-[10px] text-white/40 font-mono">@p.UserFullName</p>
                             </div>
                             <div class="ml-auto text-right">
                                 <p class="text-[10px] font-bold text-white/60">@(p.PaidAt?.ToString("MMM dd") ?? p.CreatedAt.ToString("MMM dd"))</p>

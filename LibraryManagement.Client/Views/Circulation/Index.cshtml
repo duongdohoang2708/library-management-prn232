@@ -1,4 +1,4 @@
-@model IEnumerable<LibraryManagementDAL.Models.BorrowTransaction>
+@model IEnumerable<LibraryManagementDAL.DTO.Circulation.CirculationTransactionItem>
 
 @{
     ViewData["Title"] = "Quản lý mượn trả";
@@ -30,6 +30,18 @@
             <div class="flex items-center gap-3 text-emerald-400">
                 <span class="material-symbols-outlined">check_circle</span>
                 <span class="font-medium text-sm">@TempData["SuccessMessage"]</span>
+            </div>
+            <button class="text-white/40 hover:text-white transition-colors" onclick="this.parentElement.remove()">
+                <span class="material-symbols-outlined text-lg">close</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between">
+            <div class="flex items-center gap-3 text-red-400">
+                <span class="material-symbols-outlined">error</span>
+                <span class="font-medium text-sm">@TempData["ErrorMessage"]</span>
             </div>
             <button class="text-white/40 hover:text-white transition-colors" onclick="this.parentElement.remove()">
                 <span class="material-symbols-outlined text-lg">close</span>
@@ -97,7 +109,7 @@
                             <tr class="text-white/80 border-b border-white/5 hover:bg-white/5 transition-colors group">
                                 <td class="p-4 font-medium text-white">#@item.BorrowTransactionId</td>
                                 <td class="p-4">
-                                    <div class="font-semibold text-white group-hover:text-primary transition-colors">@item.User?.FullName</div>
+                                    <div class="font-semibold text-white group-hover:text-primary transition-colors">@item.UserFullName</div>
                                     <div class="text-[11px] text-white/40">ID: @item.UserId</div>
                                 </td>
                                 <td class="p-4 text-white/60">@item.BorrowDate.ToString("dd/MM/yyyy HH:mm")</td>
@@ -142,9 +154,20 @@
                                             <div class="flex items-center gap-2 bg-black/20 p-2 rounded border border-white/5">
                                                 <span class="material-symbols-outlined text-white/30 text-sm">book</span>
                                                 <div class="min-w-0 flex-1">
-                                                    <div class="text-[12px] text-white truncate" title="@detail.BookCopy?.Book?.Title">@detail.BookCopy?.Book?.Title</div>
-                                                    <div class="text-[10px] text-primary font-mono tracking-wider">@detail.BookCopy?.Barcode</div>
+                                                    <div class="text-[12px] text-white truncate" title="@detail.BookTitle">@detail.BookTitle</div>
+                                                    <div class="text-[10px] text-primary font-mono tracking-wider">@detail.Barcode</div>
                                                 </div>
+                                                <form asp-action="Renew" method="post" class="shrink-0">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="borrowDetailId" value="@detail.BorrowDetailId" />
+                                                    <input type="hidden" name="transactionId" value="@item.BorrowTransactionId" />
+                                                    <input type="hidden" name="extraDays" value="7" />
+                                                    <button type="submit"
+                                                            class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-white/5 text-amber-300 border border-white/10 hover:bg-amber-400 hover:text-black hover:border-amber-400 transition-all"
+                                                            title="Renew 7 days">
+                                                        <span class="material-symbols-outlined text-sm">update</span>
+                                                    </button>
+                                                </form>
                                             </div>
                                         }
                                         @if(!activeDetails.Any())

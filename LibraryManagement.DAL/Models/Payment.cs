@@ -33,7 +33,9 @@ namespace LibraryManagementDAL.Models
         public byte[] RowVersion { get; set; }
 
         // ================= QUAN HỆ NAVIGATIONS =================
-        public User User { get; set; }
+        public Account Account { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public Account User { get => Account; set => Account = value; }
         public BorrowTransaction? BorrowTransaction { get; set; }
 
         // Chi tiết các khoản được thanh toán
