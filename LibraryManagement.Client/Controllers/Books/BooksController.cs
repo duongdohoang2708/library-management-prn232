@@ -26,22 +26,37 @@ namespace LibraryManagement.Client.Controllers.Books
             int? publisherId,
             int? publishYear,
             bool? isActive,
+            string? availability,
+            int? minRating,
             string? sort,
             int page = 1)
         {
-            var result = await GetBookListAsync(keyword, category, publisherId, publishYear, isActive, sort, page);
+            var result = await GetBookListAsync(keyword, category, publisherId, publishYear, isActive, availability, minRating, sort, page);
 
             ViewBag.Keyword = keyword;
             ViewBag.Category = category;
             ViewBag.PublisherId = publisherId;
             ViewBag.PublishYear = publishYear;
             ViewBag.IsActive = isActive;
+            ViewBag.Availability = availability;
+            ViewBag.MinRating = minRating;
             ViewBag.Sort = sort;
             ViewBag.Categories = result.Categories;
             ViewBag.Publishers = result.Publishers;
             ViewBag.PublishYears = result.PublishYears;
             ViewBag.TotalPages = result.TotalPages;
-            ViewBag.Request = new { Page = result.Page };
+            ViewBag.Request = new
+            {
+                Page = result.Page,
+                Keyword = keyword,
+                Category = category,
+                PublisherId = publisherId,
+                PublishYear = publishYear,
+                IsActive = isActive,
+                Availability = availability,
+                MinRating = minRating,
+                Sort = sort
+            };
 
             return View(result.Items);
         }
@@ -53,10 +68,12 @@ namespace LibraryManagement.Client.Controllers.Books
             int? publisherId,
             int? publishYear,
             bool? isActive,
+            string? availability,
+            int? minRating,
             string? sort,
             int page = 1)
         {
-            return await AllBooks(keyword, category, publisherId, publishYear, isActive, sort, page);
+            return await AllBooks(keyword, category, publisherId, publishYear, isActive, availability, minRating, sort, page);
         }
 
         [HttpGet]
@@ -191,6 +208,8 @@ namespace LibraryManagement.Client.Controllers.Books
             int? publisherId,
             int? publishYear,
             bool? isActive,
+            string? availability,
+            int? minRating,
             string? sort,
             int page)
         {
@@ -204,6 +223,8 @@ namespace LibraryManagement.Client.Controllers.Books
             AddQuery(query, "publisherId", publisherId?.ToString());
             AddQuery(query, "publishYear", publishYear?.ToString());
             AddQuery(query, "isActive", isActive?.ToString().ToLowerInvariant());
+            AddQuery(query, "availability", availability);
+            AddQuery(query, "minRating", minRating?.ToString());
             AddQuery(query, "sort", sort);
 
             var client = httpClientFactory.CreateClient();

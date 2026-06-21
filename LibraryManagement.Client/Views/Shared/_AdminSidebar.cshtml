@@ -134,6 +134,39 @@
                         Readers &amp; Users
                     </span>
                 </a>
+
+                <a asp-controller="Reports" asp-action="Index"
+                   class="@nav("Reports") relative group"
+                   title="Advanced Reports">
+                    <span class="material-symbols-outlined">summarize</span>
+                    <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
+                                 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 border border-white/10
+                                 shadow-xl translate-x-1 group-hover:translate-x-0">
+                        Advanced Reports
+                    </span>
+                </a>
+
+                <a asp-controller="Audit" asp-action="Index"
+                   class="@nav("Audit") relative group"
+                   title="Audit Logs">
+                    <span class="material-symbols-outlined">manage_search</span>
+                    <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
+                                 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 border border-white/10
+                                 shadow-xl translate-x-1 group-hover:translate-x-0">
+                        Audit Logs
+                    </span>
+                </a>
+
+                <a asp-controller="SystemSettings" asp-action="Index"
+                   class="@nav("SystemSettings") relative group"
+                   title="System Settings">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
+                                 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 border border-white/10
+                                 shadow-xl translate-x-1 group-hover:translate-x-0">
+                        System Settings
+                    </span>
+                </a>
             }
         </nav>
     </div>

@@ -1,0 +1,58 @@
+@model LibraryManagementDAL.DTO.Pagination.PaginationResponseModel<LibraryManagement.Client.DTO.Admin.AuditLogItemDto>
+@{
+    ViewData["Title"] = "Audit Logs";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="flex-1 p-8 overflow-y-auto custom-scrollbar">
+    <div class="mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-black text-white mb-2">Audit Logs</h1>
+            <p class="text-white/50">Trace important actions across books, users, circulation, and reservations.</p>
+        </div>
+        <form method="get" class="flex gap-3">
+            <input name="search" value="@ViewBag.Search" placeholder="Search action, entity, summary..." class="w-80 bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            <button class="px-5 py-3 rounded-xl bg-primary text-background-dark font-black">Search</button>
+        </form>
+    </div>
+
+    <div class="bg-black/20 border border-white/10 rounded-2xl overflow-hidden">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/40 text-[10px] uppercase tracking-widest">
+                <tr>
+                    <th class="p-4">Time</th>
+                    <th class="p-4">Action</th>
+                    <th class="p-4">Entity</th>
+                    <th class="p-4">Summary</th>
+                    <th class="p-4">Actor</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td class="p-4 text-white/60">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="p-4 text-primary font-black">@item.Action</td>
+                        <td class="p-4 text-white">@item.EntityName #@item.EntityId</td>
+                        <td class="p-4 text-white/70">@item.Summary</td>
+                        <td class="p-4 text-white/50">@item.ActorName</td>
+                    </tr>
+                }
+                @if (!Model.Items.Any())
+                {
+                    <tr><td colspan="5" class="p-8 text-center text-white/30">No audit logs found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="mt-6 flex justify-center gap-2">
+            @for (var i = 1; i <= Model.TotalPages; i++)
+            {
+                <a asp-route-page="@i" asp-route-search="@ViewBag.Search" class="px-4 py-2 rounded-lg @(i == Model.CurrentPage ? "bg-primary text-background-dark font-black" : "bg-white/10 text-white")">@i</a>
+            }
+        </div>
+    }
+</div>

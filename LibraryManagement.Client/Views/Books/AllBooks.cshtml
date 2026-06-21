@@ -113,6 +113,27 @@
                         </select>
                     }
 
+                    <select name="availability"
+                            onchange="this.form.querySelector('input[name=\'page\']').value = 1; triggerSearch(this.form)"
+                            class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-[150px]">
+                        <option value="" selected="@(string.IsNullOrEmpty(ViewBag.Availability))">Any Availability</option>
+                        <option value="available" selected="@(ViewBag.Availability == "available")">Available</option>
+                        <option value="unavailable" selected="@(ViewBag.Availability == "unavailable")">Unavailable</option>
+                        <option value="borrowed" selected="@(ViewBag.Availability == "borrowed")">Borrowed</option>
+                        <option value="reserved" selected="@(ViewBag.Availability == "reserved")">Reserved</option>
+                        <option value="lost" selected="@(ViewBag.Availability == "lost")">Lost</option>
+                        <option value="damaged" selected="@(ViewBag.Availability == "damaged")">Damaged</option>
+                    </select>
+
+                    <select name="minRating"
+                            onchange="this.form.querySelector('input[name=\'page\']').value = 1; triggerSearch(this.form)"
+                            class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-[130px]">
+                        <option value="" selected="@(ViewBag.MinRating == null)">Any Rating</option>
+                        <option value="5" selected="@(ViewBag.MinRating == 5)">5 stars</option>
+                        <option value="4" selected="@(ViewBag.MinRating == 4)">4+ stars</option>
+                        <option value="3" selected="@(ViewBag.MinRating == 3)">3+ stars</option>
+                    </select>
+
                     <select name="sort"
                             onchange="triggerSearch(this.form)"
                             class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-[150px]">
@@ -127,6 +148,8 @@
                                         ViewBag.PublisherId != null ||
                                         ViewBag.PublishYear != null ||
                                         ViewBag.IsActive != null ||
+                                        !string.IsNullOrEmpty((string)ViewBag.Availability) ||
+                                        ViewBag.MinRating != null ||
                                         !string.IsNullOrEmpty((string)ViewBag.Sort))
                     {
                         <a asp-action="AllBooks" class="px-4 py-3 bg-white/5 text-white/60 font-medium rounded-xl hover:bg-white/10 transition-colors flex items-center" title="Clear Filters">

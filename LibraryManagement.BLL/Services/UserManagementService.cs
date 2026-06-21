@@ -11,13 +11,16 @@ namespace LibraryManagement.BLL.Services
         private const int PageSize = 10;
         private readonly UserManagementRepository userManagementRepository;
         private readonly PasswordHasher<Account> passwordHasher;
+        private readonly AuditLogService auditLogService;
 
         public UserManagementService(
             UserManagementRepository _userManagementRepository,
-            PasswordHasher<Account> _passwordHasher)
+            PasswordHasher<Account> _passwordHasher,
+            AuditLogService _auditLogService)
         {
             userManagementRepository = _userManagementRepository;
             passwordHasher = _passwordHasher;
+            auditLogService = _auditLogService;
         }
 
         public async Task<PaginatedResult<Account>> GetUsersAsync(string? search, string? roleName, int page)
@@ -176,6 +179,7 @@ namespace LibraryManagement.BLL.Services
             }
 
             await userManagementRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("CreateUser", "Account", account.UserId.ToString(), $"Account \"{account.Email}\" created with role {roleName}.");
 
             return new UserActionResponse
             {
@@ -196,6 +200,7 @@ namespace LibraryManagement.BLL.Services
             account.IsActive = !account.IsActive;
             account.UpdatedAt = DateTime.UtcNow;
             await userManagementRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("ToggleUserStatus", "Account", account.UserId.ToString(), $"Account \"{account.Email}\" changed to {(account.IsActive ? "Active" : "Inactive")}.");
 
             return new UserActionResponse
             {

@@ -9,10 +9,12 @@ namespace LibraryManagement.BLL.Services
     {
         private const int PageSize = 10;
         private readonly BookRepository bookRepository;
+        private readonly AuditLogService auditLogService;
 
-        public BookCatalogService(BookRepository _bookRepository)
+        public BookCatalogService(BookRepository _bookRepository, AuditLogService _auditLogService)
         {
             bookRepository = _bookRepository;
+            auditLogService = _auditLogService;
         }
 
         public async Task<BookListResult> GetBooksAsync(
@@ -21,6 +23,8 @@ namespace LibraryManagement.BLL.Services
             int? publisherId,
             int? publishYear,
             bool? isActive,
+            string? availability,
+            int? minRating,
             string? sort,
             int page)
         {
@@ -54,6 +58,25 @@ namespace LibraryManagement.BLL.Services
             if (isActive.HasValue)
             {
                 query = query.Where(b => b.IsActive == isActive.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(availability))
+            {
+                query = availability.Trim().ToLowerInvariant() switch
+                {
+                    "available" => query.Where(b => b.BookCopies.Any(c => c.Status == BookCopyStatus.Available)),
+                    "borrowed" => query.Where(b => b.BookCopies.Any(c => c.Status == BookCopyStatus.Borrowed)),
+                    "reserved" => query.Where(b => b.BookCopies.Any(c => c.Status == BookCopyStatus.Reserved)),
+                    "lost" => query.Where(b => b.BookCopies.Any(c => c.Status == BookCopyStatus.Lost)),
+                    "damaged" => query.Where(b => b.BookCopies.Any(c => c.Status == BookCopyStatus.Damaged)),
+                    "unavailable" => query.Where(b => !b.BookCopies.Any(c => c.Status == BookCopyStatus.Available)),
+                    _ => query
+                };
+            }
+
+            if (minRating.HasValue)
+            {
+                query = query.Where(b => b.BookReviews.Any() && b.BookReviews.Average(r => r.Rating) >= minRating.Value);
             }
 
             query = sort switch
@@ -143,7 +166,9 @@ namespace LibraryManagement.BLL.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            return await bookRepository.CreateBookAsync(book);
+            var bookId = await bookRepository.CreateBookAsync(book);
+            await auditLogService.LogAsync("CreateBook", "Book", bookId.ToString(), $"Book \"{book.Title}\" created.");
+            return bookId;
         }
 
         public async Task<int?> UpdateAsync(int id, BookUpdateRequest request)
@@ -172,6 +197,7 @@ namespace LibraryManagement.BLL.Services
             book.UpdatedAt = DateTime.UtcNow;
 
             await bookRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("UpdateBook", "Book", book.BookId.ToString(), $"Book \"{book.Title}\" updated.");
             return book.BookId;
         }
 
@@ -186,6 +212,7 @@ namespace LibraryManagement.BLL.Services
             book.IsActive = !book.IsActive;
             book.UpdatedAt = DateTime.UtcNow;
             await bookRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("ToggleBookStatus", "Book", book.BookId.ToString(), $"Book \"{book.Title}\" status changed to {(book.IsActive ? "Active" : "Inactive")}.");
 
             return (book.BookId, book.IsActive);
         }

@@ -1,0 +1,84 @@
+@model LibraryManagementDAL.DTO.Reports.AdvancedReportResult
+@{
+    ViewData["Title"] = "Advanced Reports";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="flex-1 p-8 overflow-y-auto custom-scrollbar">
+    <div class="mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-black text-white mb-2">Advanced Reports</h1>
+            <p class="text-white/50">Most borrowed books, overdue users, and fine revenue.</p>
+        </div>
+        <form method="get" class="flex flex-wrap gap-3">
+            <input type="date" name="from" value="@(ViewBag.From?.ToString("yyyy-MM-dd"))" class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            <input type="date" name="to" value="@(ViewBag.To?.ToString("yyyy-MM-dd"))" class="bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            <button class="px-5 py-3 rounded-xl bg-primary text-background-dark font-black">Apply</button>
+            <a asp-action="Export" asp-route-format="excel" asp-route-from="@ViewBag.From" asp-route-to="@ViewBag.To" class="px-5 py-3 rounded-xl bg-white/10 text-white font-bold border border-white/10">Excel</a>
+            <a asp-action="Export" asp-route-format="pdf" asp-route-from="@ViewBag.From" asp-route-to="@ViewBag.To" class="px-5 py-3 rounded-xl bg-white/10 text-white font-bold border border-white/10">PDF</a>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <section class="bg-black/20 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="p-5 border-b border-white/10 font-black text-white">Most Borrowed Books</div>
+            <table class="w-full text-left text-sm">
+                <thead class="text-white/40 text-[10px] uppercase tracking-widest">
+                    <tr><th class="p-4">Book</th><th class="p-4 text-right">Borrows</th></tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    @foreach (var item in Model.MostBorrowedBooks)
+                    {
+                        <tr>
+                            <td class="p-4">
+                                <div class="font-bold text-white">@item.Title</div>
+                                <div class="text-white/40 text-xs">@item.AuthorName</div>
+                            </td>
+                            <td class="p-4 text-right text-primary font-black">@item.BorrowCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <section class="bg-black/20 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="p-5 border-b border-white/10 font-black text-white">Top Overdue Users</div>
+            <table class="w-full text-left text-sm">
+                <thead class="text-white/40 text-[10px] uppercase tracking-widest">
+                    <tr><th class="p-4">User</th><th class="p-4 text-right">Fine</th></tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    @foreach (var item in Model.TopOverdueUsers)
+                    {
+                        <tr>
+                            <td class="p-4">
+                                <div class="font-bold text-white">@item.FullName</div>
+                                <div class="text-white/40 text-xs">@item.Email</div>
+                                <div class="text-red-300 text-xs">@item.OverdueCount overdue books</div>
+                            </td>
+                            <td class="p-4 text-right text-red-300 font-black">@item.TotalFine.ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <section class="bg-black/20 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="p-5 border-b border-white/10 font-black text-white">Fine Revenue By Month</div>
+            <table class="w-full text-left text-sm">
+                <thead class="text-white/40 text-[10px] uppercase tracking-widest">
+                    <tr><th class="p-4">Month</th><th class="p-4 text-right">Amount</th></tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    @foreach (var item in Model.FineRevenueByMonth)
+                    {
+                        <tr>
+                            <td class="p-4 text-white">@item.Month</td>
+                            <td class="p-4 text-right text-emerald-300 font-black">@item.Amount.ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    </div>
+</div>

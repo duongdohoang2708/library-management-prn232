@@ -8,15 +8,21 @@ namespace LibraryManagement.BLL.Services
 {
     public class ReservationService
     {
-        private const int HoldDays = 3;
-        private const int LoanDays = 14;
         private readonly ReservationRepository reservationRepository;
         private readonly NotificationService notificationService;
+        private readonly SystemSettingService systemSettingService;
+        private readonly AuditLogService auditLogService;
 
-        public ReservationService(ReservationRepository _reservationRepository, NotificationService _notificationService)
+        public ReservationService(
+            ReservationRepository _reservationRepository,
+            NotificationService _notificationService,
+            SystemSettingService _systemSettingService,
+            AuditLogService _auditLogService)
         {
             reservationRepository = _reservationRepository;
             notificationService = _notificationService;
+            systemSettingService = _systemSettingService;
+            auditLogService = _auditLogService;
         }
 
         public async Task<List<ReservationItem>> GetReservationsAsync()
@@ -92,6 +98,7 @@ namespace LibraryManagement.BLL.Services
             }
 
             var now = DateTime.UtcNow;
+            var policy = await systemSettingService.GetPolicyAsync();
             var availableCopy = await reservationRepository.GetFirstAvailableCopyAsync(request.BookId);
             var queuePosition = await reservationRepository.CountPendingReservationsAsync(request.BookId) + 1;
             var reservation = new Reservation
@@ -109,7 +116,7 @@ namespace LibraryManagement.BLL.Services
                 availableCopy.UpdatedAt = now;
                 reservation.BookCopyId = availableCopy.BookCopyId;
                 reservation.Status = ReservationStatus.Allocated;
-                reservation.ExpireAt = now.AddDays(HoldDays);
+                reservation.ExpireAt = now.AddDays(policy.ReservationHoldDays);
             }
 
             reservationRepository.AddReservation(reservation);
@@ -119,6 +126,7 @@ namespace LibraryManagement.BLL.Services
             {
                 await NotifyReservationAllocatedAsync(reservation);
             }
+            await auditLogService.LogAsync("CreateReservation", "Reservation", reservation.ReservationId.ToString(), $"Reservation created for user #{request.UserId} and book #{request.BookId}.");
 
             return new ReservationActionResponse
             {
@@ -152,7 +160,8 @@ namespace LibraryManagement.BLL.Services
             }
 
             var now = DateTime.UtcNow;
-            var dueDate = now.Date.AddDays(LoanDays);
+            var policy = await systemSettingService.GetPolicyAsync();
+            var dueDate = now.Date.AddDays(policy.DefaultLoanDays);
 
             reservation.Status = ReservationStatus.Completed;
             reservation.UpdatedAt = now;
@@ -183,6 +192,7 @@ namespace LibraryManagement.BLL.Services
 
             reservationRepository.AddTransaction(transaction);
             await reservationRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("ApproveReservation", "Reservation", reservation.ReservationId.ToString(), $"Reservation #{reservation.ReservationId} approved and transaction #{transaction.BorrowTransactionId} created.");
 
             return new ReservationActionResponse
             {
@@ -226,6 +236,7 @@ namespace LibraryManagement.BLL.Services
             await reservationRepository.SaveChangesAsync();
             await AllocatePendingReservationsAsync(bookId, now);
             await reservationRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("CancelReservation", "Reservation", reservation.ReservationId.ToString(), $"Reservation #{reservation.ReservationId} cancelled.");
 
             return new ReservationActionResponse
             {
@@ -294,6 +305,7 @@ namespace LibraryManagement.BLL.Services
 
         private async Task AllocatePendingReservationsAsync(int bookId, DateTime now)
         {
+            var policy = await systemSettingService.GetPolicyAsync();
             var pendingReservations = await reservationRepository.GetPendingReservationsForBookAsync(bookId);
 
             foreach (var reservation in pendingReservations)
@@ -308,7 +320,7 @@ namespace LibraryManagement.BLL.Services
                 availableCopy.UpdatedAt = now;
                 reservation.BookCopyId = availableCopy.BookCopyId;
                 reservation.Status = ReservationStatus.Allocated;
-                reservation.ExpireAt = now.AddDays(HoldDays);
+                reservation.ExpireAt = now.AddDays(policy.ReservationHoldDays);
                 reservation.UpdatedAt = now;
                 await NotifyReservationAllocatedAsync(reservation);
             }

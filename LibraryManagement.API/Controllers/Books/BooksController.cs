@@ -22,10 +22,12 @@ namespace LibraryManagement.API.Controllers.Books
             int? publisherId,
             int? publishYear,
             bool? isActive,
+            string? availability,
+            int? minRating,
             string? sort,
             int page = 1)
         {
-            return Ok(await bookCatalogService.GetBooksAsync(keyword, category, publisherId, publishYear, isActive, sort, page));
+            return Ok(await bookCatalogService.GetBooksAsync(keyword, category, publisherId, publishYear, isActive, availability, minRating, sort, page));
         }
 
         [HttpGet("{id:int}")]
