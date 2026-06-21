@@ -13,6 +13,7 @@
     var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     string nav(string c) => controller == c ? "p-3 bg-primary text-background-dark rounded-xl shadow-lg shadow-primary/20" : "p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all";
+    string navAction(string c, string a) => controller == c && action == a ? "p-3 bg-primary text-background-dark rounded-xl shadow-lg shadow-primary/20" : "p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all";
 }
 
 <aside class="fixed left-0 top-0 h-full w-20 flex flex-col items-center py-8 border-r border-white/10 bg-black/20 backdrop-blur-xl z-50 justify-between">
@@ -53,7 +54,7 @@
             {
                 <div class="w-full h-px bg-white/10 my-1"></div>
                 <a asp-controller="User" asp-action="MemberDashboard"
-                   class="@nav("User") relative group"
+                   class="@navAction("User", "MemberDashboard") relative group"
                    title="My Dashboard">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
@@ -64,7 +65,7 @@
                 </a>
                 <!-- My Borrow History -->
                 <a asp-controller="User" asp-action="BorrowHistory"
-                   class="p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all relative group"
+                   class="@navAction("User", "BorrowHistory") relative group"
                    title="Borrowed Books">
                     <span class="material-symbols-outlined">history</span>
                     <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
@@ -75,7 +76,7 @@
                 </a>
 
                 <a asp-controller="Reservation" asp-action="MyReservations"
-                   class="p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all relative group"
+                   class="@nav("Reservation") relative group"
                    title="My Reservations">
                     <span class="material-symbols-outlined">event_note</span>
                     <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
@@ -87,7 +88,7 @@
 
                 <!-- My Fines -->
                 <a asp-controller="Payment" asp-action="MyFines"
-                   class="p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all relative group"
+                   class="@nav("Payment") relative group"
                    title="Fines & Fees">
                     <span class="material-symbols-outlined">payments</span>
                     <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
@@ -99,7 +100,7 @@
 
                 <!-- Notifications -->
                 <a asp-controller="Notification" asp-action="Index"
-                   class="p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all relative group" title="Notifications">
+                   class="@nav("Notification") relative group" title="Notifications">
                     <span class="material-symbols-outlined">notifications</span>
                     <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
                      whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 border border-white/10

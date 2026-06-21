@@ -65,6 +65,9 @@ builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<SystemSettingService>();
 builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<DueReminderService>();
+builder.Services.AddScoped<PaymentService>();
+builder.Services.AddScoped<IVnPayService, VnPayService>();
+builder.Services.AddHttpClient<IAIService, AIService>();
 builder.Services.AddScoped<PasswordHasher<Account>>();
 builder.Services.AddQuartz(options =>
 {
@@ -115,6 +118,59 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Seed more sample fines if database has few of them
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try
+    {
+        var unpaidFinesCount = await db.BorrowDetails.CountAsync(bd => bd.FineAmount > (bd.FinePaidAmount ?? 0));
+        if (unpaidFinesCount < 4)
+        {
+            var targetUserIds = new[] { 4, 5, 6 };
+            foreach (var uId in targetUserIds)
+            {
+                var userExists = await db.Accounts.AnyAsync(a => a.UserId == uId);
+                if (userExists)
+                {
+                    var hasUnpaid = await db.BorrowDetails.AnyAsync(bd => bd.BorrowTransaction.UserId == uId && bd.FineAmount > (bd.FinePaidAmount ?? 0));
+                    if (!hasUnpaid)
+                    {
+                        var trans = new BorrowTransaction
+                        {
+                            UserId = uId,
+                            BorrowDate = DateTime.UtcNow.AddDays(-12),
+                            DueDate = DateTime.UtcNow.AddDays(-2),
+                            Status = "Overdue",
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        db.BorrowTransactions.Add(trans);
+                        await db.SaveChangesAsync();
+
+                        var detail = new BorrowDetail
+                        {
+                            BorrowTransactionId = trans.BorrowTransactionId,
+                            BookCopyId = null,
+                            BorrowDate = DateTime.UtcNow.AddDays(-12),
+                            DueDate = DateTime.UtcNow.AddDays(-2),
+                            FineAmount = 20000 + (uId * 5000), // 40,000, 45,000, 50,000 VND
+                            FinePaidAmount = 0,
+                            IsFinePaid = false,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        db.BorrowDetails.Add(detail);
+                    }
+                }
+            }
+            await db.SaveChangesAsync();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error seeding sample fines: {ex.Message}");
+    }
+}
 
 app.MapControllers();
 

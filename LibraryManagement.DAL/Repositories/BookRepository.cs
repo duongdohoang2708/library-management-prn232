@@ -146,5 +146,33 @@ namespace LibraryManagement.DAL.Repositories
         {
             await db.SaveChangesAsync();
         }
+
+        public async Task<BookAISummary?> GetBookSummaryAsync(int bookId)
+        {
+            return await db.BookAISummary.FirstOrDefaultAsync(s => s.BookId == bookId);
+        }
+
+        public async Task SaveBookSummaryAsync(BookAISummary summary)
+        {
+            var existing = await db.BookAISummary.FirstOrDefaultAsync(s => s.BookId == summary.BookId);
+            if (existing != null)
+            {
+                existing.SummaryText = summary.SummaryText;
+                existing.ModelName = summary.ModelName;
+                existing.TokensUsed = summary.TokensUsed;
+                db.BookAISummary.Update(existing);
+            }
+            else
+            {
+                db.BookAISummary.Add(summary);
+            }
+            await db.SaveChangesAsync();
+        }
+
+        public async Task LogAIRequestAsync(AIRequestLog log)
+        {
+            db.AIRequestLogs.Add(log);
+            await db.SaveChangesAsync();
+        }
     }
 }

@@ -121,7 +121,7 @@
             {
                 <!-- Notifications -->
                 <a asp-controller="Notification" asp-action="Index"
-                   class="p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all relative group" title="Notifications">
+                   class="@nav("Notification") relative group" title="Notifications">
                     <span class="material-symbols-outlined">notifications</span>
                     <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
                              whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 border border-white/10
@@ -135,7 +135,7 @@
             {
                 <!-- Users Management -->
                 <a asp-controller="User" asp-action="AllUsers"
-                   class="p-3 text-white/60 hover:text-primary hover:bg-white/5 rounded-xl transition-all relative group"
+                   class="@navAction("User", "AllUsers") relative group"
                    title="Readers & Users">
                     <span class="material-symbols-outlined">group</span>
                     <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium

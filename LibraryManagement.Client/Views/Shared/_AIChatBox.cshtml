@@ -1,4 +1,4 @@
-﻿<!-- Toggle Button -->
+<!-- Toggle Button -->
 <button id="ai-chat-toggle"
         type="button"
         class="fixed bottom-6 right-6 z-[9999] h-14 w-14 rounded-2xl border border-yellow-400/30 bg-[#e7d80f] text-slate-900 shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition hover:scale-105 hover:shadow-[0_16px_36px_rgba(231,216,15,0.25)] flex items-center justify-center">
@@ -7,7 +7,7 @@
 
 <!-- Chat Box -->
 <div id="ai-chat-box"
-     class="fixed bottom-24 right-6 z-[9999] hidden h-[560px] w-[380px] overflow-hidden rounded-[28px] border border-white/10 bg-[#0f172acc] backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+     class="fixed bottom-24 right-6 z-[9999] hidden h-[560px] w-[380px] overflow-hidden rounded-[28px] border border-white/10 bg-[#0f172acc] backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition-all duration-300">
 
     <div class="flex h-full flex-col">
         <!-- Header -->
@@ -22,11 +22,20 @@
                 </div>
             </div>
 
-            <button id="ai-chat-close"
-                    type="button"
-                    class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white">
-                <span class="material-symbols-outlined">close</span>
-            </button>
+            <div class="flex items-center gap-1">
+                <button id="ai-chat-expand"
+                        type="button"
+                        class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        title="Phóng to">
+                    <span class="material-symbols-outlined">open_in_full</span>
+                </button>
+                <button id="ai-chat-close"
+                        type="button"
+                        class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        title="Đóng">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
         </div>
 
         <!-- Messages -->
