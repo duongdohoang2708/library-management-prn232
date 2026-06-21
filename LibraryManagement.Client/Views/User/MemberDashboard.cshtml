@@ -1,0 +1,100 @@
+@model LibraryManagement.Client.DTO.User.MemberDashboardViewModel
+@using LibraryManagementDAL.Models
+@{
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="px-8 py-12 max-w-7xl mx-auto">
+    <div class="mb-10">
+        <h1 class="text-4xl font-black text-white">My Library Dashboard</h1>
+        <p class="text-white/50 mt-2">Your current loans, reservations, fines, and latest notifications.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <p class="text-white/40 text-xs uppercase font-black tracking-widest">Borrowed</p>
+            <p class="text-3xl text-white font-black mt-2">@Model.CurrentlyBorrowedCount</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <p class="text-white/40 text-xs uppercase font-black tracking-widest">Overdue</p>
+            <p class="text-3xl text-red-300 font-black mt-2">@Model.OverdueCount</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <p class="text-white/40 text-xs uppercase font-black tracking-widest">Fines</p>
+            <p class="text-3xl text-yellow-300 font-black mt-2">@Model.UnpaidFineAmount.ToString("N0")</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <p class="text-white/40 text-xs uppercase font-black tracking-widest">Reservations</p>
+            <p class="text-3xl text-primary font-black mt-2">@Model.ActiveReservationCount</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <section class="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-black text-white">Recent Borrowing</h2>
+                <a asp-action="BorrowHistory" class="text-primary text-sm font-bold">View all</a>
+            </div>
+            <div class="space-y-3">
+                @foreach (var transaction in Model.BorrowTransactions)
+                {
+                    <div class="rounded-xl bg-background-dark/70 border border-white/10 p-4">
+                        <div class="flex justify-between gap-3">
+                            <p class="text-white font-bold">#@transaction.BorrowTransactionId</p>
+                            <span class="text-xs font-black text-primary">@transaction.Status</span>
+                        </div>
+                        <p class="text-white/50 text-sm mt-1">Due @transaction.DueDate.ToString("dd/MM/yyyy")</p>
+                        <p class="text-white/60 text-sm mt-2">@transaction.BorrowDetails.Count book(s)</p>
+                    </div>
+                }
+                @if (!Model.BorrowTransactions.Any())
+                {
+                    <p class="text-white/50">No borrow history yet.</p>
+                }
+            </div>
+        </section>
+
+        <section class="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-black text-white">Reservations</h2>
+                <a asp-controller="Reservation" asp-action="MyReservations" class="text-primary text-sm font-bold">View all</a>
+            </div>
+            <div class="space-y-3">
+                @foreach (var reservation in Model.Reservations)
+                {
+                    <div class="rounded-xl bg-background-dark/70 border border-white/10 p-4">
+                        <p class="text-white font-bold">@reservation.BookTitle</p>
+                        <div class="flex justify-between gap-3 mt-2">
+                            <span class="text-white/50 text-sm">@reservation.ReservedAt.ToString("dd/MM/yyyy")</span>
+                            <span class="text-xs font-black text-primary">@reservation.Status</span>
+                        </div>
+                    </div>
+                }
+                @if (!Model.Reservations.Any())
+                {
+                    <p class="text-white/50">No reservations yet.</p>
+                }
+            </div>
+        </section>
+
+        <section class="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-black text-white">Notifications</h2>
+                <a asp-controller="Notification" asp-action="Index" class="text-primary text-sm font-bold">View all</a>
+            </div>
+            <div class="space-y-3">
+                @foreach (var notification in Model.Notifications)
+                {
+                    <div class="rounded-xl bg-background-dark/70 border border-white/10 p-4">
+                        <p class="text-white font-bold">@notification.Title</p>
+                        <p class="text-white/50 text-sm mt-1">@notification.Message</p>
+                    </div>
+                }
+                @if (!Model.Notifications.Any())
+                {
+                    <p class="text-white/50">No notifications yet.</p>
+                }
+            </div>
+        </section>
+    </div>
+</div>

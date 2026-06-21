@@ -32,6 +32,9 @@ namespace LibraryManagement.DAL.Data
         public DbSet<PaymentDetail> PaymentDetails => Set<PaymentDetail>();
         public DbSet<BookReview> BookReviews => Set<BookReview>();
         public DbSet<BookAISummary> BookAISummary { get; set; }
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+        public DbSet<ReminderLog> ReminderLogs => Set<ReminderLog>();
 
         public DbSet<AIRequestLog> AIRequestLogs => Set<AIRequestLog>();
         public DbSet<AIRequestLogDetail> AIRequestLogDetails => Set<AIRequestLogDetail>();
@@ -62,6 +65,14 @@ namespace LibraryManagement.DAL.Data
                 .HasForeignKey<BookAISummary>(x => x.BookId);
             modelBuilder.Entity<BookAISummary>()
                 .HasIndex(x => x.BookId)
+                .IsUnique();
+
+            modelBuilder.Entity<SystemSetting>()
+                .HasIndex(x => x.Key)
+                .IsUnique();
+
+            modelBuilder.Entity<ReminderLog>()
+                .HasIndex(x => new { x.BorrowDetailId, x.ReminderType, x.ReminderDate })
                 .IsUnique();
         }
 
@@ -201,6 +212,12 @@ namespace LibraryManagement.DAL.Data
                 .WithMany()
                 .HasForeignKey(x => x.BorrowDetailId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ReminderLog>()
+                .HasOne(x => x.BorrowDetail)
+                .WithMany()
+                .HasForeignKey(x => x.BorrowDetailId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // AI LOG 1-1
             modelBuilder.Entity<AIRequestLog>()

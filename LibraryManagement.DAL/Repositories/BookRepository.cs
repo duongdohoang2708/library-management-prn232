@@ -91,6 +91,50 @@ namespace LibraryManagement.DAL.Repositories
             return author;
         }
 
+        public async Task<Author?> GetAuthorByNameAsync(string authorName)
+        {
+            var normalized = authorName.Trim().ToLower();
+            return await db.Authors.FirstOrDefaultAsync(a => a.Name.ToLower() == normalized);
+        }
+
+        public async Task<Category?> GetCategoryByNameAsync(string categoryName)
+        {
+            var normalized = categoryName.Trim().ToLower();
+            return await db.Categories.FirstOrDefaultAsync(c => c.CategoryName.ToLower() == normalized);
+        }
+
+        public async Task<Publisher?> GetPublisherByNameAsync(string publisherName)
+        {
+            var normalized = publisherName.Trim().ToLower();
+            return await db.Publishers.FirstOrDefaultAsync(p => p.PublisherName.ToLower() == normalized);
+        }
+
+        public async Task<bool> IsbnExistsAsync(string isbn)
+        {
+            var normalized = isbn.Trim().ToLower();
+            return await db.Books.AnyAsync(b => b.ISBN.ToLower() == normalized);
+        }
+
+        public void AddAuthor(Author author)
+        {
+            db.Authors.Add(author);
+        }
+
+        public void AddCategory(Category category)
+        {
+            db.Categories.Add(category);
+        }
+
+        public void AddPublisher(Publisher publisher)
+        {
+            db.Publishers.Add(publisher);
+        }
+
+        public void AddBook(Book book)
+        {
+            db.Books.Add(book);
+        }
+
         public async Task<int> CreateBookAsync(Book book)
         {
             db.Books.Add(book);

@@ -22,10 +22,12 @@ namespace LibraryManagement.API.Controllers.Books
             int? publisherId,
             int? publishYear,
             bool? isActive,
+            string? availability,
+            int? minRating,
             string? sort,
             int page = 1)
         {
-            return Ok(await bookCatalogService.GetBooksAsync(keyword, category, publisherId, publishYear, isActive, sort, page));
+            return Ok(await bookCatalogService.GetBooksAsync(keyword, category, publisherId, publishYear, isActive, availability, minRating, sort, page));
         }
 
         [HttpGet("{id:int}")]
@@ -80,6 +82,24 @@ namespace LibraryManagement.API.Controllers.Books
             }
 
             return Ok(new { bookId = result.Value.BookId, isActive = result.Value.IsActive });
+        }
+
+        [HttpPost("import")]
+        public async Task<IActionResult> Import(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { importedCount = 0, skippedCount = 0, errors = new[] { "Please choose an Excel file." } });
+            }
+
+            if (!Path.GetExtension(file.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { importedCount = 0, skippedCount = 0, errors = new[] { "Only .xlsx files are supported." } });
+            }
+
+            await using var stream = file.OpenReadStream();
+            var result = await bookCatalogService.ImportAsync(stream);
+            return Ok(result);
         }
     }
 }

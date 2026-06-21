@@ -514,6 +514,58 @@ namespace LibraryManagement.DAL.Migrations
                         });
                 });
 
+            modelBuilder.Entity("LibraryManagementDAL.Models.AuditLog", b =>
+                {
+                    b.Property<int>("AuditLogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AuditLogId"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int?>("ActorUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("EntityName")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("AuditLogId");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("LibraryManagementDAL.Models.Author", b =>
                 {
                     b.Property<int>("AuthorId")
@@ -2051,6 +2103,45 @@ namespace LibraryManagement.DAL.Migrations
                     b.ToTable("PaymentDetails");
                 });
 
+            modelBuilder.Entity("LibraryManagementDAL.Models.ReminderLog", b =>
+                {
+                    b.Property<int>("ReminderLogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReminderLogId"));
+
+                    b.Property<int>("BorrowDetailId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("ReminderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReminderType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ReminderLogId");
+
+                    b.HasIndex("BorrowDetailId", "ReminderType", "ReminderDate")
+                        .IsUnique();
+
+                    b.ToTable("ReminderLogs");
+                });
+
             modelBuilder.Entity("LibraryManagementDAL.Models.Role", b =>
                 {
                     b.Property<int>("RoleId")
@@ -2220,6 +2311,48 @@ namespace LibraryManagement.DAL.Migrations
                             StaffCode = "STF00002",
                             UserId = 9
                         });
+                });
+
+            modelBuilder.Entity("LibraryManagementDAL.Models.SystemSetting", b =>
+                {
+                    b.Property<int>("SystemSettingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SystemSettingId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("SystemSettingId");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("SystemSettings");
                 });
 
             modelBuilder.Entity("Publisher", b =>
@@ -2660,6 +2793,17 @@ namespace LibraryManagement.DAL.Migrations
                     b.Navigation("BorrowDetail");
 
                     b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("LibraryManagementDAL.Models.ReminderLog", b =>
+                {
+                    b.HasOne("LibraryManagementDAL.Models.BorrowDetail", "BorrowDetail")
+                        .WithMany()
+                        .HasForeignKey("BorrowDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BorrowDetail");
                 });
 
             modelBuilder.Entity("LibraryManagementDAL.Models.Staff", b =>

@@ -1,0 +1,67 @@
+@model LibraryManagement.Client.DTO.Admin.LibraryPolicySettingsDto
+@{
+    ViewData["Title"] = "System Settings";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="flex-1 p-8 overflow-y-auto custom-scrollbar">
+    <div class="mb-8">
+        <h1 class="text-4xl font-black text-white mb-2">System Settings</h1>
+        <p class="text-white/50">Manage borrowing policy, fine rules, reservation holds, and reminders.</p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-5 py-4 font-bold">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 px-5 py-4 font-bold">@TempData["ErrorMessage"]</div>
+    }
+
+    <form method="post" class="bg-black/20 border border-white/10 rounded-2xl p-6 max-w-5xl">
+        @Html.AntiForgeryToken()
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <label class="block">
+                <span class="text-white/50 text-xs font-bold uppercase">Loan Days</span>
+                <input asp-for="DefaultLoanDays" type="number" min="1" class="mt-2 w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            </label>
+            <label class="block">
+                <span class="text-white/50 text-xs font-bold uppercase">Renew Days</span>
+                <input asp-for="RenewDays" type="number" min="1" class="mt-2 w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            </label>
+            <label class="block">
+                <span class="text-white/50 text-xs font-bold uppercase">Reservation Hold Days</span>
+                <input asp-for="ReservationHoldDays" type="number" min="1" class="mt-2 w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            </label>
+            <label class="block">
+                <span class="text-white/50 text-xs font-bold uppercase">Max Borrowed Books</span>
+                <input asp-for="MaxOpenBorrowedBooks" type="number" min="1" class="mt-2 w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            </label>
+            <label class="block">
+                <span class="text-white/50 text-xs font-bold uppercase">Due Soon Days</span>
+                <input asp-for="DueSoonReminderDays" type="number" min="0" class="mt-2 w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            </label>
+            <label class="block">
+                <span class="text-white/50 text-xs font-bold uppercase">Overdue Fine/Day</span>
+                <input asp-for="OverdueFinePerDay" type="number" min="0" class="mt-2 w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            </label>
+            <label class="block">
+                <span class="text-white/50 text-xs font-bold uppercase">Damaged Fine</span>
+                <input asp-for="DamagedFine" type="number" min="0" class="mt-2 w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            </label>
+            <label class="block">
+                <span class="text-white/50 text-xs font-bold uppercase">Lost Fine</span>
+                <input asp-for="LostFine" type="number" min="0" class="mt-2 w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3" />
+            </label>
+        </div>
+        <div class="mt-8 flex flex-wrap gap-3">
+            <button class="px-6 py-3 rounded-xl bg-primary text-background-dark font-black">Save Settings</button>
+        </div>
+    </form>
+
+    <form asp-action="RunDueReminders" method="post" class="mt-6">
+        @Html.AntiForgeryToken()
+        <button class="px-6 py-3 rounded-xl bg-white/10 border border-white/10 text-white font-bold">Run Due Reminder Job Now</button>
+    </form>
+</div>

@@ -8,16 +8,21 @@ namespace LibraryManagement.BLL.Services
     public class CirculationService
     {
         private const int PageSize = 10;
-        private const decimal OverdueFinePerDay = 5000m;
-        private const int DefaultLoanDays = 14;
-        private const int MaxOpenBorrowedBooks = 5;
         private readonly CirculationRepository circulationRepository;
         private readonly ReservationService reservationService;
+        private readonly SystemSettingService systemSettingService;
+        private readonly AuditLogService auditLogService;
 
-        public CirculationService(CirculationRepository _circulationRepository, ReservationService _reservationService)
+        public CirculationService(
+            CirculationRepository _circulationRepository,
+            ReservationService _reservationService,
+            SystemSettingService _systemSettingService,
+            AuditLogService _auditLogService)
         {
             circulationRepository = _circulationRepository;
             reservationService = _reservationService;
+            systemSettingService = _systemSettingService;
+            auditLogService = _auditLogService;
         }
 
         public async Task<CirculationListResult> GetTransactionsAsync(
@@ -144,8 +149,9 @@ namespace LibraryManagement.BLL.Services
                 return Fail($"Book copy {unavailableCopy.Barcode} is not available.");
             }
 
+            var policy = await systemSettingService.GetPolicyAsync();
             var now = DateTime.UtcNow;
-            var dueDate = now.Date.AddDays(request.LoanDays <= 0 ? 14 : request.LoanDays);
+            var dueDate = now.Date.AddDays(request.LoanDays <= 0 ? policy.DefaultLoanDays : request.LoanDays);
 
             var transaction = new BorrowTransaction
             {
@@ -174,6 +180,7 @@ namespace LibraryManagement.BLL.Services
 
             circulationRepository.AddTransaction(transaction);
             await circulationRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("BorrowBooks", "BorrowTransaction", transaction.BorrowTransactionId.ToString(), $"Borrow transaction created for user #{user.UserId} with {copies.Count} copies.");
 
             return new CirculationActionResponse
             {
@@ -196,10 +203,11 @@ namespace LibraryManagement.BLL.Services
                 return Fail("Only member accounts can use Borrow Now.");
             }
 
+            var policy = await systemSettingService.GetPolicyAsync();
             var openBorrowedBooks = await circulationRepository.CountOpenBorrowedBooksAsync(user.UserId);
-            if (openBorrowedBooks >= MaxOpenBorrowedBooks)
+            if (openBorrowedBooks >= policy.MaxOpenBorrowedBooks)
             {
-                return Fail("You can borrow at most 5 books at the same time.");
+                return Fail($"You can borrow at most {policy.MaxOpenBorrowedBooks} books at the same time.");
             }
 
             var copy = await circulationRepository.GetFirstAvailableCopyByBookIdAsync(request.BookId);
@@ -209,7 +217,7 @@ namespace LibraryManagement.BLL.Services
             }
 
             var now = DateTime.UtcNow;
-            var dueDate = now.Date.AddDays(request.LoanDays <= 0 ? DefaultLoanDays : request.LoanDays);
+            var dueDate = now.Date.AddDays(request.LoanDays <= 0 ? policy.DefaultLoanDays : request.LoanDays);
 
             copy.Status = BookCopyStatus.Borrowed;
             copy.UpdatedAt = now;
@@ -238,6 +246,7 @@ namespace LibraryManagement.BLL.Services
 
             circulationRepository.AddTransaction(transaction);
             await circulationRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("MemberBorrowNow", "BorrowTransaction", transaction.BorrowTransactionId.ToString(), $"Member #{user.UserId} borrowed book #{request.BookId}.");
 
             return Ok("Book borrowed successfully. Check your Borrowed Books list.", transaction.BorrowTransactionId);
         }
@@ -279,6 +288,7 @@ namespace LibraryManagement.BLL.Services
                 return Fail("Please select at least one book to return.");
             }
 
+            var policy = await systemSettingService.GetPolicyAsync();
             var now = DateTime.UtcNow;
             var selectedDetails = transaction.BorrowDetails
                 .Where(x => selectedIds.Contains(x.BorrowDetailId))
@@ -306,7 +316,7 @@ namespace LibraryManagement.BLL.Services
                 detail.UpdatedAt = now;
 
                 var lateDays = Math.Max(0, (now.Date - detail.DueDate.Date).Days);
-                var overdueFine = lateDays * OverdueFinePerDay;
+                var overdueFine = lateDays * policy.OverdueFinePerDay;
                 detail.FineAmount = Math.Max(detail.FineAmount ?? 0, overdueFine);
                 detail.IsFinePaid = detail.FineAmount.GetValueOrDefault() == 0;
 
@@ -320,6 +330,7 @@ namespace LibraryManagement.BLL.Services
             UpdateTransactionStatus(transaction, now);
             await circulationRepository.SaveChangesAsync();
             await reservationService.AllocatePendingReservationsForBooksAsync(returnedBookIds);
+            await auditLogService.LogAsync("ReturnBooks", "BorrowTransaction", transaction.BorrowTransactionId.ToString(), $"{selectedDetails.Count} books returned for transaction #{transaction.BorrowTransactionId}.");
 
             return Ok("Books returned successfully.", transaction.BorrowTransactionId);
         }
@@ -337,9 +348,10 @@ namespace LibraryManagement.BLL.Services
                 return Fail("Returned books cannot be renewed.");
             }
 
+            var policy = await systemSettingService.GetPolicyAsync();
             var now = DateTime.UtcNow;
             var baseDate = detail.DueDate.Date < now.Date ? now.Date : detail.DueDate.Date;
-            detail.DueDate = baseDate.AddDays(request.ExtraDays <= 0 ? 7 : request.ExtraDays);
+            detail.DueDate = baseDate.AddDays(request.ExtraDays <= 0 ? policy.RenewDays : request.ExtraDays);
             detail.UpdatedAt = now;
 
             var transaction = detail.BorrowTransaction;
@@ -352,6 +364,7 @@ namespace LibraryManagement.BLL.Services
             transaction.UpdatedAt = now;
 
             await circulationRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("RenewBook", "BorrowDetail", detail.BorrowDetailId.ToString(), $"Borrow detail #{detail.BorrowDetailId} renewed until {detail.DueDate:yyyy-MM-dd}.");
             return Ok("Book renewed successfully.", transaction.BorrowTransactionId);
         }
 
@@ -373,9 +386,11 @@ namespace LibraryManagement.BLL.Services
                 return Fail("This book was already returned.");
             }
 
+            var policy = await systemSettingService.GetPolicyAsync();
             var now = DateTime.UtcNow;
+            var configuredFine = request.Status == BookCopyStatus.Damaged ? policy.DamagedFine : policy.LostFine;
             detail.ActualReturnDate = now;
-            detail.FineAmount = Math.Max(detail.FineAmount ?? 0, request.FineAmount);
+            detail.FineAmount = Math.Max(detail.FineAmount ?? 0, Math.Max(request.FineAmount, configuredFine));
             detail.IsFinePaid = detail.FineAmount.GetValueOrDefault() == 0;
             detail.UpdatedAt = now;
 
@@ -390,6 +405,7 @@ namespace LibraryManagement.BLL.Services
 
             UpdateTransactionStatus(detail.BorrowTransaction, now);
             await circulationRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("ReportBookIssue", "BorrowDetail", detail.BorrowDetailId.ToString(), $"Book copy issue reported as {request.Status} with fine {detail.FineAmount:0}.");
 
             return Ok("Issue reported successfully.", detail.BorrowTransactionId);
         }

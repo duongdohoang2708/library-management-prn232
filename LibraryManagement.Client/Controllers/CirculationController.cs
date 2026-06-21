@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using LibraryManagement.Client.Helpers;
 using LibraryManagementDAL.DTO.Circulation;
 using LibraryManagementDAL.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -61,6 +62,7 @@ namespace LibraryManagement.Client.Controllers
             }
 
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/circulation/borrow", model);
             var result = await response.Content.ReadFromJsonAsync<CirculationActionResponse>();
 
@@ -110,6 +112,7 @@ namespace LibraryManagement.Client.Controllers
             }
 
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/circulation/transactions/{id}/return", model);
             var result = await response.Content.ReadFromJsonAsync<CirculationActionResponse>();
 
@@ -129,6 +132,7 @@ namespace LibraryManagement.Client.Controllers
         public async Task<IActionResult> Renew(int borrowDetailId, int transactionId, int extraDays = 7)
         {
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/circulation/renew", new RenewRequest
             {
                 BorrowDetailId = borrowDetailId,
@@ -147,6 +151,7 @@ namespace LibraryManagement.Client.Controllers
         public async Task<IActionResult> ReportIssue(int transactionId, int borrowDetailId, BookCopyStatus status, decimal fineAmount)
         {
             var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
             var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/circulation/report-issue", new ReportIssueRequest
             {
                 BorrowDetailId = borrowDetailId,
