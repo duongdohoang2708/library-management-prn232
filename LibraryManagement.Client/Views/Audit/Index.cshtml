@@ -35,7 +35,23 @@
                         <td class="p-4 text-primary font-black">@item.Action</td>
                         <td class="p-4 text-white">@item.EntityName #@item.EntityId</td>
                         <td class="p-4 text-white/70">@item.Summary</td>
-                        <td class="p-4 text-white/50">@item.ActorName</td>
+                        <td class="p-4">
+                            <div class="text-white font-semibold">@item.ActorName</div>
+                            @if (!string.IsNullOrEmpty(item.ActorRole))
+                            {
+                                var badgeClass = item.ActorRole.ToLower() switch
+                                {
+                                    "admin" or "superadmin" => "bg-red-500/10 text-red-400 border-red-500/20",
+                                    "librarian" => "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                                    "member" => "bg-green-500/10 text-green-400 border-green-500/20",
+                                    "system/api" or "system" => "bg-white/5 text-white/40 border-white/10",
+                                    _ => "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                                };
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border @badgeClass mt-1">
+                                    @item.ActorRole
+                                </span>
+                            }
+                        </td>
                     </tr>
                 }
                 @if (!Model.Items.Any())

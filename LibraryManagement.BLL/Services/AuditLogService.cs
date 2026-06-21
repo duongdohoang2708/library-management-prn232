@@ -1,5 +1,6 @@
 using LibraryManagement.BLL.DTO.Audit;
 using LibraryManagement.BLL.DTO.User;
+using LibraryManagement.DAL.Data;
 using LibraryManagement.DAL.Repositories;
 using LibraryManagementDAL.Models;
 using Microsoft.AspNetCore.Http;
@@ -13,11 +14,13 @@ namespace LibraryManagement.BLL.Services
         private const int PageSize = 20;
         private readonly AuditLogRepository auditLogRepository;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly ApplicationDbContext db;
 
-        public AuditLogService(AuditLogRepository _auditLogRepository, IHttpContextAccessor _httpContextAccessor)
+        public AuditLogService(AuditLogRepository _auditLogRepository, IHttpContextAccessor _httpContextAccessor, ApplicationDbContext _db)
         {
             auditLogRepository = _auditLogRepository;
             httpContextAccessor = _httpContextAccessor;
+            db = _db;
         }
 
         public async Task<PaginatedResult<AuditLogItem>> GetLogsAsync(string? search, int page)
@@ -40,21 +43,51 @@ namespace LibraryManagement.BLL.Services
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)PageSize));
             page = Math.Min(page, totalPages);
 
+            var items = await query.Skip((page - 1) * PageSize).Take(PageSize).ToListAsync();
+
+            var actorUserIds = items.Where(x => x.ActorUserId.HasValue).Select(x => x.ActorUserId!.Value).Distinct().ToList();
+            var userRolesMap = new Dictionary<int, string>();
+
+            if (actorUserIds.Any())
+            {
+                var accounts = await db.Accounts
+                    .AsNoTracking()
+                    .Include(a => a.Staff).ThenInclude(s => s.Role)
+                    .Include(a => a.Member)
+                    .Where(a => actorUserIds.Contains(a.UserId))
+                    .ToListAsync();
+
+                foreach (var acc in accounts)
+                {
+                    string role = "User";
+                    if (acc.Staff != null && acc.Staff.Role != null)
+                    {
+                        role = acc.Staff.Role.RoleName;
+                    }
+                    else if (acc.Member != null)
+                    {
+                        role = "Member";
+                    }
+                    userRolesMap[acc.UserId] = role;
+                }
+            }
+
+            var auditLogItems = items.Select(x => new AuditLogItem
+            {
+                AuditLogId = x.AuditLogId,
+                ActorUserId = x.ActorUserId,
+                ActorName = x.ActorName,
+                ActorRole = x.ActorUserId.HasValue && userRolesMap.TryGetValue(x.ActorUserId.Value, out var role) ? role : "System/API",
+                Action = x.Action,
+                EntityName = x.EntityName,
+                EntityId = x.EntityId,
+                Summary = x.Summary,
+                CreatedAt = x.CreatedAt
+            }).ToList();
+
             return new PaginatedResult<AuditLogItem>
             {
-                Items = await query.Skip((page - 1) * PageSize).Take(PageSize)
-                    .Select(x => new AuditLogItem
-                    {
-                        AuditLogId = x.AuditLogId,
-                        ActorUserId = x.ActorUserId,
-                        ActorName = x.ActorName,
-                        Action = x.Action,
-                        EntityName = x.EntityName,
-                        EntityId = x.EntityId,
-                        Summary = x.Summary,
-                        CreatedAt = x.CreatedAt
-                    })
-                    .ToListAsync(),
+                Items = auditLogItems,
                 PageNumber = page,
                 CurrentPage = page,
                 PageSize = PageSize,
