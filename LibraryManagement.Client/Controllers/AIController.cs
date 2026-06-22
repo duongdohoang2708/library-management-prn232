@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using LibraryManagement.Client.Helpers;
 
 namespace LibraryManagement.Client.Controllers
 {
@@ -35,6 +36,7 @@ namespace LibraryManagement.Client.Controllers
         public async Task<IActionResult> GetBookSummary(int bookId)
         {
             AddAuthorizationHeader();
+            ApiActorHeaderHelper.AddActorHeaders(_httpClient, User);
             var response = await _httpClient.GetAsync($"{_baseUrl}/api/ai/books/{bookId}/summary");
             if (response.IsSuccessStatusCode)
             {
@@ -55,6 +57,7 @@ namespace LibraryManagement.Client.Controllers
         public async Task<IActionResult> Chat([FromBody] ChatRequest request)
         {
             AddAuthorizationHeader();
+            ApiActorHeaderHelper.AddActorHeaders(_httpClient, User);
             var jsonContent = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync($"{_baseUrl}/api/ai/chat", jsonContent);
             if (response.IsSuccessStatusCode)

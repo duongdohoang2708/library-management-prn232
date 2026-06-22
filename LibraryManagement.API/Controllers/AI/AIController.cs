@@ -20,11 +20,15 @@ namespace LibraryManagement.API.Controllers.AI
         [HttpGet("books/{bookId}/summary")]
         public async Task<IActionResult> GetBookSummary(int bookId)
         {
+            var userIdString = Request.Headers["X-Actor-UserId"].FirstOrDefault() 
+                               ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            int? currentUserId = int.TryParse(userIdString, out var uid) ? uid : null;
+
             var summary = await _aiService.GetBookSummaryAsync(bookId);
             if (summary == null)
             {
                 // Auto-generate on the fly if not exists
-                summary = await _aiService.GenerateBookSummaryAsync(bookId, null);
+                summary = await _aiService.GenerateBookSummaryAsync(bookId, currentUserId);
             }
             
             if (summary == null) return NotFound(new { message = "Không tìm thấy sách." });
@@ -40,7 +44,8 @@ namespace LibraryManagement.API.Controllers.AI
         [HttpPost("chat")]
         public async Task<IActionResult> Chat([FromBody] ChatRequest request)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdString = Request.Headers["X-Actor-UserId"].FirstOrDefault() 
+                               ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             int? currentUserId = int.TryParse(userIdString, out var uid) ? uid : null;
 
             if (string.IsNullOrWhiteSpace(request.Message))
