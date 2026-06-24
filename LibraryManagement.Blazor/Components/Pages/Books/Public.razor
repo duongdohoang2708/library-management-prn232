@@ -1,0 +1,222 @@
+@page "/Books/ViewBooks"
+@page "/Books/Details/{Id:int}"
+@using Microsoft.AspNetCore.WebUtilities
+@inject BooksClientService BooksService
+@inject UserActionClientService UserActionService
+
+<PageTitle>@(Id.HasValue ? "Book Details" : "All Books")</PageTitle>
+
+@if (Id.HasValue)
+{
+    @if (book is null)
+    {
+        <div class="flex flex-1 items-center justify-center px-8 py-16">
+            <SurfacePanel ContainerClass="w-full max-w-lg rounded-[2rem] border border-white/10 bg-black/20 p-8 text-center backdrop-blur"
+                         Title="Book not found"
+                         TitleClass="text-3xl font-black text-white"
+                         Message="The requested book could not be loaded."
+                         MessageClass="mt-4 text-sm leading-7 text-white/60" />
+        </div>
+    }
+    else
+    {
+        var availableCount = (book.BookCopies ?? new List<LibraryManagementDAL.Models.BookCopy>()).Count(copy => copy.Status == LibraryManagementDAL.Models.BookCopyStatus.Available);
+        var canBorrowNow = book.IsActive && availableCount > 0;
+        var isOutOfStock = book.IsActive && availableCount == 0;
+        var averageRating = book.BookReviews != null && book.BookReviews.Any()
+            ? Math.Round(book.BookReviews.Average(review => review.Rating), 1)
+            : 0;
+        var totalReviews = book.BookReviews?.Count ?? 0;
+
+        <BookDetailsView Book="@book"
+                         SuccessMessage="@successMessage"
+                         ErrorMessage="@errorMessage"
+                         FollowUpAction="@followUpAction"
+                         AiSummary="@aiSummary"
+                         AiSummaryError="@aiSummaryError"
+                         IsAuthenticated="@isAuthenticated"
+                         IsMember="@isMember"
+                         Mutating="@mutating"
+                         AvailableCount="@availableCount"
+                         CanBorrowNow="@canBorrowNow"
+                         IsOutOfStock="@isOutOfStock"
+                         AverageRating="@averageRating"
+                         TotalReviews="@totalReviews"
+                         BorrowAsync="@BorrowAsync"
+                         ReserveAsync="@ReserveAsync" />
+    }
+}
+else
+{
+    <BookListView ListResult="@listResult"
+                  Keyword="@Keyword"
+                  Category="@Category"
+                  PublisherId="@PublisherId"
+                  PublishYear="@PublishYear"
+                  IsActive="@IsActive"
+                  Availability="@Availability"
+                  MinRating="@MinRating"
+                  Sort="@Sort"
+                  Page="@Page"
+                  GetViewBooksUrl="@GetViewBooksUrl" />
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Keyword { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Category { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int? PublisherId { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int? PublishYear { get; set; }
+
+    [SupplyParameterFromQuery]
+    public bool? IsActive { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Availability { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int? MinRating { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Sort { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int Page { get; set; } = 1;
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private LibraryManagementDAL.Models.Book? book;
+    private string? aiSummary;
+    private string? aiSummaryError;
+    private string? successMessage;
+    private string? errorMessage;
+    private FollowUpAction? followUpAction;
+    private bool mutating;
+    private bool isAuthenticated;
+    private bool isMember;
+    private BookListApiResult listResult = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+        isMember = authState.User.IsInRole("Member");
+
+        successMessage = null;
+        errorMessage = null;
+        followUpAction = null;
+
+        if (Id.HasValue)
+        {
+            book = await BooksService.GetBookAsync(Id.Value);
+            aiSummary = null;
+            aiSummaryError = null;
+
+            if (book is not null)
+            {
+                var summary = await BooksService.GetAiSummaryAsync(book.BookId);
+                if (!string.IsNullOrWhiteSpace(summary))
+                {
+                    aiSummary = summary;
+                }
+                else
+                {
+                    aiSummaryError = "AI summary is not available for this book yet.";
+                }
+            }
+
+            return;
+        }
+
+        listResult = await BooksService.GetBookListAsync(new BookListQuery
+        {
+            Keyword = Keyword,
+            Category = Category,
+            PublisherId = PublisherId,
+            PublishYear = PublishYear,
+            IsActive = IsActive,
+            Availability = Availability,
+            MinRating = MinRating,
+            Sort = Sort,
+            Page = Page,
+            PageSize = 10
+        });
+    }
+
+    private async Task BorrowAsync()
+    {
+        if (!Id.HasValue)
+        {
+            return;
+        }
+
+        mutating = true;
+        var result = await UserActionService.RequestBorrowAsync(Id.Value);
+        mutating = false;
+
+        if (result.IsSuccess)
+        {
+            successMessage = result.Message;
+            followUpAction = result.Value;
+            errorMessage = null;
+            book = await BooksService.GetBookAsync(Id.Value);
+        }
+        else
+        {
+            errorMessage = result.Message;
+            successMessage = null;
+            followUpAction = null;
+        }
+    }
+
+    private async Task ReserveAsync()
+    {
+        if (!Id.HasValue)
+        {
+            return;
+        }
+
+        mutating = true;
+        var result = await UserActionService.RequestReserveAsync(Id.Value);
+        mutating = false;
+
+        if (result.IsSuccess)
+        {
+            successMessage = result.Message;
+            followUpAction = result.Value;
+            errorMessage = null;
+            book = await BooksService.GetBookAsync(Id.Value);
+        }
+        else
+        {
+            errorMessage = result.Message;
+            successMessage = null;
+            followUpAction = null;
+        }
+    }
+
+    private string GetViewBooksUrl(int page)
+    {
+        var query = new Dictionary<string, string?>();
+        if (!string.IsNullOrWhiteSpace(Keyword)) query["keyword"] = Keyword;
+        if (!string.IsNullOrWhiteSpace(Category)) query["category"] = Category;
+        if (PublisherId.HasValue) query["publisherId"] = PublisherId.Value.ToString();
+        if (PublishYear.HasValue) query["publishYear"] = PublishYear.Value.ToString();
+        if (IsActive.HasValue) query["isActive"] = IsActive.Value.ToString().ToLowerInvariant();
+        if (!string.IsNullOrWhiteSpace(Availability)) query["availability"] = Availability;
+        if (MinRating.HasValue) query["minRating"] = MinRating.Value.ToString();
+        if (!string.IsNullOrWhiteSpace(Sort)) query["sort"] = Sort;
+        query["page"] = page.ToString();
+        return QueryHelpers.AddQueryString("/Books/ViewBooks", query!);
+    }
+}

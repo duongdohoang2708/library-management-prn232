@@ -1,0 +1,654 @@
+@page "/Payment"
+@page "/Payment/Index"
+@page "/Payment/MyFines"
+@page "/Payment/CreateFine"
+@page "/Payment/ExternalCheckout"
+@page "/Payment/PaymentResult"
+@page "/Payment/Details/{Id:int}"
+@attribute [Authorize]
+@using System.Security.Claims
+@using LibraryManagement.Blazor.Helpers
+@using LibraryManagement.Blazor.Models
+@using LibraryManagementDAL.DTO.Circulation
+@using LibraryManagementDAL.DTO.Payment
+@using LibraryManagementDAL.Models
+@inject PaymentClientService PaymentService
+@inject NavigationManager Navigation
+@inject ToastService Toasts
+
+<PageTitle>Quản lý Tiền phạt &amp; Thanh toán</PageTitle>
+
+@if (isLoading)
+{
+    <div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+        <SurfacePanel ContainerClass="rounded-2xl border border-white/10 bg-black/20 p-10 text-center text-white/60"
+                     Title="Loading payment data..."
+                     TitleClass="text-base font-medium text-white/60" />
+    </div>
+}
+else if (view == "create-fine")
+{
+    <PaymentCreateFineView ErrorMessage="@errorMessage"
+                           UserSearchQuery="@manualFineUserSearchQuery"
+                           UserSearchResultsVisible="@manualFineUserSearchResultsVisible"
+                           SearchingUsers="@manualFineSearchingUsers"
+                           UserSearchResults="@manualFineUserSearchResults"
+                           SelectedUserId="@manualFineUserId"
+                           SelectedUserName="@manualFineUserName"
+                           SelectedUserEmail="@manualFineUserEmail"
+                           ManualFineAmount="@manualFineAmount"
+                           ManualFineReason="@manualFineReason"
+                           IsBusy="@isBusy"
+                           UserSearchQueryChanged="@(async (string? value) => { manualFineUserSearchQuery = value; await HandleManualFineUserSearchChangedAsync(); })"
+                           SelectUser="@SelectManualFineUser"
+                           ClearSelectedUser="@ClearManualFineUser"
+                           ManualFineAmountChanged="@(async (string value) => { manualFineAmount = decimal.TryParse(value, out var amount) ? amount : (decimal?)null; await Task.CompletedTask; })"
+                           ManualFineReasonChanged="@(async (string value) => { manualFineReason = value; await Task.CompletedTask; })"
+                           SubmitCreateFine="@SubmitCreateFineAsync" />
+}
+else if (view == "details")
+{
+    <PaymentDetailsView ErrorMessage="@errorMessage"
+                        DetailUserName="@detailUserName"
+                        DetailUserEmail="@detailUserEmail"
+                        Details="@detailFines"
+                        TotalOwed="@DetailTotalOwed"
+                        AmountPaid="@detailPaymentAmount"
+                        PaymentMethod="@detailPaymentMethod"
+                        IsBusy="@isBusy"
+                        GetRemainingAmount="@GetRemainingAmount"
+                        GetBookTitle="@GetBookTitle"
+                        AmountPaidChanged="@(async (string value) => { if (decimal.TryParse(value, out var amount)) detailPaymentAmount = amount; await Task.CompletedTask; })"
+                        PaymentMethodChanged="@(async (string value) => { detailPaymentMethod = value; await Task.CompletedTask; })"
+                        SubmitPayment="@SubmitAdminPaymentAsync" />
+}
+else if (view == "my-fines")
+{
+    <PaymentMyFinesView Fines="@myFines"
+                        SelectedFineIds="@memberSelectedFineIds"
+                        SelectedAmount="@memberSelectedAmount"
+                        TotalOwed="@MyTotalOwed"
+                        IsBusy="@isBusy"
+                        AreAllSelected="@AreAllMyFinesSelected"
+                        ToggleFine="@(async (int id, bool isSelected) => { ToggleMyFine(id, isSelected); await Task.CompletedTask; })"
+                        ToggleAllSelected="@(async (bool isSelected) => { ToggleAllMyFines(isSelected); await Task.CompletedTask; })"
+                        SubmitPayment="@SubmitMyFinesPaymentAsync" />
+}
+else if (view == "result")
+{
+    <PaymentResultView IsSuccessful="@PaymentSucceeded"
+                       TransactionId="@TransactionId"
+                       Message="@ResultMessage"
+                       BackLink="@ResultBackLink"
+                       IsPaymentStaff="@IsPaymentStaff" />
+}
+else if (view == "external")
+{
+    <PaymentExternalView ProviderName="@ExternalProviderName"
+                         LogoIcon="@ExternalLogoIcon"
+                         CheckoutAmount="@ExternalCheckoutAmount"
+                         GatewayUrl="@GatewayUrl"
+                         BackLink="@ExternalBackLink"
+                         ContinueToExternalGateway="@ContinueToExternalGateway"
+                         SimulateExternalPaymentSuccess="@SimulateExternalPaymentSuccess" />
+}
+else
+{
+    <PaymentAdminIndexView ErrorMessage="@errorMessage"
+                           SearchText="@adminSearchText"
+                           Users="@adminFines.Users"
+                           CurrentPage="@adminFines.CurrentPage"
+                           TotalPages="@adminFines.TotalPages"
+                           BuildHref="@BuildAdminIndexHref"
+                           SearchTextChanged="@(async (string value) => { adminSearchText = value; await HandleAdminSearchChangedAsync(); })"
+                           ClearSearch="@(async () => { adminSearchText = string.Empty; ClearAdminSearch(); await Task.CompletedTask; })" />
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "searchQuery")]
+    public string? SearchQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int Page { get; set; } = 1;
+
+    [SupplyParameterFromQuery(Name = "success")]
+    public bool? Success { get; set; }
+
+    [SupplyParameterFromQuery(Name = "transactionId")]
+    public string? TransactionId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "message")]
+    public string? ResultMessage { get; set; }
+
+    [SupplyParameterFromQuery(Name = "userId")]
+    public int? ResultUserId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "amount")]
+    public decimal? ExternalAmount { get; set; }
+
+    [SupplyParameterFromQuery(Name = "method")]
+    public string? ExternalMethod { get; set; }
+
+    [SupplyParameterFromQuery(Name = "gatewayUrl")]
+    public string? GatewayUrl { get; set; }
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private ClaimsPrincipal user = new(new ClaimsIdentity());
+    private HashSet<string> roles = new(StringComparer.OrdinalIgnoreCase);
+    private string view = "index";
+    private bool isLoading = true;
+    private bool isBusy;
+    private string? errorMessage;
+    private PagedUserFinesResponse adminFines = new()
+    {
+        CurrentPage = 1,
+        TotalPages = 1,
+        Users = new List<UserFinesDTO>()
+    };
+    private List<BorrowDetail> detailFines = new();
+    private List<BorrowDetail> myFines = new();
+    private string adminSearchText = string.Empty;
+    private decimal detailPaymentAmount;
+    private string detailPaymentMethod = "Cash";
+    private string detailUserName = "Unknown";
+    private string detailUserEmail = "Unknown";
+    private HashSet<int> memberSelectedFineIds = new();
+    private decimal memberSelectedAmount;
+    private string? manualFineUserSearchQuery;
+    private bool manualFineUserSearchResultsVisible;
+    private bool manualFineSearchingUsers;
+    private List<UserSearchResult> manualFineUserSearchResults = new();
+    private int manualFineUserId;
+    private string manualFineUserName = "---";
+    private string manualFineUserEmail = string.Empty;
+    private decimal? manualFineAmount;
+    private string manualFineReason = string.Empty;
+    private CancellationTokenSource? manualFineUserSearchCts;
+    private CancellationTokenSource? adminSearchCts;
+
+    private bool IsPaymentStaff => roles.Contains("Admin") || roles.Contains("Librarian");
+
+    private bool PaymentSucceeded => Success ?? false;
+
+    private decimal DetailTotalOwed => detailFines.Sum(GetRemainingAmount);
+
+    private decimal MyTotalOwed => myFines.Sum(GetRemainingAmount);
+
+    private bool AreAllMyFinesSelected => myFines.Count > 0 && memberSelectedFineIds.Count == myFines.Count;
+
+    private string ResultBackLink => IsPaymentStaff ? "/Payment/Index" : "/Payment/MyFines";
+
+    private decimal ExternalCheckoutAmount => ExternalAmount ?? memberSelectedAmount;
+
+    private string ExternalProviderName =>
+        string.Equals(ExternalMethod, "Banking", StringComparison.OrdinalIgnoreCase) ? "Bank Transfer" :
+        string.Equals(ExternalMethod, "Momo", StringComparison.OrdinalIgnoreCase) ? "MoMo E-Wallet" :
+        "VNPay Gateway";
+
+    private string ExternalLogoIcon =>
+        string.Equals(ExternalMethod, "Banking", StringComparison.OrdinalIgnoreCase) ? "account_balance" :
+        string.Equals(ExternalMethod, "Momo", StringComparison.OrdinalIgnoreCase) ? "account_balance_wallet" :
+        "qr_code_scanner";
+
+    private string ExternalBackLink =>
+        ResultUserId.HasValue && IsPaymentStaff
+            ? $"/Payment/Details/{ResultUserId.Value}"
+            : "/Payment/MyFines";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        var authState = await AuthenticationStateTask;
+        user = authState.User;
+        roles = user.FindAll(ClaimTypes.Role)
+            .Select(claim => claim.Value)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        view = GetView();
+
+        if (RequiresStaffAccess(view) && !IsPaymentStaff)
+        {
+            Navigation.NavigateTo("/Auth/AccessDenied", forceLoad: true);
+            return;
+        }
+
+        try
+        {
+            switch (view)
+            {
+                case "create-fine":
+                    ResetCreateFineForm();
+                    break;
+                case "details":
+                    await LoadDetailsAsync();
+                    break;
+                case "my-fines":
+                    await LoadMyFinesAsync();
+                    break;
+                case "result":
+                case "external":
+                    break;
+                default:
+                    await LoadAdminIndexAsync();
+                    break;
+            }
+        }
+        catch
+        {
+            errorMessage = "Could not load payment data right now.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadAdminIndexAsync()
+    {
+        adminFines = await PaymentService.GetUsersWithFinesAsync(Page, SearchQuery);
+        adminSearchText = SearchQuery ?? string.Empty;
+    }
+
+    private async Task LoadDetailsAsync()
+    {
+        if (!Id.HasValue)
+        {
+            errorMessage = "User not found.";
+            detailFines.Clear();
+            return;
+        }
+
+        detailFines = await PaymentService.GetUserFinesAsync(Id.Value);
+        if (!detailFines.Any())
+        {
+            Toasts.Success("This user has no fines to pay.");
+            Navigation.NavigateTo("/Payment/Index");
+            return;
+        }
+
+        detailUserName = detailFines.First().BorrowTransaction?.Account?.FullName ?? "Unknown";
+        detailUserEmail = detailFines.First().BorrowTransaction?.Account?.Email ?? "Unknown";
+        detailPaymentAmount = DetailTotalOwed;
+        detailPaymentMethod = "Cash";
+    }
+
+    private async Task LoadMyFinesAsync()
+    {
+        myFines = await PaymentService.GetMyFinesAsync();
+        memberSelectedFineIds.Clear();
+        memberSelectedAmount = 0;
+    }
+
+    private void ResetCreateFineForm()
+    {
+        manualFineUserSearchQuery = null;
+        manualFineUserSearchResultsVisible = false;
+        manualFineSearchingUsers = false;
+        manualFineUserSearchResults.Clear();
+        manualFineUserId = 0;
+        manualFineUserName = "---";
+        manualFineUserEmail = string.Empty;
+        manualFineAmount = null;
+        manualFineReason = string.Empty;
+    }
+
+    private string GetView()
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var path = relative.Split('?', '#')[0].Trim('/').ToLowerInvariant();
+
+        return path switch
+        {
+            "payment/createfine" => "create-fine",
+            "payment/myfines" => "my-fines",
+            "payment/paymentresult" => "result",
+            "payment/externalcheckout" => "external",
+            _ when path.StartsWith("payment/details/", StringComparison.Ordinal) => "details",
+            _ => "index"
+        };
+    }
+
+    private static bool RequiresStaffAccess(string currentView)
+    {
+        return currentView is "index" or "details" or "create-fine";
+    }
+
+    private string BuildAdminIndexHref(int page)
+    {
+        var query = new List<string> { $"page={Math.Max(1, page)}" };
+        AddQuery(query, "searchQuery", SearchQuery);
+        return "/Payment/Index" + (query.Count > 0 ? "?" + string.Join("&", query) : string.Empty);
+    }
+
+    private static void AddQuery(List<string> query, string name, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            query.Add($"{name}={Uri.EscapeDataString(value.Trim())}");
+        }
+    }
+
+    private string BuildPaymentResultUrl(bool success, string? transactionId, string? message, int? userId)
+    {
+        var query = new List<string> { $"success={success.ToString().ToLowerInvariant()}" };
+
+        if (!string.IsNullOrWhiteSpace(transactionId))
+        {
+            query.Add($"transactionId={Uri.EscapeDataString(transactionId)}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            query.Add($"message={Uri.EscapeDataString(message)}");
+        }
+
+        if (userId.HasValue)
+        {
+            query.Add($"userId={userId.Value}");
+        }
+
+        return "/Payment/PaymentResult?" + string.Join("&", query);
+    }
+
+    private static decimal GetRemainingAmount(BorrowDetail detail)
+    {
+        return (detail.FineAmount ?? 0) - (detail.FinePaidAmount ?? 0);
+    }
+
+    private static string GetBookTitle(BorrowDetail detail)
+    {
+        return detail.BookCopy?.Book?.Title ?? "Manual Fine";
+    }
+
+    private void GoToPaymentIndex()
+    {
+        Navigation.NavigateTo("/Payment/Index");
+    }
+
+    private async Task HandleAdminSearchChangedAsync()
+    {
+        adminSearchCts?.Cancel();
+        var localCts = new CancellationTokenSource();
+        adminSearchCts = localCts;
+
+        try
+        {
+            await Task.Delay(500, localCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        var target = string.IsNullOrWhiteSpace(adminSearchText)
+            ? "/Payment/Index"
+            : $"/Payment/Index?searchQuery={Uri.EscapeDataString(adminSearchText.Trim())}&page=1";
+
+        if (!string.Equals(Navigation.Uri, Navigation.ToAbsoluteUri(target).ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo(target);
+        }
+    }
+
+    private void ClearAdminSearch()
+    {
+        adminSearchText = string.Empty;
+        Navigation.NavigateTo("/Payment/Index");
+    }
+
+    private async Task SubmitAdminPaymentAsync()
+    {
+        if (!Id.HasValue)
+        {
+            errorMessage = "User not found.";
+            return;
+        }
+
+        if (!detailFines.Any())
+        {
+            errorMessage = "No fines available to process.";
+            return;
+        }
+
+        if (detailPaymentAmount <= 0)
+        {
+            Toasts.Error("Please enter a valid payment amount.");
+            return;
+        }
+
+        if (detailPaymentAmount > DetailTotalOwed)
+        {
+            Toasts.Error("Payment amount cannot exceed total debt.");
+            detailPaymentAmount = DetailTotalOwed;
+            return;
+        }
+
+        var selectedFines = detailFines.Select(detail => detail.BorrowDetailId).ToList();
+
+        isBusy = true;
+        try
+        {
+            if (string.Equals(detailPaymentMethod, "VnPay", StringComparison.OrdinalIgnoreCase))
+            {
+                var result = await PaymentService.CreateVnPayUrlAsync(Id.Value, selectedFines, detailPaymentAmount);
+                if (result.IsSuccess && !string.IsNullOrWhiteSpace(result.Value))
+                {
+                    Navigation.NavigateTo(result.Value, forceLoad: true);
+                    return;
+                }
+
+                Navigation.NavigateTo(BuildPaymentResultUrl(false, null, result.Message, Id.Value));
+                return;
+            }
+
+            var cashResult = await PaymentService.ProcessCashAsync(Id.Value, selectedFines, detailPaymentAmount);
+            Navigation.NavigateTo(cashResult.IsSuccess
+                ? BuildPaymentResultUrl(true, cashResult.Value, null, Id.Value)
+                : BuildPaymentResultUrl(false, null, cashResult.Message, Id.Value));
+        }
+        catch
+        {
+            Navigation.NavigateTo(BuildPaymentResultUrl(false, null, "There was an error processing your payment.", Id.Value));
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void ToggleAllMyFines(bool isSelected)
+    {
+        memberSelectedFineIds = isSelected
+            ? myFines.Select(fine => fine.BorrowDetailId).ToHashSet()
+            : new HashSet<int>();
+
+        RecalculateMySelectedAmount();
+    }
+
+    private void ToggleMyFine(int borrowDetailId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            memberSelectedFineIds.Add(borrowDetailId);
+        }
+        else
+        {
+            memberSelectedFineIds.Remove(borrowDetailId);
+        }
+
+        RecalculateMySelectedAmount();
+    }
+
+    private void RecalculateMySelectedAmount()
+    {
+        memberSelectedAmount = myFines
+            .Where(fine => memberSelectedFineIds.Contains(fine.BorrowDetailId))
+            .Sum(GetRemainingAmount);
+    }
+
+    private async Task SubmitMyFinesPaymentAsync()
+    {
+        if (!memberSelectedFineIds.Any())
+        {
+            Toasts.Error("Please select at least one fine.");
+            return;
+        }
+
+        if (!TryGetCurrentUserId(out var currentUserId))
+        {
+            Navigation.NavigateTo(BuildPaymentResultUrl(false, null, "Could not determine the current user.", null));
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var result = await PaymentService.CreateVnPayUrlAsync(currentUserId, memberSelectedFineIds, memberSelectedAmount);
+            if (result.IsSuccess && !string.IsNullOrWhiteSpace(result.Value))
+            {
+                Navigation.NavigateTo(result.Value, forceLoad: true);
+                return;
+            }
+
+            Navigation.NavigateTo(BuildPaymentResultUrl(false, null, result.Message, currentUserId));
+        }
+        catch
+        {
+            Navigation.NavigateTo(BuildPaymentResultUrl(false, null, "There was an error processing your payment.", currentUserId));
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task HandleManualFineUserSearchChangedAsync()
+    {
+        manualFineUserSearchCts?.Cancel();
+
+        if (string.IsNullOrWhiteSpace(manualFineUserSearchQuery))
+        {
+            manualFineUserSearchResultsVisible = false;
+            manualFineUserSearchResults.Clear();
+            manualFineSearchingUsers = false;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var localCts = new CancellationTokenSource();
+        manualFineUserSearchCts = localCts;
+        manualFineSearchingUsers = true;
+        manualFineUserSearchResultsVisible = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await Task.Delay(300, localCts.Token);
+            manualFineUserSearchResults = await PaymentService.SearchUsersAsync(manualFineUserSearchQuery, localCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        finally
+        {
+            if (manualFineUserSearchCts == localCts)
+            {
+                manualFineSearchingUsers = false;
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void SelectManualFineUser(UserSearchResult userResult)
+    {
+        manualFineUserId = userResult.UserId;
+        manualFineUserName = userResult.FullName;
+        manualFineUserEmail = userResult.Email;
+        manualFineUserSearchQuery = string.Empty;
+        manualFineUserSearchResults.Clear();
+        manualFineUserSearchResultsVisible = false;
+    }
+
+    private void ClearManualFineUser()
+    {
+        manualFineUserId = 0;
+        manualFineUserName = "---";
+        manualFineUserEmail = string.Empty;
+        manualFineUserSearchQuery = string.Empty;
+        manualFineUserSearchResults.Clear();
+        manualFineUserSearchResultsVisible = false;
+    }
+
+    private async Task SubmitCreateFineAsync()
+    {
+        if (manualFineUserId <= 0)
+        {
+            Toasts.Error("Please select a member.");
+            return;
+        }
+
+        if (!manualFineAmount.HasValue || manualFineAmount.Value <= 0)
+        {
+            Toasts.Error("Please enter a valid fine amount.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(manualFineReason))
+        {
+            Toasts.Error("Please enter a reason for the fine.");
+            return;
+        }
+
+        isBusy = true;
+        errorMessage = null;
+
+        try
+        {
+            var result = await PaymentService.CreateFineAsync(manualFineUserId, manualFineAmount.Value, manualFineReason.Trim());
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                Navigation.NavigateTo("/Payment/Index");
+            }
+            else
+            {
+                errorMessage = result.Message;
+            }
+        }
+        catch
+        {
+            errorMessage = "Create fine failed.";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void ContinueToExternalGateway()
+    {
+        if (!string.IsNullOrWhiteSpace(GatewayUrl))
+        {
+            Navigation.NavigateTo(GatewayUrl, forceLoad: true);
+        }
+    }
+
+    private void SimulateExternalPaymentSuccess()
+    {
+        Navigation.NavigateTo(BuildPaymentResultUrl(true, "SIMULATED-CHECKOUT", null, ResultUserId));
+    }
+
+    private bool TryGetCurrentUserId(out int userId)
+    {
+        return int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
+    }
+}

@@ -1,0 +1,41 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+<div class="flex flex-1 items-center justify-center p-8">
+    <div class="w-full max-w-md rounded-[2.5rem] border border-white/5 bg-white/5 p-10 text-center shadow-2xl backdrop-blur-xl">
+        @if (IsSuccessful)
+        {
+            <div class="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+                <span class="material-symbols-outlined text-5xl">check_circle</span>
+            </div>
+            <h1 class="mb-4 text-3xl font-black text-white">Payment Successful!</h1>
+            <p class="mb-8 leading-relaxed text-white/60">Your payment has been processed successfully. Thank you for settling your fines.</p>
+
+            @if (!string.IsNullOrWhiteSpace(TransactionId))
+            {
+                <div class="mb-8 rounded-2xl border border-white/5 bg-black/20 p-4">
+                    <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-white/40">Transaction ID</p>
+                    <p class="font-mono text-white">@TransactionId</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full border border-rose-500/20 bg-rose-500/10 text-rose-500 shadow-[0_0_40px_rgba(244,63,94,0.2)]">
+                <span class="material-symbols-outlined text-5xl">error</span>
+            </div>
+            <h1 class="mb-4 text-3xl font-black text-white">Payment Failed</h1>
+            <p class="mb-8 leading-relaxed text-white/60">@(Message ?? "There was an error processing your payment. Please try again.")</p>
+        }
+
+        <a href="@BackLink" class="block w-full rounded-2xl border border-white/5 bg-white/10 py-4 font-bold text-white transition-all hover:border-primary/30 hover:bg-white/20">
+            @(IsPaymentStaff ? "Back to Fines Management" : "Back to My Fines")
+        </a>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsSuccessful { get; set; }
+    [Parameter] public string? TransactionId { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string BackLink { get; set; } = "/";
+    [Parameter] public bool IsPaymentStaff { get; set; }
+}

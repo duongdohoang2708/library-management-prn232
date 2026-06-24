@@ -1,0 +1,34 @@
+@inject NavigationManager Navigation
+
+<div class="min-h-screen bg-background-dark px-6 py-12 text-slate-100">
+    <div class="mx-auto flex max-w-lg flex-col items-center rounded-[2rem] border border-white/10 bg-black/20 p-8 text-center backdrop-blur">
+        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <span class="material-symbols-outlined animate-pulse text-3xl">sync</span>
+        </div>
+        <h1 class="mt-6 text-3xl font-black text-white">Redirecting</h1>
+        <p class="mt-4 text-sm leading-7 text-white/60">
+            Checking your account and forwarding you to the right route.
+        </p>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var state = await AuthenticationStateTask;
+        var relativePath = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+        var target = state.User.Identity?.IsAuthenticated == true
+            ? "/Auth/AccessDenied"
+            : $"/Auth/Login?returnUrl={Uri.EscapeDataString(relativePath)}";
+
+        Navigation.NavigateTo(target, forceLoad: true);
+    }
+}

@@ -1,0 +1,195 @@
+@page "/AI"
+@attribute [Authorize]
+@inject AIClientService AIService
+@inject BooksClientService BooksService
+@inject ToastService Toasts
+
+<PageTitle>AI Assistant - Standard Library</PageTitle>
+
+<div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+    <div class="mb-10 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+            <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-primary">
+                <span class="material-symbols-outlined text-base">auto_awesome</span>
+                AI Workspace
+            </div>
+            <h1 class="mb-2 text-4xl font-black text-white">AI Book Assistant</h1>
+            <p class="max-w-3xl text-white/50">Ask for reading recommendations, book explanations, or generate a concise summary for a specific book ID.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-8 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <section class="rounded-[2rem] border border-white/5 bg-black/20 p-6 shadow-2xl">
+            <h2 class="mb-4 flex items-center gap-2 text-xl font-black text-white">
+                <span class="material-symbols-outlined text-primary">menu_book</span>
+                Book Summary
+            </h2>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="mb-2 block text-xs font-bold uppercase tracking-widest text-white/40">Book ID</label>
+                    <input @bind="summaryBookIdInput" type="number" min="1" class="w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white focus:border-primary focus:outline-none" />
+                </div>
+
+                <button type="button" @onclick="LoadSummaryAsync" disabled="@isLoadingSummary" class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-black text-background-dark transition-all hover:shadow-lg hover:shadow-primary/20 disabled:cursor-not-allowed disabled:opacity-60">
+                    <span class="material-symbols-outlined">summarize</span>
+                    @(isLoadingSummary ? "Generating..." : "Generate Summary")
+                </button>
+
+                <div class="rounded-2xl border border-white/5 bg-white/5 p-5">
+                    @if (!string.IsNullOrWhiteSpace(summaryError))
+                    {
+                        <div class="text-sm font-semibold text-red-300">@summaryError</div>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(summaryText))
+                    {
+                        <div class="space-y-3">
+                            <div class="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Summary</div>
+                            <p class="whitespace-pre-wrap text-sm leading-7 text-white/75">@summaryText</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-sm leading-7 text-white/45">Enter a valid book ID to generate the same AI-backed summary used on the book details experience.</p>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="flex min-h-[640px] flex-col overflow-hidden rounded-[2rem] border border-white/5 bg-black/20 shadow-2xl">
+            <div class="border-b border-white/5 bg-gradient-to-r from-background-dark to-teal-deep px-6 py-5">
+                <h2 class="flex items-center gap-3 text-xl font-black text-white">
+                    <span class="material-symbols-outlined rounded-2xl bg-primary p-2 text-background-dark">forum</span>
+                    Ask the assistant
+                </h2>
+                <p class="mt-2 text-sm text-white/60">Ask for reading recommendations, summaries, and book insights in a full conversation view.</p>
+            </div>
+
+            <div class="custom-scrollbar flex-1 space-y-4 overflow-y-auto bg-gradient-to-b from-background-dark to-teal-deep px-6 py-6">
+                @foreach (var message in messages)
+                {
+                    <div class="@(message.Role == "user" ? "ml-auto rounded-2xl rounded-br-md bg-primary text-background-dark shadow-[0_8px_20px_rgba(231,216,15,0.18)]" : "mr-auto rounded-2xl rounded-tl-md border border-white/5 bg-white/10 text-white shadow-sm") max-w-[85%] px-4 py-3 text-sm leading-6">
+                        <div class="mb-1 text-[10px] font-black uppercase tracking-[0.22em] @(message.Role == "user" ? "text-background-dark/60" : "text-primary")">
+                            @(message.Role == "user" ? "You" : "Assistant")
+                        </div>
+                        <div class="whitespace-pre-wrap">@message.Text</div>
+                    </div>
+                }
+            </div>
+
+            <div class="border-t border-white/5 bg-background-dark/95 px-6 py-5">
+                <div class="flex items-end gap-3">
+                    <textarea @bind="chatInput" rows="3" placeholder="Nhập câu hỏi về sách..." class="w-full resize-none rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/20"></textarea>
+                    <button type="button" @onclick="SendChatAsync" disabled="@isSendingChat" class="flex h-[54px] min-w-[72px] items-center justify-center rounded-2xl bg-primary px-4 font-semibold text-background-dark shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60">
+                        <span class="material-symbols-outlined">north_east</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "bookId")]
+    public int? BookId { get; set; }
+
+    private readonly List<ChatMessage> messages =
+    [
+        new() { Role = "assistant", Text = "Xin chào, mình có thể giúp bạn tìm hiểu và gợi ý sách phù hợp." }
+    ];
+
+    private string chatInput = string.Empty;
+    private string summaryText = string.Empty;
+    private string? summaryError;
+    private int summaryBookIdInput;
+    private bool isSendingChat;
+    private bool isLoadingSummary;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (BookId.HasValue && summaryBookIdInput == 0)
+        {
+            summaryBookIdInput = BookId.Value;
+            await LoadSummaryAsync();
+        }
+    }
+
+    private async Task LoadSummaryAsync()
+    {
+        if (summaryBookIdInput <= 0)
+        {
+            summaryError = "Please enter a valid book ID.";
+            summaryText = string.Empty;
+            return;
+        }
+
+        isLoadingSummary = true;
+        summaryError = null;
+
+        try
+        {
+            summaryText = await BooksService.GetAiSummaryAsync(summaryBookIdInput) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(summaryText))
+            {
+                summaryError = "Could not generate a summary for this book.";
+            }
+        }
+        catch
+        {
+            summaryText = string.Empty;
+            summaryError = "Could not generate a summary for this book.";
+        }
+        finally
+        {
+            isLoadingSummary = false;
+        }
+    }
+
+    private async Task SendChatAsync()
+    {
+        if (string.IsNullOrWhiteSpace(chatInput))
+        {
+            return;
+        }
+
+        var prompt = chatInput.Trim();
+        chatInput = string.Empty;
+        messages.Add(new ChatMessage { Role = "user", Text = prompt });
+        isSendingChat = true;
+
+        try
+        {
+            var result = await AIService.SendChatAsync(prompt);
+            if (result.IsSuccess)
+            {
+                messages.Add(new ChatMessage
+                {
+                    Role = "assistant",
+                    Text = string.IsNullOrWhiteSpace(result.Value)
+                        ? "Minh chua co phan hoi phu hop."
+                        : result.Value
+                });
+            }
+            else
+            {
+                Toasts.Error(result.Message);
+                messages.Add(new ChatMessage { Role = "assistant", Text = "Da co loi khi ket noi toi AI." });
+            }
+        }
+        catch
+        {
+            Toasts.Error("Could not reach the AI assistant.");
+            messages.Add(new ChatMessage { Role = "assistant", Text = "Da co loi khi ket noi toi AI." });
+        }
+        finally
+        {
+            isSendingChat = false;
+        }
+    }
+
+    private sealed class ChatMessage
+    {
+        public string Role { get; set; } = "assistant";
+        public string Text { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,358 @@
+@page "/Reservation"
+@page "/Reservation/Index"
+@page "/Reservation/MyReservations"
+@attribute [Authorize]
+@using LibraryManagementDAL.DTO.Reservation
+@inject ReservationClientService ReservationService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject ToastService Toasts
+
+<PageTitle>@GetPageTitle()</PageTitle>
+
+@if (isStaffView && !isStaff)
+{
+    <AuthRedirect />
+}
+else if (isMemberView && !isMember)
+{
+    <AuthRedirect />
+}
+else if (isLoading)
+{
+    <div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+        <div class="rounded-2xl border border-white/5 bg-black/20 p-10 text-center text-white/60">Loading reservations...</div>
+    </div>
+}
+else if (isStaffView)
+{
+    <div class="custom-scrollbar flex-1 min-w-0 overflow-y-auto p-8">
+        <div class="mb-8">
+            <a href="/Circulation/Index" class="mb-4 inline-flex items-center text-sm font-medium text-white/40 transition-colors hover:text-primary">
+                <span class="material-symbols-outlined mr-1 text-[18px]">arrow_back</span>
+                Back to circulation
+            </a>
+            <h1 class="mb-2 font-display text-4xl font-bold text-white">Book Reservation Requests</h1>
+            <p class="text-white/60">Manage hold requests and approve pickup loans.</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">@errorMessage</div>
+        }
+
+        <div class="overflow-hidden rounded-2xl border border-white/5 bg-white/5 shadow-2xl">
+            <div class="border-b border-white/5 bg-black/20 p-6">
+                <h3 class="flex items-center gap-2 text-lg font-bold text-white">
+                    <span class="material-symbols-outlined text-primary">pending_actions</span>
+                    Open Requests
+                </h3>
+            </div>
+
+            <div class="custom-scrollbar overflow-x-auto">
+                <table class="w-full border-collapse text-left">
+                    <thead>
+                        <tr class="bg-black/20 text-[11px] font-bold uppercase tracking-wider text-white/40">
+                            <th class="border-b border-white/5 p-4">Requester</th>
+                            <th class="border-b border-white/5 p-4">Book Information</th>
+                            <th class="border-b border-white/5 p-4">Date Requested</th>
+                            <th class="border-b border-white/5 p-4">Status</th>
+                            <th class="border-b border-white/5 p-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        @if (reservations.Any())
+                        {
+                            @foreach (var item in reservations)
+                            {
+                            <tr class="group border-b border-white/5 text-white/80 transition-colors hover:bg-white/[0.03]">
+                                    <td class="p-4">
+                                        <div class="font-semibold text-white transition-colors group-hover:text-primary">@item.UserFullName</div>
+                                        <div class="text-[11px] text-white/40">@item.UserEmail</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="font-medium text-white">@item.BookTitle</div>
+                                        @if (!string.IsNullOrWhiteSpace(item.Barcode))
+                                        {
+                                            <div class="mt-0.5 flex items-center gap-1 text-[11px] text-primary">
+                                                <span class="material-symbols-outlined text-[12px]">barcode</span>
+                                                @item.Barcode
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-[11px] italic text-white/30">Waiting for allocation...</div>
+                                        }
+                                    </td>
+                                    <td class="p-4 text-white/60">
+                                        <div>@item.ReservedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                        @if (item.ExpireAt.HasValue)
+                                        {
+                                            <div class="mt-0.5 text-[11px] text-white/30">Hold until @item.ExpireAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                        }
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider @GetReservationStatusClass(item.Status)">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+                                            @GetStaffStatusText(item.Status)
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            @if (item.Status == ReservationStatus.Allocated)
+                                            {
+                                                <button type="button" @onclick="() => ApproveAsync(item.ReservationId)" disabled="@isBusy" class="flex items-center gap-1 rounded-lg bg-primary p-2 text-xs font-bold text-background-dark shadow-lg shadow-primary/20 transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60">
+                                                    <span class="material-symbols-outlined text-sm">check</span>
+                                                    Approve Loan
+                                                </button>
+                                            }
+                                            <button type="button" @onclick="() => ConfirmCancelAsync(item.ReservationId)" disabled="@isBusy" class="rounded-lg border border-white/5 bg-white/5 p-2 text-red-400 transition-all hover:border-red-500/20 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60" title="Cancel Request">
+                                                <span class="material-symbols-outlined text-lg">delete</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="p-16 text-center text-white/40">
+                                    <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-white/5 bg-white/5">
+                                        <span class="material-symbols-outlined text-4xl text-white/10">bookmark</span>
+                                    </div>
+                                    <h4 class="mb-2 text-lg font-bold text-white/60">No Requests</h4>
+                                    <p class="mx-auto max-w-xs text-sm text-white/30">When readers place books on hold, the list will appear here for you to manage.</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="p-8">
+        <div class="mx-auto max-w-6xl">
+            <div class="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+                <div>
+                    <h2 class="mb-2 tracking-tight text-4xl font-black text-white">My Reservations</h2>
+                    <p class="font-medium text-white/40">Track your reservation queue and pickup status.</p>
+                </div>
+
+                <a href="/Books/ViewBooks" class="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-black text-background-dark transition-all hover:bg-primary-hover">
+                    <span class="material-symbols-outlined">auto_stories</span>
+                    Browse Books
+                </a>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">@errorMessage</div>
+            }
+
+            @if (!reservations.Any())
+            {
+                <div class="rounded-3xl border border-white/5 bg-white/5 p-20 text-center">
+                    <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white/5">
+                        <span class="material-symbols-outlined text-4xl text-white/20">bookmark</span>
+                    </div>
+                    <h3 class="mb-2 text-xl font-bold text-white">No Reservations</h3>
+                    <p class="mx-auto mb-8 max-w-sm text-white/40">You have not reserved any books yet.</p>
+                </div>
+            }
+            else
+            {
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    @foreach (var item in reservations)
+                    {
+                        <div class="rounded-3xl border border-white/5 bg-white/5 p-6 transition-all hover:border-primary/30">
+                            <div class="mb-5 flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 class="mb-1 text-xl font-black text-white">@item.BookTitle</h3>
+                                    <p class="text-xs font-bold uppercase tracking-widest text-white/40">Reserved @item.ReservedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                                </div>
+                                <span class="rounded-lg border px-3 py-1.5 text-[10px] font-black uppercase tracking-wider @GetReservationStatusClass(item.Status)">
+                                    @GetMemberStatusText(item.Status)
+                                </span>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(item.Barcode))
+                            {
+                                <div class="mb-4 rounded-2xl border border-white/5 bg-black/20 p-4">
+                                    <p class="mb-1 text-[10px] font-black uppercase tracking-widest text-white/30">Reserved Copy</p>
+                                    <p class="font-bold text-primary">@item.Barcode</p>
+                                </div>
+                            }
+
+                            @if (item.Status == ReservationStatus.Allocated && item.ExpireAt.HasValue)
+                            {
+                                <div class="text-sm text-emerald-300/80">
+                                    Please pick up this book before <span class="font-bold text-emerald-300">@item.ExpireAt.Value.ToString("dd/MM/yyyy HH:mm")</span>.
+                                </div>
+                            }
+                            else if (item.Status == ReservationStatus.Pending)
+                            {
+                                <div class="text-sm text-white/40">
+                                    You are in the queue. The library will hold a copy for you when one becomes available.
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private List<ReservationItem> reservations = new();
+    private bool isLoading = true;
+    private bool isBusy;
+    private bool isStaff;
+    private bool isMember;
+    private bool isStaffView;
+    private bool isMemberView;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        var authState = await AuthenticationStateTask;
+        var user = authState.User;
+        isStaff = user.IsInRole("Admin") || user.IsInRole("Manager") || user.IsInRole("Librarian");
+        isMember = user.IsInRole("Member");
+
+        var view = GetView();
+        isStaffView = view == "index";
+        isMemberView = view == "myreservations";
+
+        if ((isStaffView && !isStaff) || (isMemberView && !isMember))
+        {
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            reservations = isStaffView
+                ? await ReservationService.GetReservationsAsync()
+                : await ReservationService.GetCurrentUserReservationsAsync();
+        }
+        catch
+        {
+            errorMessage = "Could not load reservations right now.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetView()
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var path = relative.Split('?', '#')[0].Trim('/').ToLowerInvariant();
+        return path == "reservation/myreservations" ? "myreservations" : "index";
+    }
+
+    private string GetPageTitle() => isStaffView
+        ? "Reservation Requests - Standard Library"
+        : "My Reservations - Standard Library";
+
+    private async Task ApproveAsync(int reservationId)
+    {
+        isBusy = true;
+        try
+        {
+            var result = await ReservationService.ApproveAsync(reservationId);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                reservations = await ReservationService.GetReservationsAsync();
+            }
+            else
+            {
+                Toasts.Error(result.Message);
+            }
+        }
+        catch
+        {
+            Toasts.Error("Approve reservation failed.");
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task ConfirmCancelAsync(int reservationId)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to cancel this request?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await CancelAsync(reservationId);
+    }
+
+    private async Task CancelAsync(int reservationId)
+    {
+        isBusy = true;
+        try
+        {
+            var result = await ReservationService.CancelAsync(reservationId);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                reservations = isStaffView
+                    ? await ReservationService.GetReservationsAsync()
+                    : await ReservationService.GetCurrentUserReservationsAsync();
+            }
+            else
+            {
+                Toasts.Error(result.Message);
+            }
+        }
+        catch
+        {
+            Toasts.Error("Cancel reservation failed.");
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private static string GetReservationStatusClass(ReservationStatus status) => status switch
+    {
+        ReservationStatus.Allocated => "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+        ReservationStatus.Pending => "border-amber-500/20 bg-amber-500/10 text-amber-400",
+        ReservationStatus.Completed => "border-primary/20 bg-primary/10 text-primary",
+        ReservationStatus.Cancelled => "border-white/5 bg-white/10 text-white/40",
+        ReservationStatus.Expired => "border-rose-500/20 bg-rose-500/10 text-rose-400",
+        _ => "border-white/5 bg-white/10 text-white/40"
+    };
+
+    private static string GetStaffStatusText(ReservationStatus status) => status == ReservationStatus.Allocated
+        ? "Ready for Pickup"
+        : "Waiting for Book";
+
+    private static string GetMemberStatusText(ReservationStatus status) => status switch
+    {
+        ReservationStatus.Allocated => "Ready for Pickup",
+        ReservationStatus.Pending => "Waiting in Queue",
+        ReservationStatus.Completed => "Loan Approved",
+        ReservationStatus.Cancelled => "Cancelled",
+        ReservationStatus.Expired => "Expired",
+        _ => status.ToString()
+    };
+}

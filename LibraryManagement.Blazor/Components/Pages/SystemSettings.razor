@@ -1,0 +1,161 @@
+@page "/SystemSettings"
+@page "/SystemSettings/Index"
+@attribute [Authorize(Roles = "Admin,Manager")]
+@inject SystemSettingsClientService SettingsService
+@inject ToastService Toasts
+
+<PageTitle>System Settings</PageTitle>
+
+<div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+    <div class="mb-8">
+        <h1 class="mb-2 text-4xl font-black text-white">System Settings</h1>
+        <p class="text-white/50">Manage borrowing policy, fine rules, reservation holds, and reminders.</p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 font-bold text-red-300">@errorMessage</div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="rounded-2xl border border-white/5 bg-black/20 p-10 text-center text-white/60">Loading system settings...</div>
+    }
+    else
+    {
+        <EditForm Model="@model" OnValidSubmit="SaveAsync" class="max-w-5xl rounded-2xl border border-white/5 bg-black/20 p-6">
+            <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-white/50">Loan Days</span>
+                    <input @bind="model.DefaultLoanDays" type="number" min="1" class="mt-2 w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-white/50">Renew Days</span>
+                    <input @bind="model.RenewDays" type="number" min="1" class="mt-2 w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-white/50">Reservation Hold Days</span>
+                    <input @bind="model.ReservationHoldDays" type="number" min="1" class="mt-2 w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-white/50">Max Borrowed Books</span>
+                    <input @bind="model.MaxOpenBorrowedBooks" type="number" min="1" class="mt-2 w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-white/50">Due Soon Days</span>
+                    <input @bind="model.DueSoonReminderDays" type="number" min="0" class="mt-2 w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-white/50">Overdue Fine/Day</span>
+                    <input @bind="model.OverdueFinePerDay" type="number" min="0" class="mt-2 w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-white/50">Damaged Fine</span>
+                    <input @bind="model.DamagedFine" type="number" min="0" class="mt-2 w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-white/50">Lost Fine</span>
+                    <input @bind="model.LostFine" type="number" min="0" class="mt-2 w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+                </label>
+            </div>
+            <div class="mt-8 flex flex-wrap gap-3">
+                <button disabled="@isSaving" class="rounded-xl bg-primary px-6 py-3 font-black text-background-dark disabled:cursor-not-allowed disabled:opacity-60">
+                    @(isSaving ? "Saving..." : "Save Settings")
+                </button>
+            </div>
+        </EditForm>
+
+        <div class="mt-6">
+            <button type="button" @onclick="RunDueRemindersAsync" disabled="@isReminderRunning" class="rounded-xl border border-white/5 bg-white/10 px-6 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60">
+                @(isReminderRunning ? "Running..." : "Run Due Reminder Job Now")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private LibraryManagement.Blazor.DTO.Admin.LibraryPolicySettingsDto model = new();
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool isReminderRunning;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            model = await SettingsService.GetPolicyAsync();
+        }
+        catch
+        {
+            errorMessage = "Could not load system settings right now.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        isSaving = true;
+
+        try
+        {
+            var result = await SettingsService.UpdatePolicyAsync(model);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+            }
+            else
+            {
+                Toasts.Error(result.Message);
+            }
+        }
+        catch
+        {
+            Toasts.Error("Update settings failed.");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task RunDueRemindersAsync()
+    {
+        isReminderRunning = true;
+
+        try
+        {
+            var result = await SettingsService.RunDueRemindersAsync();
+            if (result.IsSuccess)
+            {
+                var message = result.Value is null
+                    ? result.Message
+                    : $"{result.Message} Sent {result.Value.SentCount} reminders.";
+                Toasts.Success(message);
+            }
+            else
+            {
+                Toasts.Error(result.Message);
+            }
+        }
+        catch
+        {
+            Toasts.Error("Due reminder job failed.");
+        }
+        finally
+        {
+            isReminderRunning = false;
+        }
+    }
+}

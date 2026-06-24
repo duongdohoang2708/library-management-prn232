@@ -1,0 +1,180 @@
+@page "/Notification"
+@page "/Notification/Index"
+@page "/Notification/SendNotification"
+@attribute [Authorize]
+@inject NotificationClientService NotificationService
+@inject ToastService Toasts
+@inject NavigationManager Navigation
+
+<PageTitle>Notification</PageTitle>
+
+@if (view == "send" && !isStaff)
+{
+    <AuthRedirect />
+}
+else if (view == "send")
+{
+    <NotificationSendView UserSearchQuery="@userSearchQuery"
+                          UserSearchResultsVisible="@userSearchResultsVisible"
+                          SearchingUsers="@searchingUsers"
+                          UserSearchResults="@userSearchResults"
+                          SelectedUserId="@notificationModel.UserId"
+                          SelectedUserName="@selectedUserName"
+                          SelectedUserEmail="@selectedUserEmail"
+                          Title="@notificationModel.Title"
+                          Message="@notificationModel.Message"
+                          Type="@notificationModel.Type"
+                          SendingNotification="@sendingNotification"
+                          HandleUserSearchChangedAsync="@HandleUserSearchChangedAsync"
+                          SelectUser="@SelectUser"
+                          ClearSelectedUser="@ClearSelectedUser"
+                          SendNotificationAsync="@SendNotificationAsync" />
+}
+else
+{
+    <NotificationIndexView IsStaff="@isStaff"
+                           NotificationPage="@notificationPage"
+                           Notifications="@notifications"
+                           BuildHref="@BuildHref"
+                           MarkAllAsRead="@MarkAllAsReadAsync" />
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    public int page { get; set; } = 1;
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private string view = "index";
+    private bool isStaff;
+    private LibraryManagementDAL.DTO.Pagination.PaginationResponseModel<LibraryManagementDAL.Models.Notification> notificationPage = new();
+    private List<LibraryManagementDAL.Models.Notification> notifications = new();
+    private LibraryManagementDAL.DTO.Notification.NotificationCreateRequest notificationModel = new() { Type = "General" };
+    private string? userSearchQuery;
+    private bool userSearchResultsVisible;
+    private bool searchingUsers;
+    private List<LibraryManagementDAL.DTO.Circulation.UserSearchResult> userSearchResults = new();
+    private string selectedUserName = "---";
+    private string selectedUserEmail = string.Empty;
+    private bool sendingNotification;
+    private CancellationTokenSource? debounceCts;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        isStaff = authState.User.IsInRole("Librarian") || authState.User.IsInRole("Manager") || authState.User.IsInRole("Admin");
+
+        var relativePath = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0];
+        view = relativePath.StartsWith("/Notification/SendNotification", StringComparison.OrdinalIgnoreCase) ? "send" : "index";
+
+        if (view == "index")
+        {
+            notificationPage = await NotificationService.GetNotificationsAsync(page);
+            notifications = notificationPage.Items;
+        }
+        else
+        {
+            notificationModel = new LibraryManagementDAL.DTO.Notification.NotificationCreateRequest
+            {
+                Type = "General"
+            };
+            selectedUserName = "---";
+            selectedUserEmail = string.Empty;
+            userSearchQuery = null;
+            userSearchResults.Clear();
+            userSearchResultsVisible = false;
+        }
+    }
+
+    private string BuildHref(int pageNumber) => $"/Notification/Index?page={pageNumber}";
+
+    private async Task MarkAllAsReadAsync()
+    {
+        var result = await NotificationService.MarkAllAsReadAsync();
+        if (result.IsSuccess)
+        {
+            Toasts.Success(result.Message);
+            notificationPage = await NotificationService.GetNotificationsAsync(page);
+            notifications = notificationPage.Items;
+        }
+        else
+        {
+            Toasts.Error(result.Message);
+        }
+    }
+
+    private async Task HandleUserSearchChangedAsync(string? value)
+    {
+        userSearchQuery = value;
+        debounceCts?.Cancel();
+        debounceCts = new CancellationTokenSource();
+        var token = debounceCts.Token;
+
+        if (string.IsNullOrWhiteSpace(userSearchQuery))
+        {
+            userSearchResults.Clear();
+            userSearchResultsVisible = false;
+            return;
+        }
+
+        searchingUsers = true;
+        userSearchResultsVisible = true;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(300, token);
+            userSearchResults = await NotificationService.SearchUsersAsync(userSearchQuery, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        finally
+        {
+            searchingUsers = false;
+        }
+    }
+
+    private void SelectUser(LibraryManagementDAL.DTO.Circulation.UserSearchResult user)
+    {
+        notificationModel.UserId = user.UserId;
+        selectedUserName = user.FullName;
+        selectedUserEmail = user.Email;
+        userSearchQuery = string.Empty;
+        userSearchResultsVisible = false;
+    }
+
+    private void ClearSelectedUser()
+    {
+        notificationModel.UserId = null;
+        selectedUserName = "---";
+        selectedUserEmail = string.Empty;
+        userSearchQuery = string.Empty;
+        userSearchResultsVisible = false;
+    }
+
+    private async Task SendNotificationAsync()
+    {
+        if (notificationModel.UserId is null or <= 0)
+        {
+            Toasts.Warning("Please select a member.");
+            return;
+        }
+
+        sendingNotification = true;
+        var result = await NotificationService.SendNotificationAsync(notificationModel);
+        sendingNotification = false;
+
+        if (result.IsSuccess)
+        {
+            Toasts.Success(result.Message);
+            Navigation.NavigateTo("/Notification/Index");
+        }
+        else
+        {
+            Toasts.Error(result.Message);
+        }
+    }
+}

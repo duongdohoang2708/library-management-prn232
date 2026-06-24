@@ -1,0 +1,345 @@
+@page "/User/Create"
+@attribute [Authorize(Roles = "Admin,Manager")]
+@layout AuthLayout
+@using LibraryManagementDAL.DTO.User
+@inject UserClientService UserService
+@inject NavigationManager Navigation
+@inject ToastService Toasts
+
+<PageTitle>Create Librarian - LMS Library</PageTitle>
+
+<AuthSplitShell LeftClass="hidden lg:flex w-[40%] flex-col justify-between overflow-hidden border-r border-white/5 p-12"
+                RightClass="custom-scrollbar flex flex-1 flex-col items-center justify-center overflow-y-auto p-8 lg:p-12">
+    <LeftContent>
+        <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30">
+                <span class="material-symbols-outlined text-xl text-background-dark">admin_panel_settings</span>
+            </div>
+            <span class="text-lg font-bold tracking-tight text-white">Standard Library</span>
+        </div>
+
+        <div class="flex flex-col">
+            <h1 class="mb-4 text-3xl font-black leading-tight text-white">
+                Create a new<br />
+                <span class="text-primary">librarian account</span>
+            </h1>
+            <p class="mb-10 text-sm leading-relaxed text-white/50">
+                Add a staff account for managing books, borrow transactions, and member support in the library system.
+            </p>
+
+            <div class="space-y-4">
+                @foreach (var feature in features)
+                {
+                    <div class="flex items-center gap-3 text-sm">
+                        <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+                            <span class="material-symbols-outlined text-base text-primary">@feature.Icon</span>
+                        </div>
+                        <span class="text-white/70">@feature.Text</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5">
+            <div class="mb-2 flex items-center gap-1 text-primary">
+                @for (var i = 0; i < 5; i++)
+                {
+                    <span class="material-symbols-outlined fill-1 text-sm">star</span>
+                }
+            </div>
+            <p class="mb-3 text-xs italic leading-relaxed text-white/70">
+                "A good librarian account setup makes management faster, safer, and easier from day one."
+            </p>
+            <div class="flex items-center gap-2">
+                <div class="flex h-7 w-7 items-center justify-center rounded-full border border-primary/30 bg-primary/20">
+                    <span class="text-xs font-bold text-primary">A</span>
+                </div>
+                <div>
+                    <div class="text-xs font-semibold text-white/80">Admin Panel</div>
+                    <div class="text-[10px] text-white/30">Library Management System</div>
+                </div>
+            </div>
+        </div>
+    </LeftContent>
+
+    <RightContent>
+        <div class="w-full max-w-lg">
+            <div class="mb-8 flex items-center gap-3 lg:hidden">
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+                    <span class="material-symbols-outlined text-lg text-background-dark">admin_panel_settings</span>
+                </div>
+                <span class="font-bold text-white">Standard Library</span>
+            </div>
+
+            <div class="mb-8">
+                <h2 class="mb-1 text-2xl font-black text-white">Create Librarian</h2>
+                <p class="text-sm text-white/40">Fill in the information below to create a new librarian account</p>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="mb-6 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    <span class="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg">error</span>
+                    <div>@errorMessage</div>
+                </div>
+            }
+
+            <EditForm Model="@model" OnValidSubmit="CreateAsync" class="space-y-5">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/60">
+                            Username <span class="text-red-400">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-white/25">badge</span>
+                            <input @bind="model.Username" class="auth-input !pl-11" placeholder="vd: librarian01" autocomplete="username" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/60">
+                            Full Name <span class="text-red-400">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-white/25">person</span>
+                            <input @bind="model.FullName" class="auth-input !pl-11" placeholder="Nguyễn Văn A" autocomplete="name" />
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/60">
+                        Email <span class="text-red-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-white/25">alternate_email</span>
+                        <input @bind="model.Email" class="auth-input !pl-11" placeholder="librarian@email.com" autocomplete="email" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/60">
+                            Password <span class="text-red-400">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-white/25">lock</span>
+                            <input value="@model.PasswordHash"
+                                   @oninput="HandlePasswordInput"
+                                   id="createPassword"
+                                   type="@(showCreatePassword ? "text" : "password")"
+                                   class="auth-input !pl-11 !pr-10"
+                                   placeholder="Tối thiểu 6 ký tự"
+                                   autocomplete="new-password" />
+                            <button type="button"
+                                    @onclick="ToggleCreatePassword"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 transition-colors hover:text-white/60">
+                                <span class="material-symbols-outlined text-base">@(showCreatePassword ? "visibility" : "visibility_off")</span>
+                            </button>
+                        </div>
+                        <div class="mt-2 flex gap-1">
+                            @for (var i = 0; i < 4; i++)
+                            {
+                                <div class="@GetStrengthBarClass(i)"></div>
+                            }
+                        </div>
+                        <p class="@($"mt-1 text-xs transition-colors {strengthLabelClass}")">@strengthLabel</p>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/60">
+                            Confirm Password <span class="text-red-400">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-white/25">lock_check</span>
+                            <input @bind="model.ComfirmPasswordHash"
+                                   @bind:event="oninput"
+                                   type="@(showCreateConfirmPassword ? "text" : "password")"
+                                   class="@($"auth-input !pl-11 !pr-10 {(IsConfirmPasswordMismatch ? "border-red-500/50" : string.Empty)}")"
+                                   placeholder="Nhập lại mật khẩu"
+                                   autocomplete="new-password" />
+                            <button type="button"
+                                    @onclick="ToggleCreateConfirmPassword"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 transition-colors hover:text-white/60">
+                                <span class="material-symbols-outlined text-base">@(showCreateConfirmPassword ? "visibility" : "visibility_off")</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/60">Phone Number</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-white/25">phone</span>
+                            <input @bind="model.Phone" class="auth-input !pl-11" placeholder="0901234567" autocomplete="tel" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/60">Date of Birth</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-base text-white/25">cake</span>
+                            <input @bind="model.DateOfBirth" type="date" class="auth-input !pl-11" style="color-scheme: dark;" />
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/60">Address</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-white/25">location_on</span>
+                        <input @bind="model.Address" class="auth-input !pl-11" placeholder="123 Đường ABC, Quận XYZ, TP.HCM" autocomplete="street-address" />
+                    </div>
+                </div>
+
+                <label class="flex items-start gap-3 pt-1">
+                    <input @bind="agreed" type="checkbox" class="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded border-white/20 bg-white/5 text-primary focus:ring-primary/40" />
+                    <span class="text-sm leading-relaxed text-white/50">
+                        I confirm this librarian account information is correct and has been approved by the administrator.
+                    </span>
+                </label>
+                @if (showAgreementError)
+                {
+                    <p class="flex items-center gap-1 text-xs text-red-400">
+                        <span class="material-symbols-outlined text-xs">warning</span>
+                        Please confirm before creating the account.
+                    </p>
+                }
+
+                <button disabled="@isBusy" class="btn-primary-auth mt-2 flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-80">
+                    <span class="material-symbols-outlined text-lg">@(isBusy ? "progress_activity" : "person_add")</span>
+                    <span>@(isBusy ? "Creating account..." : "Create Librarian")</span>
+                </button>
+            </EditForm>
+
+            <p class="mt-6 text-center text-sm text-white/40">
+                Back to
+                <a href="/User/AllUsers" class="ml-1 font-semibold text-primary transition-colors hover:text-primary/80">
+                    User Management
+                </a>
+            </p>
+        </div>
+    </RightContent>
+</AuthSplitShell>
+
+@code {
+    private readonly (string Icon, string Text)[] features =
+    [
+        ("badge", "Create staff access securely"),
+        ("menu_book", "Manage books and copies"),
+        ("swap_horiz", "Track borrowing activities"),
+        ("shield", "Protected role-based permissions")
+    ];
+
+    private UserCreateRequest model = new() { Role = "Librarian" };
+    private bool agreed;
+    private bool isBusy;
+    private string? errorMessage;
+    private bool showCreatePassword;
+    private bool showCreateConfirmPassword;
+    private bool showAgreementError;
+    private int passwordStrength;
+    private string strengthLabel = string.Empty;
+    private string strengthLabelClass = "text-white/30";
+
+    private bool IsConfirmPasswordMismatch =>
+        !string.IsNullOrWhiteSpace(model.ComfirmPasswordHash)
+        && !string.Equals(model.PasswordHash, model.ComfirmPasswordHash, StringComparison.Ordinal);
+
+    private void ToggleCreatePassword() => showCreatePassword = !showCreatePassword;
+
+    private void ToggleCreateConfirmPassword() => showCreateConfirmPassword = !showCreateConfirmPassword;
+
+    private void HandlePasswordInput(ChangeEventArgs args)
+    {
+        var value = args.Value?.ToString() ?? string.Empty;
+        model.PasswordHash = value;
+
+        passwordStrength = 0;
+        if (value.Length >= 6) passwordStrength++;
+        if (value.Length >= 10) passwordStrength++;
+        if (value.Any(char.IsUpper) && value.Any(char.IsLower)) passwordStrength++;
+        if (value.Any(char.IsDigit) && value.Any(ch => !char.IsLetterOrDigit(ch))) passwordStrength++;
+
+        (strengthLabel, strengthLabelClass) = passwordStrength switch
+        {
+            1 => ("Weak", "text-red-400"),
+            2 => ("Medium", "text-orange-400"),
+            3 => ("Strong", "text-yellow-400"),
+            4 => ("Very strong", "text-emerald-400"),
+            _ => (string.Empty, "text-white/30")
+        };
+    }
+
+    private string GetStrengthBarClass(int index)
+    {
+        var baseClass = "h-1 flex-1 rounded-full transition-all duration-300 ";
+        if (index >= passwordStrength)
+        {
+            return baseClass + "bg-white/10";
+        }
+
+        var color = passwordStrength switch
+        {
+            1 => "bg-red-500",
+            2 => "bg-orange-500",
+            3 => "bg-yellow-500",
+            _ => "bg-emerald-500"
+        };
+
+        return baseClass + color;
+    }
+
+    private async Task CreateAsync()
+    {
+        errorMessage = null;
+        model.Role = "Librarian";
+        showAgreementError = false;
+
+        if (string.IsNullOrWhiteSpace(model.Username) ||
+            string.IsNullOrWhiteSpace(model.FullName) ||
+            string.IsNullOrWhiteSpace(model.Email) ||
+            string.IsNullOrWhiteSpace(model.PasswordHash) ||
+            string.IsNullOrWhiteSpace(model.ComfirmPasswordHash))
+        {
+            errorMessage = "Please fill in all required fields.";
+            return;
+        }
+
+        if (model.PasswordHash != model.ComfirmPasswordHash)
+        {
+            errorMessage = "Passwords do not match.";
+            return;
+        }
+
+        if (!agreed)
+        {
+            showAgreementError = true;
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var result = await UserService.CreateAsync(model);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                Navigation.NavigateTo("/User/AllUsers", forceLoad: false);
+            }
+            else
+            {
+                errorMessage = result.Message;
+            }
+        }
+        catch
+        {
+            errorMessage = "Create user failed.";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

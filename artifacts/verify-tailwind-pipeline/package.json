@@ -1,0 +1,15 @@
+{
+  "name": "librarymanagement-blazor",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build:css": "tailwindcss -i ./Styles/tailwind.css -o ./wwwroot/css/tailwind.css --config ./tailwind.config.js --minify",
+    "watch:css": "tailwindcss -i ./Styles/tailwind.css -o ./wwwroot/css/tailwind.css --config ./tailwind.config.js --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
+    "tailwindcss": "^3.4.13"
+  }
+}

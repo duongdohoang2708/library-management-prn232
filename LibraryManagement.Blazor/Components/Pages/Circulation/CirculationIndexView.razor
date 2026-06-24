@@ -1,0 +1,186 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+<div class="custom-scrollbar flex-1 min-w-0 overflow-y-auto p-8">
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="mb-2 font-display text-4xl font-bold text-white">Circulation Management</h1>
+            <p class="text-white/60">List of active or overdue borrowing transactions</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/Reservation/Index" class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 font-bold text-white transition-all hover:bg-white/10">
+                <span class="material-symbols-outlined text-xl text-primary">bookmarks</span>
+                Reservations
+            </a>
+            <a href="/Circulation/Borrow" class="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-bold text-background-dark transition-all hover:shadow-lg hover:shadow-primary/20">
+                <span class="material-symbols-outlined text-xl">add</span>
+                New Transaction
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">@ErrorMessage</div>
+    }
+
+    <div class="mb-8 rounded-2xl border border-white/10 bg-black/20 p-6 backdrop-blur-md">
+        <form method="get" action="/Circulation/Index" class="flex flex-col gap-4 md:flex-row">
+            <div class="relative flex-1">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/40">search</span>
+                <input type="text"
+                       name="searchQuery"
+                       value="@SearchQuery"
+                       oninput="clearTimeout(this.delay); this.delay = setTimeout(() => { this.form.requestSubmit(); }, 500);"
+                       placeholder="Transaction ID, User ID, Book..."
+                       class="w-full rounded-xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-white transition-colors focus:border-primary focus:outline-none" />
+            </div>
+
+            <div class="flex gap-4">
+                <select name="statusFilter"
+                        onchange="this.form.requestSubmit()"
+                        class="cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                    <option value="">All Statuses</option>
+                    <option value="Borrowing" selected="@(StatusFilter == "Borrowing")">Borrowing</option>
+                    <option value="Overdue" selected="@(StatusFilter == "Overdue")">Overdue</option>
+                    <option value="Returned" selected="@(StatusFilter == "Returned")">Returned</option>
+                </select>
+
+                @if (!string.IsNullOrWhiteSpace(SearchQuery) || !string.IsNullOrWhiteSpace(StatusFilter))
+                {
+                    <a href="/Circulation/Index" class="flex items-center rounded-xl bg-white/5 px-4 py-3 font-medium text-white/60 transition-colors hover:bg-white/10" title="Clear Filters">
+                        <span class="material-symbols-outlined">close</span>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+
+    <div class="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-white/5 bg-black/20 p-6 text-white">
+            <h3 class="flex items-center gap-2 text-lg font-bold">
+                <span class="material-symbols-outlined text-primary">receipt_long</span>
+                Active Transactions
+            </h3>
+        </div>
+
+        <div class="custom-scrollbar overflow-x-auto">
+            <table class="w-full border-collapse text-left">
+                <thead>
+                    <tr class="bg-black/20 text-[11px] font-bold uppercase tracking-wider text-white/40">
+                        <th class="border-b border-white/5 p-4">Transaction ID</th>
+                        <th class="border-b border-white/5 p-4">Borrower (ID)</th>
+                        <th class="border-b border-white/5 p-4">Borrow Date</th>
+                        <th class="border-b border-white/5 p-4">Due Date</th>
+                        <th class="border-b border-white/5 p-4">Status</th>
+                        <th class="min-w-[200px] border-b border-white/5 p-4">Books Held</th>
+                        <th class="border-b border-white/5 p-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    @if (ListResult.Items.Any())
+                    {
+                        @foreach (var item in ListResult.Items)
+                        {
+                            var isOverdue = item.DueDate.Date < DateTime.UtcNow.Date;
+                            var activeDetails = item.BorrowDetails.Where(detail => detail.ActualReturnDate == null).ToList();
+
+                            <tr class="group border-b border-white/5 text-white/80 transition-colors hover:bg-white/5">
+                                <td class="p-4 font-medium text-white">#@item.BorrowTransactionId</td>
+                                <td class="p-4">
+                                    <div class="font-semibold text-white transition-colors group-hover:text-primary">@item.UserFullName</div>
+                                    <div class="text-[11px] text-white/40">ID: @item.UserId</div>
+                                </td>
+                                <td class="p-4 text-white/60">@item.BorrowDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="p-4">
+                                    <span class="rounded-md px-2 py-1 text-xs font-semibold @(isOverdue ? "border border-red-500/20 bg-red-500/10 text-red-400" : "text-white/80")">
+                                        @item.DueDate.ToString("dd/MM/yyyy")
+                                    </span>
+                                </td>
+                                <td class="p-4">
+                                    <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider @GetTransactionStatusClass(item.Status, isOverdue)">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-current @(item.Status == "Overdue" || (item.Status == "Borrowing" && isOverdue) ? "animate-pulse" : "")"></span>
+                                        @GetTransactionStatusText(item.Status, isOverdue)
+                                    </span>
+                                </td>
+                                <td class="p-4">
+                                    <div class="flex flex-col gap-1.5">
+                                        @foreach (var detail in activeDetails)
+                                        {
+                                            <div class="flex items-center gap-2 rounded border border-white/5 bg-black/20 p-2">
+                                                <span class="material-symbols-outlined text-sm text-white/30">book</span>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="truncate text-[12px] text-white" title="@detail.BookTitle">@detail.BookTitle</div>
+                                                    <div class="font-mono text-[10px] tracking-wider text-primary">@detail.Barcode</div>
+                                                </div>
+                                                <button type="button"
+                                                        @onclick="async () => await RenewAsync.InvokeAsync(detail.BorrowDetailId)"
+                                                        disabled="@IsBusy"
+                                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-amber-300 transition-all hover:border-amber-400 hover:bg-amber-400 hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
+                                                        title="Renew 7 days">
+                                                    <span class="material-symbols-outlined text-sm">update</span>
+                                                </button>
+                                            </div>
+                                        }
+                                        @if (!activeDetails.Any())
+                                        {
+                                            <div class="flex items-center gap-2 rounded border border-emerald-500/10 bg-emerald-500/5 p-2">
+                                                <span class="material-symbols-outlined text-sm text-emerald-500/40">check_circle</span>
+                                                <div class="text-[11px] font-bold uppercase tracking-widest text-emerald-400">All Items Returned</div>
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="p-4 align-middle">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="/Notification/SendNotification?userId=@item.UserId"
+                                           class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-primary transition-all hover:border-primary hover:bg-primary hover:text-background-dark"
+                                           title="Send Notification">
+                                            <span class="material-symbols-outlined text-lg">notifications_active</span>
+                                        </a>
+
+                                        @if (item.Status != "Returned")
+                                        {
+                                            <a href="/Circulation/Return?id=@item.BorrowTransactionId"
+                                               class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-primary transition-all hover:border-primary hover:bg-primary hover:text-background-dark"
+                                               title="Process Return">
+                                                <span class="material-symbols-outlined text-lg">assignment_return</span>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="inline-flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-lg border border-white/10 text-white/20" title="Transaction Completed">
+                                                <span class="material-symbols-outlined text-lg">check_circle</span>
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="p-12 text-center text-white/40">
+                                <span class="material-symbols-outlined mb-4 block text-6xl text-white/10">receipt_long</span>
+                                <p class="text-sm">No active borrowing transactions found.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <PagedFooter CurrentPage="@ListResult.CurrentPage" TotalPages="@ListResult.TotalPages" BuildHref="@BuildHref" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? SearchQuery { get; set; }
+    [Parameter] public string? StatusFilter { get; set; }
+    [Parameter] public LibraryManagementDAL.DTO.Circulation.CirculationListResult ListResult { get; set; } = new();
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public Func<int, string> BuildHref { get; set; } = default!;
+    [Parameter] public Func<string, bool, string> GetTransactionStatusClass { get; set; } = default!;
+    [Parameter] public Func<string, bool, string> GetTransactionStatusText { get; set; } = default!;
+    [Parameter] public EventCallback<int> RenewAsync { get; set; }
+}

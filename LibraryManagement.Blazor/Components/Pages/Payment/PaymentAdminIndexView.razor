@@ -1,0 +1,118 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+<div class="custom-scrollbar flex-1 min-w-0 overflow-y-auto p-8">
+    <div class="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div>
+            <h1 class="mb-2 text-4xl font-bold text-white">Fees & Fines Management</h1>
+            <p class="text-white/60">Manage payments for overdue, damaged, or lost books.</p>
+        </div>
+        <div>
+            <a href="/Payment/CreateFine" class="group flex items-center gap-2 rounded-xl border border-white/5 bg-white/5 px-5 py-3 font-bold text-white transition-all hover:border-primary/30 hover:bg-white/10">
+                <span class="material-symbols-outlined text-primary transition-transform group-hover:scale-110">add_card</span>
+                Create Fine Manually
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">@ErrorMessage</div>
+    }
+
+    <div class="mb-8 rounded-2xl border border-white/5 bg-black/20 p-6 backdrop-blur-md">
+        <div class="flex flex-col gap-4 md:flex-row">
+            <div class="relative flex-1">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/40">search</span>
+                <input value="@SearchText"
+                       @oninput="HandleSearchInputAsync"
+                       placeholder="Search ID, Name, Email..."
+                       class="w-full rounded-xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-white transition-colors focus:border-primary focus:outline-none" />
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                <div class="flex items-center">
+                    <button type="button"
+                            @onclick="ClearSearch"
+                            class="flex items-center justify-center gap-2 rounded-xl bg-red-400/10 px-6 py-3 font-medium text-red-400 transition-colors hover:bg-red-400/20"
+                            title="Clear Filters">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                        Clear
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20 backdrop-blur-md">
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-left">
+                <thead>
+                    <tr class="border-b border-white/5 bg-white/5">
+                        <th class="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-white/30">Member</th>
+                        <th class="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-white/30">Email</th>
+                        <th class="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-white/30">Books</th>
+                        <th class="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-white/30">Total Fine</th>
+                        <th class="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-white/30">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    @if (Users.Any())
+                    {
+                        @foreach (var user in Users)
+                        {
+                            <tr class="group transition-colors hover:bg-white/[0.03]">
+                                <td class="px-6 py-5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-white/5 bg-white/5 text-sm font-bold text-primary">
+                                            @(string.IsNullOrWhiteSpace(user.FullName) ? "?" : user.FullName[..1])
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-white transition-colors group-hover:text-primary">@user.FullName</p>
+                                            <p class="font-mono text-[10px] italic text-white/30">ID: #@user.UserId</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-sm text-white/60">@user.Email</td>
+                                <td class="px-6 py-5 text-right text-sm text-white/80">@user.UnpaidBookCount</td>
+                                <td class="px-6 py-5 text-right font-black text-primary">@user.TotalUnpaidFine.ToString("N0") VND</td>
+                                <td class="px-6 py-5 text-right">
+                                    <a href="/Payment/Details/@user.UserId"
+                                       class="inline-flex items-center rounded-lg border border-white/5 bg-white/5 px-4 py-2 text-sm font-bold text-white transition-all hover:border-primary hover:bg-primary hover:text-background-dark">
+                                        Process Payment
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="py-12 text-center text-white/40">
+                                <span class="material-symbols-outlined mb-4 block text-5xl opacity-50">sentiment_satisfied</span>
+                                Great! There are currently no members with unpaid fines.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <PagedFooter CurrentPage="@CurrentPage" TotalPages="@TotalPages" BuildHref="@BuildHref" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string SearchText { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyList<LibraryManagementDAL.DTO.Payment.UserFinesDTO> Users { get; set; } = Array.Empty<LibraryManagementDAL.DTO.Payment.UserFinesDTO>();
+    [Parameter] public int CurrentPage { get; set; }
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter] public Func<int, string> BuildHref { get; set; } = default!;
+    [Parameter] public EventCallback<string> SearchTextChanged { get; set; }
+    [Parameter] public EventCallback ClearSearch { get; set; }
+
+    private async Task HandleSearchInputAsync(ChangeEventArgs e)
+    {
+        await SearchTextChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+    }
+}

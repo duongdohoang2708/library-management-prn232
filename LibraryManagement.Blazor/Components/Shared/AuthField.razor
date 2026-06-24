@@ -1,0 +1,32 @@
+<div class="@ContainerClass">
+    <label class="@LabelClass">
+        @LabelContent
+    </label>
+    <div class="relative">
+        <span class="material-symbols-outlined pointer-events-none absolute left-@IconLeftClass top-1/2 -translate-y-1/2 @IconClass">@Icon</span>
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string ContainerClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public string LabelClass { get; set; } = "block text-sm font-semibold text-white/70 mb-2";
+
+    [Parameter]
+    public RenderFragment? LabelContent { get; set; }
+
+    [Parameter]
+    public string Icon { get; set; } = string.Empty;
+
+    [Parameter]
+    public string IconClass { get; set; } = "text-white/30 text-lg";
+
+    [Parameter]
+    public string IconLeftClass { get; set; } = "4";
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

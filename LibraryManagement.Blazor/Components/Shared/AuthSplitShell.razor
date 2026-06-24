@@ -1,0 +1,22 @@
+<div class="flex min-h-screen">
+    <div class="@LeftClass">
+        @LeftContent
+    </div>
+    <div class="@RightClass">
+        @RightContent
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string LeftClass { get; set; } = "hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden border-r border-white/5";
+
+    [Parameter]
+    public string RightClass { get; set; } = "flex-1 flex flex-col justify-center items-center p-8 lg:p-16";
+
+    [Parameter]
+    public RenderFragment? LeftContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? RightContent { get; set; }
+}

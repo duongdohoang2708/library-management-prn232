@@ -1,0 +1,40 @@
+@inherits LayoutComponentBase
+@using LibraryManagement.Blazor.Models
+
+<div class="flex min-h-screen teal-gradient text-slate-100">
+    <DashboardSidebar UserState="@userState" />
+
+    <main class="ml-20 flex min-h-screen min-w-0 flex-1 flex-col">
+        <DashboardHeader UserState="@userState" />
+
+        @Body
+
+        <DashboardFooter />
+    </main>
+</div>
+
+<ToastViewport />
+
+@if (!userState.IsStaff)
+{
+    <AIChatBox />
+}
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">x</span>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private ShellUserState userState = ShellUserState.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var state = await AuthenticationStateTask;
+        userState = ShellUserState.From(state.User);
+    }
+}

@@ -1,0 +1,237 @@
+@page "/Review"
+@page "/Review/Index"
+@inject ReviewClientService ReviewService
+@inject ToastService Toasts
+
+<PageTitle>@(reviewPage?.Book is null ? "Reviews" : $"Reviews - {reviewPage.Book.Title}")</PageTitle>
+
+@if (bookId <= 0)
+{
+    <div class="flex flex-1 items-center justify-center px-8 py-16">
+        <div class="w-full max-w-lg rounded-[2rem] border border-white/5 bg-black/20 p-8 text-center backdrop-blur">
+            <h1 class="text-3xl font-black text-white">Missing book</h1>
+            <p class="mt-4 text-sm leading-7 text-white/60">
+                Open this page with a valid <code>bookId</code> query parameter.
+            </p>
+        </div>
+    </div>
+}
+else if (reviewPage is null)
+{
+    <div class="flex flex-1 items-center justify-center px-8 py-16">
+        <div class="w-full max-w-lg rounded-[2rem] border border-white/5 bg-black/20 p-8 text-center backdrop-blur">
+            <h1 class="text-3xl font-black text-white">Book not found</h1>
+            <p class="mt-4 text-sm leading-7 text-white/60">
+                The requested book could not be loaded.
+            </p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="custom-scrollbar flex min-w-0 flex-1 flex-col overflow-y-auto bg-[#0A0F1E] pb-20">
+        <div class="relative mb-10 h-[250px] w-full overflow-hidden">
+            <div class="absolute inset-0 z-0">
+                <img src="@BookImageHelper.Resolve(reviewPage.Book.ImageUrl, reviewPage.Book.Title)"
+                     alt=""
+                     onerror="this.onerror=null;this.src='/images/book-placeholder.svg';"
+                     class="h-full w-full scale-110 object-cover opacity-20 blur-2xl" />
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0A0F1E] via-transparent to-transparent"></div>
+            </div>
+
+            <div class="relative z-10 mx-auto flex h-full max-w-5xl items-end px-8 pb-10">
+                <div class="flex items-center gap-8">
+                    <div class="h-44 w-32 flex-shrink-0 overflow-hidden rounded-2xl border border-white/5 shadow-2xl">
+                        <img src="@BookImageHelper.Resolve(reviewPage.Book.ImageUrl, reviewPage.Book.Title)"
+                             alt="@reviewPage.Book.Title"
+                             onerror="this.onerror=null;this.src='/images/book-placeholder.svg';"
+                             class="h-full w-full object-cover" />
+                    </div>
+                    <div>
+                        <nav class="mb-4 flex gap-2 text-xs font-bold uppercase tracking-widest text-white/30">
+                            <a href="/Home/Index" class="transition-colors hover:text-primary">Home</a>
+                            <span>/</span>
+                            <a href="/Books/Details/@reviewPage.Book.BookId" class="transition-colors hover:text-primary">Details</a>
+                            <span>/</span>
+                            <span class="text-white/60">Reviews</span>
+                        </nav>
+                        <h1 class="mb-2 text-4xl font-black leading-tight text-white">@reviewPage.Book.Title</h1>
+                        <p class="font-bold text-primary">by @reviewPage.Book.Author?.Name</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mx-auto grid w-full max-w-5xl grid-cols-1 gap-12 px-8 lg:grid-cols-3">
+            <div class="lg:col-span-1">
+                <div class="sticky top-10 h-fit rounded-[2.5rem] border border-white/5 bg-white/5 p-8 shadow-2xl backdrop-blur-xl">
+                    @if (isAuthenticated && isMember)
+                    {
+                        <h2 class="mb-2 text-xl font-black text-white">@(reviewPage.UserReview is not null ? "Your Review" : "Write a Review")</h2>
+                        <p class="mb-8 text-xs text-white/40">Tell us what you think about this book.</p>
+
+                        <div class="space-y-6">
+                            <div>
+                                <label class="mb-4 block text-center text-[10px] font-black uppercase tracking-widest text-white/40">Select Stars</label>
+                                <div class="flex justify-center gap-2">
+                                    @for (var i = 1; i <= 5; i++)
+                                    {
+                                        var starValue = i;
+                                        <button type="button" class="p-1 transition-all hover:scale-125" @onclick="() => rating = starValue">
+                                            <span class="material-symbols-outlined text-3xl @(starValue <= rating ? "text-amber-400 fill-current" : "text-white/20")">star</span>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <div>
+                                <textarea @bind="comment"
+                                          placeholder="Share your thoughts..."
+                                          class="h-32 w-full resize-none rounded-2xl border border-white/5 bg-white/5 px-5 py-4 text-sm text-white placeholder:text-white/20 outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"></textarea>
+                            </div>
+
+                            <button type="button"
+                                    @onclick="SubmitReviewAsync"
+                                    disabled="@submitting"
+                                    class="w-full rounded-2xl bg-primary py-4 font-black text-background-dark shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
+                                @(submitting ? "Submitting..." : "Submit Review")
+                            </button>
+                        </div>
+                    }
+                    else if (isAuthenticated)
+                    {
+                        <div class="py-10 text-center">
+                            <span class="material-symbols-outlined mb-4 text-4xl text-white/20">visibility</span>
+                            <h3 class="mb-3 font-bold text-white">Review is for members</h3>
+                            <p class="text-xs text-white/40">Staff accounts can read community reviews but cannot submit member ratings.</p>
+                        </div>
+                    }
+                    else
+                    {
+                    <div class="py-10 text-center">
+                        <span class="material-symbols-outlined mb-4 text-4xl text-primary">lock</span>
+                        <h3 class="mb-3 font-bold text-white">Please logging to review</h3>
+                        <a href="/Auth/Login" class="text-xs font-black uppercase tracking-widest text-primary hover:underline">Login Now</a>
+                    </div>
+                }
+                </div>
+            </div>
+
+            <div class="space-y-8 lg:col-span-2">
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-2xl font-black text-white">Community Reviews</h2>
+                    <div class="rounded-full border border-white/5 bg-white/5 px-4 py-1.5 text-[10px] font-black uppercase text-white/50">@($"{reviewPage.Reviews.Count} Reviews")</div>
+                </div>
+
+                @if (reviewPage.Reviews.Any())
+                {
+                    @foreach (var review in reviewPage.Reviews)
+                    {
+                        var reviewerName = review.User?.FullName ?? review.Account?.FullName ?? "Reader";
+                        var reviewerInitial = string.IsNullOrWhiteSpace(reviewerName) ? "R" : reviewerName[..1];
+                        <div class="group rounded-[2rem] border border-white/5 bg-white/5 p-8 transition-all hover:border-primary/20">
+                            <div class="mb-6 flex items-start justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/20 to-background-dark/30 text-xl font-black text-primary">
+                                        @reviewerInitial
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-white">@reviewerName</h4>
+                                        <div class="mt-0.5 flex items-center gap-2">
+                                            <div class="flex text-amber-400">
+                                                @for (var i = 1; i <= 5; i++)
+                                                {
+                                                    <span class="material-symbols-outlined text-xs @(i <= review.Rating ? "fill-current" : "opacity-20")">star</span>
+                                                }
+                                            </div>
+                                            <span class="text-[10px] font-bold text-white/20">
+                                                @(review.UpdatedAt.HasValue ? $"Updated {review.UpdatedAt.Value:MMM dd, yyyy}" : $"{review.CreatedAt:MMM dd, yyyy}")
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-sm italic leading-relaxed text-white/70">"@review.Comment"</p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="flex flex-col items-center justify-center rounded-[2.5rem] border border-dashed border-white/5 p-20 text-center">
+                        <span class="material-symbols-outlined mb-6 text-5xl text-white/10">chat_bubble</span>
+                        <h3 class="font-bold text-white/40">No reviews yet</h3>
+                        <p class="text-sm text-white/20">Be the first to share your thoughts!</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .fill-current {
+        font-variation-settings: 'FILL' 1;
+    }
+</style>
+
+@code {
+    [SupplyParameterFromQuery(Name = "bookId")]
+    public int bookId { get; set; }
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private ReviewPageViewModel? reviewPage;
+    private bool isAuthenticated;
+    private bool isMember;
+    private int rating = 5;
+    private string? comment;
+    private bool submitting;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+        isMember = authState.User.IsInRole("Member");
+
+        if (bookId <= 0)
+        {
+            reviewPage = null;
+            return;
+        }
+
+        reviewPage = await ReviewService.GetReviewPageAsync(bookId);
+        rating = reviewPage?.UserReview?.Rating ?? 5;
+        comment = reviewPage?.UserReview?.Comment;
+    }
+
+    private async Task SubmitReviewAsync()
+    {
+        if (reviewPage is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(comment))
+        {
+            Toasts.Warning("Please enter your review comment.");
+            return;
+        }
+
+        submitting = true;
+        var result = await ReviewService.SubmitReviewAsync(bookId, rating, comment);
+        submitting = false;
+
+        if (result.IsSuccess)
+        {
+            Toasts.Success(result.Message);
+            reviewPage = await ReviewService.GetReviewPageAsync(bookId);
+            rating = reviewPage?.UserReview?.Rating ?? rating;
+            comment = reviewPage?.UserReview?.Comment ?? comment;
+        }
+        else
+        {
+            Toasts.Error(result.Message);
+        }
+    }
+}

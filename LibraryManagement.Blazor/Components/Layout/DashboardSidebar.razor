@@ -1,0 +1,183 @@
+@inject NavigationManager Navigation
+
+<aside class="fixed left-0 top-0 z-50 flex h-full w-20 flex-col items-center justify-between border-r border-white/10 bg-black/20 py-8 backdrop-blur-xl">
+    <div>
+        <a href="@HomeUrl" class="mb-8 block text-primary" title="@HomeTitle">
+            <span class="material-symbols-outlined text-4xl font-bold">@(UserState.IsStaff ? "admin_panel_settings" : "menu_book")</span>
+        </a>
+
+        <nav class="flex flex-col gap-3">
+            @foreach (var item in NavigationItems)
+            {
+                <a href="@item.Url" class="@GetNavClass(item)" title="@item.Title">
+                    <span class="material-symbols-outlined">@item.Icon</span>
+                    <span class="pointer-events-none absolute left-full ml-3 translate-x-1 whitespace-nowrap rounded-lg border border-white/10 bg-black/90 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-xl transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100">
+                        @item.Title
+                    </span>
+                </a>
+            }
+        </nav>
+    </div>
+
+    <div class="flex flex-col items-center gap-3">
+        @if (UserState.IsAuthenticated)
+        {
+            <form method="post" action="/auth/logout">
+                <button type="submit"
+                        title="Logout"
+                        class="group relative rounded-xl p-3 text-white/40 transition-all hover:bg-red-500/10 hover:text-red-400">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span class="pointer-events-none absolute left-full ml-3 translate-x-1 whitespace-nowrap rounded-lg border border-red-500/20 bg-black/90 px-2.5 py-1.5 text-xs font-medium text-red-300 opacity-0 shadow-xl transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100">
+                        Logout
+                    </span>
+                </button>
+            </form>
+
+            <div class="group relative cursor-pointer">
+                <div class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 bg-primary/20 transition-all @(UserState.IsAdmin ? "border-primary" : "border-white/20") group-hover:border-primary">
+                    <span class="text-sm font-bold text-primary">@UserState.Initials</span>
+                </div>
+                @if (UserState.IsStaff)
+                {
+                    <div class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-background-dark bg-primary">
+                        <span class="material-symbols-outlined text-background-dark" style="font-size:10px">star</span>
+                    </div>
+                }
+
+                <div class="pointer-events-none absolute bottom-full left-full mb-0 ml-3 min-w-max translate-y-1 whitespace-nowrap rounded-xl border border-white/10 bg-black/95 p-3 opacity-0 shadow-2xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+                    <p class="text-xs font-semibold text-white">@UserState.DisplayName</p>
+                    <div class="mt-1.5 flex flex-wrap gap-1">
+                        @foreach (var role in UserState.Roles)
+                        {
+                            <span class="rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">@role</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <a href="/Auth/Login"
+               class="group relative rounded-xl p-3 text-white/60 transition-all hover:bg-white/5 hover:text-primary"
+               title="Login">
+                <span class="material-symbols-outlined">login</span>
+                <span class="pointer-events-none absolute left-full ml-3 translate-x-1 whitespace-nowrap rounded-lg border border-white/10 bg-black/90 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-xl transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100">
+                    Login
+                </span>
+            </a>
+        }
+    </div>
+</aside>
+
+@code {
+    [Parameter] public ShellUserState UserState { get; set; } = ShellUserState.Empty;
+
+    private string CurrentPath => "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0];
+
+    private string HomeUrl => UserState.IsStaff
+        ? (UserState.IsAdminOrManager ? "/Home/AdminDashboard" : "/Home/Index")
+        : "/Home/Index";
+
+    private string HomeTitle => UserState.IsStaff
+        ? (UserState.IsAdminOrManager ? "Admin Dashboard" : "Overview")
+        : "Home";
+
+    private IReadOnlyList<NavItem> NavigationItems => UserState.IsStaff ? BuildStaffItems() : BuildMemberItems();
+
+    private IReadOnlyList<NavItem> BuildMemberItems()
+    {
+        var items = new List<NavItem>
+        {
+            new("/Home/Index", "home", "Home"),
+            new("/Books/ViewBooks", "auto_stories", "Book Library")
+        };
+
+        if (UserState.IsAuthenticated)
+        {
+            items.AddRange(
+            [
+                new("/User/MemberDashboard", "dashboard", "My Dashboard"),
+                new("/User/BorrowHistory", "history", "Borrowed Books"),
+                new("/Reservation/MyReservations", "event_note", "My Reservations"),
+                new("/Payment/MyFines", "payments", "Fines & Fees"),
+                new("/Notification/Index", "notifications", "Notifications")
+            ]);
+        }
+
+        return items;
+    }
+
+    private IReadOnlyList<NavItem> BuildStaffItems()
+    {
+        var items = new List<NavItem>();
+        if (UserState.IsAdminOrManager)
+        {
+            items.Add(new NavItem("/Home/AdminDashboard", "dashboard", "System Statistics"));
+        }
+        else if (UserState.IsLibrarian)
+        {
+            items.Add(new NavItem("/Home/Index", "dashboard", "Overview"));
+        }
+
+        items.AddRange(
+        [
+            new("/Books/AllBooks", "auto_stories", "Manage Books List"),
+            new("/Catalog/Index", "category", "Catalog Data"),
+            new("/Inventory/Index", "inventory_2", "Physical Inventory"),
+            new("/Circulation/Index", "compare_arrows", "Circulation"),
+            new("/Payment/Index", "point_of_sale", "Fees & Fines")
+        ]);
+
+        if (UserState.IsLibrarian)
+        {
+            items.Add(new NavItem("/Notification/Index", "notifications", "Notifications"));
+        }
+
+        if (UserState.IsAdminOrManager)
+        {
+            items.AddRange(
+            [
+                new("/User/AllUsers", "group", "Readers & Users"),
+                new("/Reports/Index", "summarize", "Advanced Reports"),
+                new("/Audit/Index", "manage_search", "Audit Logs"),
+                new("/SystemSettings/Index", "settings", "System Settings")
+            ]);
+        }
+
+        return items;
+    }
+
+    private string GetNavClass(NavItem item)
+    {
+        var active = IsActive(item.Url);
+        return active
+            ? "group relative rounded-xl bg-primary p-3 text-background-dark shadow-lg shadow-primary/20"
+            : "group relative rounded-xl p-3 text-white/60 transition-all hover:bg-white/5 hover:text-primary";
+    }
+
+    private bool IsActive(string url)
+    {
+        var target = url.Split('?', '#')[0];
+        if (CurrentPath.Equals(target, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (target.Equals("/Books/AllBooks", StringComparison.OrdinalIgnoreCase))
+        {
+            return CurrentPath.StartsWith("/Books/AllBooks", StringComparison.OrdinalIgnoreCase)
+                || CurrentPath.StartsWith("/Books/AddBook", StringComparison.OrdinalIgnoreCase)
+                || CurrentPath.StartsWith("/Books/Update", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target.Equals("/Books/ViewBooks", StringComparison.OrdinalIgnoreCase))
+        {
+            return CurrentPath.StartsWith("/Books/ViewBooks", StringComparison.OrdinalIgnoreCase)
+                || CurrentPath.StartsWith("/Books/Details", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return CurrentPath.StartsWith(target, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed record NavItem(string Url, string Icon, string Title);
+}

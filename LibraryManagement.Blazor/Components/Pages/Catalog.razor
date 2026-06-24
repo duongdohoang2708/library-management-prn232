@@ -1,0 +1,356 @@
+@page "/Catalog"
+@page "/Catalog/Index"
+@attribute [Authorize(Roles = "Admin,Manager,Librarian")]
+@using LibraryManagementDAL.DTO.Catalog
+@inject CatalogClientService CatalogService
+@inject NavigationManager Navigation
+@inject ToastService Toasts
+
+<PageTitle>Catalog Management</PageTitle>
+
+<div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+    <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+            <h1 class="mb-2 text-4xl font-black text-white">Catalog Management</h1>
+            <p class="text-white/50">Manage authors, categories, and publishers used by the book catalog.</p>
+        </div>
+        <div class="grid grid-cols-3 gap-3 min-w-full lg:min-w-[420px]">
+            <button type="button" @onclick='() => SetActiveTab("authors")' class="@GetTabButtonClass("authors")">
+                <span class="@GetTabLabelClass("authors")">Authors</span>
+                <span class="text-xl">@catalog.Authors.Count</span>
+            </button>
+            <button type="button" @onclick='() => SetActiveTab("categories")' class="@GetTabButtonClass("categories")">
+                <span class="@GetTabLabelClass("categories")">Categories</span>
+                <span class="text-xl">@catalog.Categories.Count</span>
+            </button>
+            <button type="button" @onclick='() => SetActiveTab("publishers")' class="@GetTabButtonClass("publishers")">
+                <span class="@GetTabLabelClass("publishers")">Publishers</span>
+                <span class="text-xl">@catalog.Publishers.Count</span>
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 font-bold text-red-300">@errorMessage</div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="rounded-2xl border border-white/5 bg-black/20 p-10 text-center text-white/60">Loading catalog data...</div>
+    }
+    else
+    {
+        <section class="@GetPanelClass("authors")">
+            <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+                <div class="flex flex-col gap-4 border-b border-white/5 p-5 xl:flex-row xl:items-end xl:justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-white">Authors</h2>
+                        <p class="mt-1 text-sm text-white/45">Create and edit author profile data.</p>
+                    </div>
+                    <form class="grid flex-1 grid-cols-1 gap-3 md:grid-cols-[220px_1fr_auto] xl:max-w-4xl" @onsubmit="CreateAuthorAsync" @onsubmit:preventDefault>
+                        <input @bind="newAuthor.Name" required maxlength="150" placeholder="Author name" class="h-11 rounded-lg border border-white/5 bg-black/40 px-3 text-white outline-none focus:border-primary" />
+                        <input @bind="newAuthor.Biography" placeholder="Biography" class="h-11 rounded-lg border border-white/5 bg-black/40 px-3 text-white outline-none focus:border-primary" />
+                        <button disabled="@isBusy" class="h-11 rounded-lg bg-primary px-5 font-black text-background-dark disabled:cursor-not-allowed disabled:opacity-60">Add</button>
+                    </form>
+                </div>
+
+                <div class="divide-y divide-white/5">
+                    @foreach (var author in catalog.Authors)
+                    {
+                        <div class="grid grid-cols-1 items-center gap-3 p-4 xl:grid-cols-[1fr_auto]">
+                            <form class="grid grid-cols-1 gap-3 md:grid-cols-[240px_1fr]" @onsubmit="() => UpdateAuthorAsync(author)" @onsubmit:preventDefault>
+                                <input @bind="author.Name" required maxlength="150" class="h-10 rounded-lg border border-white/5 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                                <input @bind="author.Biography" class="h-10 rounded-lg border border-white/5 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                                <button disabled="@isBusy" class="h-10 rounded-lg border border-primary/30 bg-primary/15 font-black text-primary xl:hidden disabled:cursor-not-allowed disabled:opacity-60">Save</button>
+                            </form>
+                            <div class="flex gap-2">
+                                <button type="button" @onclick="() => UpdateAuthorAsync(author)" disabled="@isBusy" class="hidden h-10 items-center rounded-lg border border-primary/30 bg-primary/15 px-4 font-black text-primary disabled:cursor-not-allowed disabled:opacity-60 xl:inline-flex">Save</button>
+                                <button type="button" @onclick="() => DeleteAuthorAsync(author.AuthorId)" disabled="@isBusy" class="h-10 rounded-lg border border-red-500/25 bg-red-500/10 px-4 font-black text-red-300 disabled:cursor-not-allowed disabled:opacity-60">Delete</button>
+                            </div>
+                        </div>
+                    }
+                    @if (!catalog.Authors.Any())
+                    {
+                        <div class="p-8 text-center text-white/45">No authors yet.</div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="@GetPanelClass("categories")">
+            <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+                <div class="flex flex-col gap-4 border-b border-white/5 p-5 xl:flex-row xl:items-end xl:justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-white">Categories</h2>
+                        <p class="mt-1 text-sm text-white/45">Keep genres and subject groups clean.</p>
+                    </div>
+                    <form class="grid flex-1 grid-cols-1 gap-3 md:grid-cols-[220px_1fr_auto] xl:max-w-4xl" @onsubmit="CreateCategoryAsync" @onsubmit:preventDefault>
+                        <input @bind="newCategory.CategoryName" required maxlength="100" placeholder="Category name" class="h-11 rounded-lg border border-white/5 bg-black/40 px-3 text-white outline-none focus:border-primary" />
+                        <input @bind="newCategory.Description" maxlength="255" placeholder="Description" class="h-11 rounded-lg border border-white/5 bg-black/40 px-3 text-white outline-none focus:border-primary" />
+                        <button disabled="@isBusy" class="h-11 rounded-lg bg-primary px-5 font-black text-background-dark disabled:cursor-not-allowed disabled:opacity-60">Add</button>
+                    </form>
+                </div>
+
+                <div class="divide-y divide-white/5">
+                    @foreach (var category in catalog.Categories)
+                    {
+                        <div class="grid grid-cols-1 items-center gap-3 p-4 xl:grid-cols-[1fr_auto]">
+                            <form class="grid grid-cols-1 gap-3 md:grid-cols-[240px_1fr]" @onsubmit="() => UpdateCategoryAsync(category)" @onsubmit:preventDefault>
+                                <input @bind="category.CategoryName" required maxlength="100" class="h-10 rounded-lg border border-white/5 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                                <input @bind="category.Description" maxlength="255" class="h-10 rounded-lg border border-white/5 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                                <button disabled="@isBusy" class="h-10 rounded-lg border border-primary/30 bg-primary/15 font-black text-primary xl:hidden disabled:cursor-not-allowed disabled:opacity-60">Save</button>
+                            </form>
+                            <div class="flex gap-2">
+                                <button type="button" @onclick="() => UpdateCategoryAsync(category)" disabled="@isBusy" class="hidden h-10 items-center rounded-lg border border-primary/30 bg-primary/15 px-4 font-black text-primary disabled:cursor-not-allowed disabled:opacity-60 xl:inline-flex">Save</button>
+                                <button type="button" @onclick="() => DeleteCategoryAsync(category.CategoryId)" disabled="@isBusy" class="h-10 rounded-lg border border-red-500/25 bg-red-500/10 px-4 font-black text-red-300 disabled:cursor-not-allowed disabled:opacity-60">Delete</button>
+                            </div>
+                        </div>
+                    }
+                    @if (!catalog.Categories.Any())
+                    {
+                        <div class="p-8 text-center text-white/45">No categories yet.</div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="@GetPanelClass("publishers")">
+            <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+                <div class="flex flex-col gap-4 border-b border-white/5 p-5 xl:flex-row xl:items-end xl:justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-white">Publishers</h2>
+                        <p class="mt-1 text-sm text-white/45">Manage publisher names and addresses.</p>
+                    </div>
+                    <form class="grid flex-1 grid-cols-1 gap-3 md:grid-cols-[220px_1fr_auto] xl:max-w-4xl" @onsubmit="CreatePublisherAsync" @onsubmit:preventDefault>
+                        <input @bind="newPublisher.PublisherName" required maxlength="150" placeholder="Publisher name" class="h-11 rounded-lg border border-white/5 bg-black/40 px-3 text-white outline-none focus:border-primary" />
+                        <input @bind="newPublisher.Address" maxlength="255" placeholder="Address" class="h-11 rounded-lg border border-white/5 bg-black/40 px-3 text-white outline-none focus:border-primary" />
+                        <button disabled="@isBusy" class="h-11 rounded-lg bg-primary px-5 font-black text-background-dark disabled:cursor-not-allowed disabled:opacity-60">Add</button>
+                    </form>
+                </div>
+
+                <div class="divide-y divide-white/5">
+                    @foreach (var publisher in catalog.Publishers)
+                    {
+                        <div class="grid grid-cols-1 items-center gap-3 p-4 xl:grid-cols-[1fr_auto]">
+                            <form class="grid grid-cols-1 gap-3 md:grid-cols-[240px_1fr]" @onsubmit="() => UpdatePublisherAsync(publisher)" @onsubmit:preventDefault>
+                                <input @bind="publisher.PublisherName" required maxlength="150" class="h-10 rounded-lg border border-white/5 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                                <input @bind="publisher.Address" maxlength="255" class="h-10 rounded-lg border border-white/5 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                                <button disabled="@isBusy" class="h-10 rounded-lg border border-primary/30 bg-primary/15 font-black text-primary xl:hidden disabled:cursor-not-allowed disabled:opacity-60">Save</button>
+                            </form>
+                            <div class="flex gap-2">
+                                <button type="button" @onclick="() => UpdatePublisherAsync(publisher)" disabled="@isBusy" class="hidden h-10 items-center rounded-lg border border-primary/30 bg-primary/15 px-4 font-black text-primary disabled:cursor-not-allowed disabled:opacity-60 xl:inline-flex">Save</button>
+                                <button type="button" @onclick="() => DeletePublisherAsync(publisher.PublisherId)" disabled="@isBusy" class="h-10 rounded-lg border border-red-500/25 bg-red-500/10 px-4 font-black text-red-300 disabled:cursor-not-allowed disabled:opacity-60">Delete</button>
+                            </div>
+                        </div>
+                    }
+                    @if (!catalog.Publishers.Any())
+                    {
+                        <div class="p-8 text-center text-white/45">No publishers yet.</div>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    private CatalogIndexResult catalog = new();
+    private AuthorSaveRequest newAuthor = new();
+    private CategorySaveRequest newCategory = new();
+    private PublisherSaveRequest newPublisher = new();
+    private bool isLoading = true;
+    private bool isBusy;
+    private string activeTab = "authors";
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        activeTab = GetFragmentTab();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            catalog = await CatalogService.GetIndexAsync();
+        }
+        catch
+        {
+            errorMessage = "Could not load catalog data right now.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetFragmentTab()
+    {
+        var fragment = new Uri(Navigation.Uri).Fragment.TrimStart('#');
+        return fragment is "categories" or "publishers" ? fragment : "authors";
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        Navigation.NavigateTo($"{new Uri(Navigation.Uri).GetLeftPart(UriPartial.Path)}#{tab}", replace: true);
+    }
+
+    private string GetTabButtonClass(string tab) =>
+        activeTab == tab
+            ? "rounded-xl border border-primary bg-primary px-4 py-3 text-left font-black text-background-dark"
+            : "rounded-xl border border-white/5 bg-black/20 px-4 py-3 text-left font-black text-white";
+
+    private string GetTabLabelClass(string tab) =>
+        activeTab == tab
+            ? "block text-xs uppercase"
+            : "block text-xs uppercase text-white/50";
+
+    private string GetPanelClass(string tab) => activeTab == tab ? string.Empty : "hidden";
+
+    private async Task CreateAuthorAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newAuthor.Name))
+        {
+            Toasts.Error("Author name is required.");
+            return;
+        }
+
+        await ExecuteCatalogActionAsync(
+            () => CatalogService.CreateAuthorAsync(new AuthorSaveRequest
+            {
+                Name = newAuthor.Name.Trim(),
+                Biography = string.IsNullOrWhiteSpace(newAuthor.Biography) ? null : newAuthor.Biography.Trim()
+            }),
+            "authors",
+            () => newAuthor = new AuthorSaveRequest());
+    }
+
+    private async Task UpdateAuthorAsync(LibraryManagementDAL.Models.Author author)
+    {
+        if (string.IsNullOrWhiteSpace(author.Name))
+        {
+            Toasts.Error("Author name is required.");
+            return;
+        }
+
+        await ExecuteCatalogActionAsync(
+            () => CatalogService.UpdateAuthorAsync(author.AuthorId, new AuthorSaveRequest
+            {
+                Name = author.Name.Trim(),
+                Biography = string.IsNullOrWhiteSpace(author.Biography) ? null : author.Biography.Trim()
+            }),
+            "authors");
+    }
+
+    private Task DeleteAuthorAsync(int id) => ExecuteCatalogActionAsync(() => CatalogService.DeleteAuthorAsync(id), "authors");
+
+    private async Task CreateCategoryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newCategory.CategoryName))
+        {
+            Toasts.Error("Category name is required.");
+            return;
+        }
+
+        await ExecuteCatalogActionAsync(
+            () => CatalogService.CreateCategoryAsync(new CategorySaveRequest
+            {
+                CategoryName = newCategory.CategoryName.Trim(),
+                Description = string.IsNullOrWhiteSpace(newCategory.Description) ? null : newCategory.Description.Trim()
+            }),
+            "categories",
+            () => newCategory = new CategorySaveRequest());
+    }
+
+    private async Task UpdateCategoryAsync(LibraryManagementDAL.Models.Category category)
+    {
+        if (string.IsNullOrWhiteSpace(category.CategoryName))
+        {
+            Toasts.Error("Category name is required.");
+            return;
+        }
+
+        await ExecuteCatalogActionAsync(
+            () => CatalogService.UpdateCategoryAsync(category.CategoryId, new CategorySaveRequest
+            {
+                CategoryName = category.CategoryName.Trim(),
+                Description = string.IsNullOrWhiteSpace(category.Description) ? null : category.Description.Trim()
+            }),
+            "categories");
+    }
+
+    private Task DeleteCategoryAsync(int id) => ExecuteCatalogActionAsync(() => CatalogService.DeleteCategoryAsync(id), "categories");
+
+    private async Task CreatePublisherAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newPublisher.PublisherName))
+        {
+            Toasts.Error("Publisher name is required.");
+            return;
+        }
+
+        await ExecuteCatalogActionAsync(
+            () => CatalogService.CreatePublisherAsync(new PublisherSaveRequest
+            {
+                PublisherName = newPublisher.PublisherName.Trim(),
+                Address = string.IsNullOrWhiteSpace(newPublisher.Address) ? null : newPublisher.Address.Trim()
+            }),
+            "publishers",
+            () => newPublisher = new PublisherSaveRequest());
+    }
+
+    private async Task UpdatePublisherAsync(Publisher publisher)
+    {
+        if (string.IsNullOrWhiteSpace(publisher.PublisherName))
+        {
+            Toasts.Error("Publisher name is required.");
+            return;
+        }
+
+        await ExecuteCatalogActionAsync(
+            () => CatalogService.UpdatePublisherAsync(publisher.PublisherId, new PublisherSaveRequest
+            {
+                PublisherName = publisher.PublisherName.Trim(),
+                Address = string.IsNullOrWhiteSpace(publisher.Address) ? null : publisher.Address.Trim()
+            }),
+            "publishers");
+    }
+
+    private Task DeletePublisherAsync(int id) => ExecuteCatalogActionAsync(() => CatalogService.DeletePublisherAsync(id), "publishers");
+
+    private async Task ExecuteCatalogActionAsync(Func<Task<OperationResult<int?>>> action, string tab, Action? onSuccess = null)
+    {
+        isBusy = true;
+        errorMessage = null;
+
+        try
+        {
+            var result = await action();
+            if (result.IsSuccess)
+            {
+                onSuccess?.Invoke();
+                activeTab = tab;
+                await LoadAsync();
+                SetActiveTab(tab);
+                Toasts.Success(result.Message);
+                return;
+            }
+
+            Toasts.Error(result.Message);
+        }
+        catch
+        {
+            Toasts.Error("Catalog action failed.");
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

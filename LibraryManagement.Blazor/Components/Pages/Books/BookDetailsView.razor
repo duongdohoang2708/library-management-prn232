@@ -1,0 +1,234 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+@using Microsoft.AspNetCore.Components
+@using LibraryManagementDAL.Models
+
+<div class="p-10">
+    <div class="mx-auto max-w-6xl">
+        @if (!string.IsNullOrWhiteSpace(SuccessMessage))
+        {
+            <div class="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-emerald-300">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span class="font-bold">@SuccessMessage</span>
+                </div>
+                @if (FollowUpAction is not null)
+                {
+                    <a href="@FollowUpAction.Url" class="text-xs font-black uppercase tracking-widest text-primary hover:underline">
+                        @FollowUpAction.Text
+                    </a>
+                }
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="mb-8 flex items-center gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-5 py-4 text-rose-300">
+                <span class="material-symbols-outlined">error</span>
+                <span class="font-bold">@ErrorMessage</span>
+            </div>
+        }
+
+        <div class="grid grid-cols-1 gap-16 lg:grid-cols-2">
+            <div class="sticky top-10 h-fit">
+                <div class="group relative flex aspect-[3/4] items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-slate-900 p-8 shadow-2xl">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
+                    <img class="h-full w-full scale-100 rounded-lg object-contain drop-shadow-2xl transition-transform duration-700 group-hover:scale-105"
+                         alt="@Book.Title"
+                         src="@BookImageHelper.Resolve(Book.ImageUrl, Book.Title)"
+                         onerror="this.onerror=null;this.src='/images/book-placeholder.svg';" />
+
+                    @if (!Book.IsActive)
+                    {
+                        <div class="absolute right-6 top-6 rounded-full border border-white/20 bg-slate-500/90 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg backdrop-blur-md">
+                            Discontinued
+                        </div>
+                    }
+                    else if (IsOutOfStock)
+                    {
+                        <div class="absolute right-6 top-6 rounded-full border border-white/20 bg-rose-500/90 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg backdrop-blur-md">
+                            Out of Stock
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="absolute right-6 top-6 rounded-full border border-white/20 bg-emerald-500/90 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg backdrop-blur-md">
+                            Available: @AvailableCount copies
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="flex flex-col">
+                <div class="flex-1">
+                    <div class="mb-6 flex items-center gap-3">
+                        <span class="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
+                            @Book.Category?.CategoryName
+                        </span>
+                        <div class="h-1 w-1 rounded-full bg-white/20"></div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-white/40">@Book.Publisher?.PublisherName</span>
+                    </div>
+
+                    <h1 class="mb-4 text-5xl font-black leading-tight tracking-tight text-white">
+                        @Book.Title
+                    </h1>
+
+                    <div class="mb-10 flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 font-black uppercase text-white/40">
+                            @Book.Author?.Name?.FirstOrDefault()
+                        </div>
+                        <p class="text-xl font-medium italic text-white/60">
+                            By @Book.Author?.Name
+                        </p>
+                    </div>
+
+                    <div class="relative mb-12 rounded-3xl border border-[#e7d80f]/30 bg-[#0b3b39]/30 p-6 shadow-lg">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[#e7d80f]">auto_awesome</span>
+                                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#e7d80f]">AI Summary</h3>
+                            </div>
+                        </div>
+                        <div class="prose prose-invert prose-sm max-w-none text-sm font-light leading-relaxed text-white/80">
+                            @if (!string.IsNullOrWhiteSpace(AiSummary))
+                            {
+                                @((MarkupString)AiSummary!)
+                            }
+                            else
+                            {
+                                <span class="italic text-white/40">@(AiSummaryError ?? "AI summary is not available for this book yet.")</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-12 grid grid-cols-2 gap-8 rounded-3xl border border-white/10 bg-white/5 p-8 md:grid-cols-4">
+                        <div>
+                            <p class="mb-1 text-[10px] font-black uppercase tracking-widest text-white/30">Publish Year</p>
+                            <p class="text-lg font-bold text-white">@Book.PublishYear</p>
+                        </div>
+                        <div>
+                            <p class="mb-1 text-[10px] font-black uppercase tracking-widest text-white/30">Edition</p>
+                            <p class="text-lg font-bold text-white">Edition @Book.EditionNumber</p>
+                        </div>
+                        <div>
+                            <p class="mb-1 text-[10px] font-black uppercase tracking-widest text-white/30">ISBN</p>
+                            <p class="truncate text-lg font-bold text-white" title="@Book.ISBN">@Book.ISBN</p>
+                        </div>
+                        <div>
+                            <p class="mb-1 text-[10px] font-black uppercase tracking-widest text-white/30">Status</p>
+                            @if (!Book.IsActive)
+                            {
+                                <p class="text-lg font-bold text-rose-400">Discontinued</p>
+                            }
+                            else if (CanBorrowNow)
+                            {
+                                <p class="text-lg font-bold text-emerald-400">Available</p>
+                            }
+                            else
+                            {
+                                <p class="text-lg font-bold text-rose-400">Out of Stock</p>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="group mb-12 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-8 transition-all duration-500 hover:border-primary/40">
+                        <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex flex-col gap-1">
+                                <p class="text-center text-[10px] font-black uppercase tracking-widest text-white/30 sm:text-left">Community Rating</p>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex text-amber-500">
+                                        @for (var i = 1; i <= 5; i++)
+                                        {
+                                            <span class="material-symbols-outlined text-xl @(i <= Math.Round(AverageRating) ? "fill-current" : "opacity-20")">star</span>
+                                        }
+                                    </div>
+                                    <span class="text-2xl font-black text-white">@AverageRating</span>
+                                    <span class="ml-1 font-bold text-white/30">(@TotalReviews reviews)</span>
+                                </div>
+                            </div>
+                            <a href="/Review?bookId=@Book.BookId" class="w-full rounded-2xl border border-primary/20 bg-white/5 px-6 py-3 text-center text-xs font-black uppercase tracking-widest text-primary shadow-lg transition-all hover:bg-primary hover:text-background-dark sm:w-auto">
+                                View All
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex flex-col gap-4 sm:flex-row">
+                    @if (IsMember)
+                    {
+                        @if (IsAuthenticated)
+                        {
+                            @if (CanBorrowNow)
+                            {
+                                <button type="button" @onclick="BorrowAsync" disabled="@Mutating" class="flex flex-1 items-center justify-center gap-3 rounded-2xl bg-primary px-10 py-5 font-black text-background-dark shadow-xl shadow-primary/30 transition-all active:scale-[0.98] hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70">
+                                    <span class="material-symbols-outlined">book_5</span>
+                                    <span>@(Mutating ? "Processing..." : "Borrow Now")</span>
+                                </button>
+                            }
+                            else if (Book.IsActive)
+                            {
+                                <button type="button" @onclick="ReserveAsync" disabled="@Mutating" class="flex flex-1 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-10 py-5 font-black text-white transition-all hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-70">
+                                    <span class="material-symbols-outlined">event_note</span>
+                                    <span>@(Mutating ? "Processing..." : "Reserve Queue")</span>
+                                </button>
+                            }
+                            else
+                            {
+                                <div class="flex-1">
+                                    <button type="button" disabled class="flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-10 py-5 font-black text-white/30">
+                                        <span class="material-symbols-outlined">block</span>
+                                        <span>Not Available</span>
+                                    </button>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <a href="/Auth/Login?returnUrl=@Uri.EscapeDataString($"/Books/Details/{Book.BookId}")" class="flex flex-1 items-center justify-center gap-3 rounded-2xl bg-primary px-10 py-5 text-center font-black text-background-dark shadow-xl shadow-primary/30 transition-all hover:bg-primary-hover">
+                                <span class="material-symbols-outlined">login</span>
+                                Log in to borrow
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <a href="/Inventory/ManageCopies?bookId=@Book.BookId" class="flex flex-1 items-center justify-center gap-3 rounded-2xl bg-primary px-10 py-5 text-center font-black text-background-dark shadow-xl shadow-primary/30 transition-all hover:bg-primary-hover">
+                            <span class="material-symbols-outlined">inventory_2</span>
+                            Manage Copies
+                        </a>
+                    }
+
+                    <a href="@(IsMember ? "/Books/ViewBooks" : "/Books/AllBooks")" class="flex items-center justify-center gap-2 rounded-2xl border border-white/5 bg-white/5 px-10 py-5 text-center font-bold text-white/70 transition-all hover:bg-white/10">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                        Back
+                    </a>
+                </div>
+
+                @if (IsAuthenticated && IsOutOfStock)
+                {
+                    <p class="mt-6 text-center text-xs font-bold italic text-white/40">
+                        * This book is currently unavailable. You can reserve it and the system will automatically hold it for you once it is returned.
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public LibraryManagementDAL.Models.Book Book { get; set; } = default!;
+    [Parameter] public string? SuccessMessage { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public FollowUpAction? FollowUpAction { get; set; }
+    [Parameter] public string? AiSummary { get; set; }
+    [Parameter] public string? AiSummaryError { get; set; }
+    [Parameter] public bool IsAuthenticated { get; set; }
+    [Parameter] public bool IsMember { get; set; }
+    [Parameter] public bool Mutating { get; set; }
+    [Parameter] public int AvailableCount { get; set; }
+    [Parameter] public bool CanBorrowNow { get; set; }
+    [Parameter] public bool IsOutOfStock { get; set; }
+    [Parameter] public double AverageRating { get; set; }
+    [Parameter] public int TotalReviews { get; set; }
+    [Parameter] public EventCallback BorrowAsync { get; set; }
+    [Parameter] public EventCallback ReserveAsync { get; set; }
+}

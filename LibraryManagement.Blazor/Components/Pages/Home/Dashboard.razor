@@ -1,0 +1,274 @@
+@page "/Home/Dashboard"
+@namespace LibraryManagement.Blazor.Components.Pages
+@attribute [Authorize]
+@implements IDisposable
+@inject HomeClientService HomeService
+@inject NavigationManager Navigation
+
+<PageTitle>System Statistics - Standard Library</PageTitle>
+
+@if (isRedirecting)
+{
+    <div class="flex flex-1 items-center justify-center px-8 py-16">
+        <div class="w-full max-w-lg rounded-[2rem] border border-white/10 bg-black/20 p-10 text-center backdrop-blur">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <span class="material-symbols-outlined animate-pulse text-3xl">sync</span>
+            </div>
+            <h1 class="mt-6 text-3xl font-black text-white">Opening dashboard</h1>
+            <p class="mt-4 text-sm leading-7 text-white/60">
+                Routing you to the appropriate dashboard for your account.
+            </p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="custom-scrollbar flex-1 min-w-0 overflow-y-auto p-8">
+        <div class="mb-10">
+            <h1 class="mb-2 text-4xl font-extrabold tracking-tight text-white">
+                Good afternoon, <span class="text-primary">@displayName</span>
+            </h1>
+            <p class="text-lg text-white/50">Here is an overview of the library's status today.</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(model.ErrorMessage))
+        {
+            <div class="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-300">
+                @model.ErrorMessage
+            </div>
+        }
+
+        <div class="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div class="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 transition-all hover:border-primary/40">
+                <div class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-primary/10 blur-2xl transition-all group-hover:bg-primary/20"></div>
+                <div class="mb-4 flex items-center gap-4">
+                    <div class="rounded-2xl bg-primary/20 p-3 text-primary">
+                        <span class="material-symbols-outlined text-3xl">library_books</span>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-widest text-white/40">Total Books</p>
+                        <h3 class="text-3xl font-black text-white">@stats.TotalBooks.ToString("N0")</h3>
+                    </div>
+                </div>
+                <div class="w-fit rounded border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary/70">
+                    Available for lending
+                </div>
+            </div>
+
+            <div class="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 transition-all hover:border-primary/40">
+                <div class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-primary/10 blur-2xl transition-all group-hover:bg-primary/20"></div>
+                <div class="mb-4 flex items-center gap-4">
+                    <div class="rounded-2xl bg-primary/20 p-3 text-primary">
+                        <span class="material-symbols-outlined text-3xl">compare_arrows</span>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-widest text-white/40">Active Borrows</p>
+                        <h3 class="text-3xl font-black text-white">@stats.TotalActiveBorrows.ToString("N0")</h3>
+                    </div>
+                </div>
+                <div class="w-fit rounded border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary/70">
+                    Open sessions
+                </div>
+            </div>
+
+            <div class="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 transition-all hover:border-red-500/40">
+                <div class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-red-500/10 blur-2xl transition-all group-hover:bg-red-500/20"></div>
+                <div class="mb-4 flex items-center gap-4">
+                    <div class="rounded-2xl bg-red-500/20 p-3 text-red-500">
+                        <span class="material-symbols-outlined text-3xl">warning</span>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-widest text-white/40">Overdue</p>
+                        <h3 class="text-3xl font-black text-white">@stats.OverdueBooksCount.ToString("N0")</h3>
+                    </div>
+                </div>
+                <div class="w-fit rounded border border-red-500/20 bg-red-500/5 px-2 py-0.5 text-[10px] font-bold text-red-500/70">
+                    Needs processing
+                </div>
+            </div>
+
+            <div class="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 transition-all hover:border-green-500/40">
+                <div class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-green-500/10 blur-2xl transition-all group-hover:bg-green-500/20"></div>
+                <div class="mb-4 flex items-center gap-4">
+                    <div class="rounded-2xl bg-green-500/20 p-3 text-green-400">
+                        <span class="material-symbols-outlined text-3xl">payments</span>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-widest text-white/40">Unpaid Fines</p>
+                        <h3 class="text-3xl font-black text-white">
+                            @stats.TotalUnpaidFines.ToString("N0") <span class="text-sm font-normal">VND</span>
+                        </h3>
+                    </div>
+                </div>
+                <div class="w-fit rounded border border-green-500/20 bg-green-500/5 px-2 py-0.5 text-[10px] font-bold text-green-400/70">
+                    Pending payments
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            <div class="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/20 shadow-2xl lg:col-span-2">
+                <div class="flex items-center justify-between border-b border-white/5 bg-white/5 p-6">
+                    <h3 class="flex items-center gap-2 text-lg font-bold text-white">
+                        <span class="material-symbols-outlined text-primary">history</span>
+                        Recent Transactions
+                    </h3>
+                    <a href="/Circulation/Index" class="text-xs font-bold text-primary hover:underline">Details</a>
+                </div>
+                <div class="flex-1 overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                            <tr>
+                                <th class="px-6 py-4">Borrower</th>
+                                <th class="px-6 py-4">Date</th>
+                                <th class="px-6 py-4">Due Date</th>
+                                <th class="px-6 py-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            @if (stats.RecentTransactions.Any())
+                            {
+                                @foreach (var tx in stats.RecentTransactions)
+                                {
+                                    var isOverdue = !string.Equals(tx.Status, "Returned", StringComparison.OrdinalIgnoreCase)
+                                        && tx.DueDate < DateTime.UtcNow;
+                                    var statusClass = string.Equals(tx.Status, "Returned", StringComparison.OrdinalIgnoreCase)
+                                        ? "bg-green-500/10 text-green-400 border-green-500/20"
+                                        : isOverdue
+                                            ? "bg-red-500/10 text-red-500 border-red-500/20 animate-pulse"
+                                            : "bg-primary/10 text-primary border-primary/20";
+
+                                    <tr class="group transition-colors hover:bg-white/[0.02]">
+                                        <td class="px-6 py-5">
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-sm font-bold text-primary">
+                                                    @(string.IsNullOrWhiteSpace(tx.UserFullName) ? "?" : tx.UserFullName[..1])
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-bold text-white transition-colors group-hover:text-primary">@tx.UserFullName</p>
+                                                    <p class="font-mono text-[10px] italic text-white/30">ID: #@tx.UserId</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-5 text-sm text-white/60">@tx.BorrowDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td class="px-6 py-5 text-sm text-white/60">@tx.DueDate.ToString("dd/MM/yyyy")</td>
+                                        <td class="px-6 py-5">
+                                            <span class="rounded border px-2 py-1 text-[10px] font-black uppercase @statusClass">
+                                                @(isOverdue ? "Overdue" : tx.Status)
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="px-6 py-8 text-center text-sm text-white/30">
+                                        No recent transactions.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-8">
+                <div class="relative overflow-hidden rounded-3xl border border-primary/20 bg-primary/10 p-8">
+                    <h3 class="mb-6 flex items-center text-xl font-black text-primary">Quick Actions</h3>
+                    <div class="flex flex-col gap-3">
+                        <a href="/Circulation/Borrow" class="flex items-center gap-4 rounded-2xl bg-primary p-4 font-black text-background-dark shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                            <span class="material-symbols-outlined">add_circle</span>
+                            New Loan
+                        </a>
+                        <a href="/Inventory/Index" class="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 font-bold text-white transition-all hover:bg-white/10 active:scale-95">
+                            <span class="material-symbols-outlined text-primary">barcode_reader</span>
+                            Check Inventory
+                        </a>
+                    </div>
+                </div>
+
+                <div class="flex flex-col rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl">
+                    <h3 class="mb-6 flex items-center justify-between text-sm font-bold uppercase tracking-widest text-white/60">
+                        Top Debtors
+                        <span class="material-symbols-outlined text-red-500">priority_high</span>
+                    </h3>
+                    <div class="flex flex-col gap-5">
+                        @if (stats.TopDebtors.Any())
+                        {
+                            @foreach (var debtor in stats.TopDebtors)
+                            {
+                                <a href="/Payment/Details?userId=@debtor.UserId" class="group flex cursor-pointer items-center gap-4">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 font-bold text-red-500 shadow-lg transition-all group-hover:bg-red-500 group-hover:text-background-dark">
+                                        @(string.IsNullOrWhiteSpace(debtor.FullName) ? "?" : debtor.FullName[..1])
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h4 class="truncate text-xs font-bold text-white transition-colors group-hover:text-primary">@debtor.FullName</h4>
+                                        <p class="truncate font-mono text-[9px] italic text-white/30">@debtor.Email</p>
+                                        <div class="mt-1 flex items-center gap-2">
+                                            <span class="text-[10px] font-black text-red-400">@debtor.TotalUnpaidFine.ToString("N0") VND</span>
+                                            <span class="text-[8px] text-white/20">|</span>
+                                            <span class="text-[9px] text-white/40">@debtor.UnpaidBookCount books owed</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            }
+                        }
+                        else
+                        {
+                            <p class="py-4 text-center text-xs text-white/20">No unpaid fines.</p>
+                        }
+                    </div>
+                    <a href="/Payment/Index" class="mt-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-primary transition-all hover:tracking-[0.3em]">
+                        Manage Fees & Fines
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private readonly CancellationTokenSource disposal = new();
+    private DashboardPageViewModel model = new();
+    private LibraryManagementDAL.DTO.Dashboard.DashboardStatsResult stats = new();
+    private string displayName = "Reader";
+    private bool isRedirecting = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        var principal = authState.User;
+        var roles = principal.FindAll(System.Security.Claims.ClaimTypes.Role).Select(role => role.Value).ToList();
+
+        if (roles.Any(role => role is "Admin" or "Manager"))
+        {
+            Navigation.NavigateTo("/Home/AdminDashboard", forceLoad: true);
+            return;
+        }
+
+        if (roles.Contains("Member"))
+        {
+            Navigation.NavigateTo("/User/MemberDashboard", forceLoad: true);
+            return;
+        }
+
+        displayName = principal.FindFirst("FullName")?.Value
+            ?? principal.Identity?.Name
+            ?? "Reader";
+
+        isRedirecting = false;
+
+        model = await HomeService.GetDashboardAsync(disposal.Token);
+        stats = model.Stats ?? new LibraryManagementDAL.DTO.Dashboard.DashboardStatsResult();
+    }
+
+    public void Dispose()
+    {
+        disposal.Cancel();
+        disposal.Dispose();
+    }
+}

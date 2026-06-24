@@ -1,0 +1,784 @@
+@page "/Books/AllBooks"
+@page "/Books/AddBook"
+@page "/Books/Update/{Id:int}"
+@attribute [Authorize(Roles = "Admin,Manager,Librarian")]
+@using LibraryManagementDAL.DTO.Book
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.WebUtilities
+@inject BooksClientService BooksService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject ToastService Toasts
+
+<PageTitle>Manage Books - Standard Library</PageTitle>
+
+@if (view == "list")
+{
+    <div class="flex flex-1 overflow-hidden">
+        <div class="custom-scrollbar flex-1 overflow-y-auto px-8 py-12">
+            @if (NewBookId.HasValue)
+            {
+                <div class="mb-8 flex flex-col items-start justify-between gap-4 rounded-xl border border-green-500/20 bg-green-500/10 p-4 sm:flex-row sm:items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-green-400">check_circle</span>
+                        <div>
+                            <strong class="block text-green-400">Book created successfully!</strong>
+                            <span class="text-sm text-green-400/80">Would you like to manage physical copies for this new book?</span>
+                        </div>
+                    </div>
+                    <a href="/Inventory/ManageCopies?bookId=@NewBookId" class="flex w-max items-center gap-2 whitespace-nowrap rounded-lg border border-green-500/30 bg-green-500/20 px-5 py-2.5 font-bold text-green-300 transition-colors hover:bg-green-500/30">
+                        <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                        Manage Copies
+                    </a>
+                </div>
+            }
+
+            <div class="mb-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 class="mb-1 text-3xl font-bold text-white">Book Catalog Management</h2>
+                    <p class="text-sm text-white/40">View and manage all books in the system</p>
+                </div>
+                <a href="/Books/AddBook" class="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-black text-background-dark transition-all hover:shadow-xl hover:shadow-primary/30">
+                    <span class="material-symbols-outlined">add_box</span>
+                    Add New Book
+                </a>
+            </div>
+
+            <div class="mb-8 rounded-2xl border border-white/10 bg-black/20 p-6 backdrop-blur-md">
+                <form method="get" action="/Books/AllBooks" class="flex flex-col gap-4 md:flex-row">
+                    <input type="hidden" name="page" value="@Page" />
+                    <div class="relative flex-1">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/40">search</span>
+                        <input type="text" name="keyword" value="@Keyword"
+                               oninput="clearTimeout(this.delay); this.delay = setTimeout(() => { this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit(); }, 500);"
+                               placeholder="Search by book title, author, or ISBN..."
+                               class="w-full rounded-xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-white transition-colors focus:border-primary focus:outline-none" />
+                    </div>
+
+                    <div class="flex flex-wrap gap-4">
+                        <select name="category"
+                                onchange="this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit()"
+                                class="min-w-[150px] cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                            <option value="">All Categories</option>
+                            @foreach (var category in options.Categories)
+                            {
+                                <option value="@category.CategoryName" selected="@(Category == category.CategoryName)">@category.CategoryName</option>
+                            }
+                        </select>
+
+                        <select name="publisherId"
+                                onchange="this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit()"
+                                class="min-w-[160px] cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                            <option value="">All Publishers</option>
+                            @foreach (var publisher in options.Publishers)
+                            {
+                                <option value="@publisher.PublisherId" selected="@(PublisherId == publisher.PublisherId)">@publisher.PublisherName</option>
+                            }
+                        </select>
+
+                        <select name="publishYear"
+                                onchange="this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit()"
+                                class="min-w-[130px] cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                            <option value="">All Years</option>
+                            @foreach (var publishYear in listResult.PublishYears)
+                            {
+                                <option value="@publishYear" selected="@(PublishYear == publishYear)">@publishYear</option>
+                            }
+                        </select>
+
+                        <select name="isActive"
+                                onchange="this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit()"
+                                class="min-w-[130px] cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                            <option value="">All Status</option>
+                            <option value="true" selected="@(IsActive == true)">Active</option>
+                            <option value="false" selected="@(IsActive == false)">Inactive</option>
+                        </select>
+
+                        <select name="availability"
+                                onchange="this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit()"
+                                class="min-w-[150px] cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                            <option value="">Any Availability</option>
+                            <option value="available" selected="@(Availability == "available")">Available</option>
+                            <option value="unavailable" selected="@(Availability == "unavailable")">Unavailable</option>
+                            <option value="borrowed" selected="@(Availability == "borrowed")">Borrowed</option>
+                            <option value="reserved" selected="@(Availability == "reserved")">Reserved</option>
+                            <option value="lost" selected="@(Availability == "lost")">Lost</option>
+                            <option value="damaged" selected="@(Availability == "damaged")">Damaged</option>
+                        </select>
+
+                        <select name="minRating"
+                                onchange="this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit()"
+                                class="min-w-[130px] cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                            <option value="">Any Rating</option>
+                            <option value="5" selected="@(MinRating == 5)">5 stars</option>
+                            <option value="4" selected="@(MinRating == 4)">4+ stars</option>
+                            <option value="3" selected="@(MinRating == 3)">3+ stars</option>
+                        </select>
+
+                        <select name="sort"
+                                onchange="this.form.requestSubmit()"
+                                class="min-w-[150px] cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                            <option value="">Sort By</option>
+                            <option value="newest" selected="@(Sort == "newest")">Newest arrivals</option>
+                            <option value="year" selected="@(Sort == "year")">Publish Year</option>
+                            <option value="az" selected="@(Sort == "az")">Title: A-Z</option>
+                        </select>
+
+                        @if (HasFilters)
+                        {
+                            <a href="/Books/AllBooks" class="flex items-center rounded-xl bg-white/5 px-4 py-3 text-white/60 transition-colors hover:bg-white/10" title="Clear Filters">
+                                <span class="material-symbols-outlined">close</span>
+                            </a>
+                        }
+                    </div>
+                </form>
+            </div>
+
+            <div id="staffContainer" class="mb-12 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="border-b border-white/5 bg-white/5 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                            <tr>
+                                <th class="px-6 py-4">Book</th>
+                                <th class="px-6 py-4">Category</th>
+                                <th class="px-6 py-4">Publisher</th>
+                                <th class="px-6 py-4">Year</th>
+                                <th class="px-6 py-4">Edition</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-sm">
+                            @foreach (var item in listResult.Items)
+                            {
+                                <tr class="group transition-colors hover:bg-white/[0.02]">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-4">
+                                            <div class="flex h-14 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded border border-primary/20 bg-black/40 p-0.5 shadow-lg transition-all group-hover:border-primary/50">
+                                                <img alt="@item.Title"
+                                                     src="@BookImageHelper.Resolve(item.ImageUrl, item.Title)"
+                                                     onerror="this.onerror=null;this.src='/images/book-placeholder.svg';"
+                                                     class="h-full w-full rounded-sm object-contain">
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-white transition-colors group-hover:text-primary">@item.Title</p>
+                                                <p class="text-[11px] italic text-white/40">@item.Author?.Name</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-white/60">@item.Category?.CategoryName</td>
+                                    <td class="px-6 py-4 text-white/60">@item.Publisher?.PublisherName</td>
+                                    <td class="px-6 py-4 text-white/60">@item.PublishYear</td>
+                                    <td class="px-6 py-4">
+                                        <span class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">ED @item.EditionNumber</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="rounded border px-2 py-0.5 text-[10px] font-bold @(item.IsActive ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-red-500/20 bg-red-500/10 text-red-500")">
+                                            @(item.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <a href="/Books/Details/@item.BookId" class="rounded-lg border border-white/10 bg-white/5 p-2 text-white/60 transition-all hover:border-primary/50 hover:text-primary" title="View Details">
+                                                <span class="material-symbols-outlined text-sm">visibility</span>
+                                            </a>
+                                            <a href="/Books/Update/@item.BookId" class="rounded-lg border border-white/10 bg-white/5 p-2 text-white/60 transition-all hover:border-primary/50 hover:text-primary" title="Edit Book">
+                                                <span class="material-symbols-outlined text-sm">edit</span>
+                                            </a>
+                                            <a href="/Inventory/ManageCopies?bookId=@item.BookId" class="rounded-lg border border-white/10 bg-white/5 p-2 text-white/60 transition-all hover:border-yellow-400/50 hover:text-yellow-400" title="Manage Copies">
+                                                <span class="material-symbols-outlined text-sm">inventory_2</span>
+                                            </a>
+                                            <button type="button"
+                                                    @onclick="() => ToggleStatusAsync(item.BookId)"
+                                                    class="rounded-lg border border-white/10 bg-white/5 p-2 text-white/60 transition-all hover:@(item.IsActive ? "text-red-400 hover:border-red-400/50" : "text-emerald-400 hover:border-emerald-400/50")"
+                                                    title="@(item.IsActive ? "Deactivate Book" : "Activate Book")">
+                                                <span class="material-symbols-outlined text-sm">@(item.IsActive ? "delete" : "restore")</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <PagedFooter CurrentPage="@Page" TotalPages="@listResult.TotalPages" BuildHref="@GetAllBooksUrl" />
+            </div>
+        </div>
+    </div>
+}
+else if (view == "add")
+{
+    <div class="flex flex-1 overflow-hidden">
+        <div class="custom-scrollbar flex-1 overflow-y-auto px-8 py-12">
+            <div class="mx-auto max-w-4xl pb-20">
+                <div class="mb-10">
+                    <h1 class="mb-2 text-4xl font-bold text-white">Add New Book</h1>
+                    <p class="text-sm text-white/60">Create a single book entry or import multiple books via Excel</p>
+                </div>
+
+                <div class="mb-8 flex gap-4">
+                    <a href="/Books/AddBook?mode=single" class="flex items-center gap-2 rounded-lg border px-5 py-2 text-sm font-bold transition-all @(CurrentMode == "single" ? "border-primary bg-primary text-background-dark" : "border-white/10 bg-white/10 text-white hover:bg-white/20")">
+                        <span class="material-symbols-outlined text-lg">menu_book</span>
+                        Add Single Book
+                    </a>
+                    <a href="/Books/AddBook?mode=import" class="flex items-center gap-2 rounded-lg border px-5 py-2 text-sm font-bold transition-all @(CurrentMode == "import" ? "border-primary bg-primary text-background-dark" : "border-white/10 bg-white/10 text-white hover:bg-white/20")">
+                        <span class="material-symbols-outlined text-lg">upload_file</span>
+                        Import File
+                    </a>
+                </div>
+
+                @if (CurrentMode == "single")
+                {
+                    <div class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl">
+                        <h2 class="mb-8 text-2xl font-bold text-white">Add Single Book</h2>
+
+                        <div class="flex flex-col gap-8 md:flex-row">
+                            <div class="flex w-full flex-col gap-4 md:w-1/3">
+                                <label class="font-bold text-white">Book Cover Image</label>
+                                <label for="coverImageInput" class="group relative flex aspect-[3/4] cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-white/10 bg-black/40 p-2 transition-colors hover:border-primary/50">
+                                    @if (!string.IsNullOrWhiteSpace(coverPreviewUrl))
+                                    {
+                                        <img src="@coverPreviewUrl" class="h-full w-full object-contain" />
+                                    }
+                                    else
+                                    {
+                                        <div class="flex flex-col items-center gap-2 text-white/30 transition-colors group-hover:text-primary">
+                                            <span class="material-symbols-outlined text-5xl">add_photo_alternate</span>
+                                            <span class="text-sm">Click to upload cover</span>
+                                        </div>
+                                    }
+                                </label>
+                                <InputFile id="coverImageInput" OnChange="OnCoverSelectedAsync" accept="image/*" class="hidden" />
+                                <p class="text-center text-xs text-white/40">Recommended aspect ratio 3:4. Format: JPG, PNG.</p>
+                            </div>
+
+                            <div class="flex w-full flex-col gap-4 md:w-2/3">
+                                <div class="mb-3">
+                                    <label class="text-white">Title</label>
+                                    <input @bind="createModel.Title" class="w-full rounded border border-white/10 bg-black/30 p-2 text-white" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="text-white">Description</label>
+                                    <textarea @bind="createModel.Description" class="w-full rounded border border-white/10 bg-black/30 p-2 text-white"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="text-white">Publish Year</label>
+                                    <input @bind="createModel.PublishYear" type="number" class="w-full rounded border border-white/10 bg-black/30 p-2 text-white" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="text-white">Edition Number</label>
+                                    <input @bind="createModel.EditionNumber" type="number" class="w-full rounded border border-white/10 bg-black/30 p-2 text-white" />
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="mb-1 block text-white">Author</label>
+                                    <select @bind="createModel.AuthorId" @bind:after="ClearAuthorNameIfNeeded" class="mb-2 w-full rounded border border-white/10 bg-black/30 p-2 text-white">
+                                        <option value="">-- Select existing author --</option>
+                                        @foreach (var author in options.Authors)
+                                        {
+                                            <option value="@author.AuthorId">@author.Name</option>
+                                        }
+                                    </select>
+                                    <div class="mb-2 text-center text-xs text-white/50">OR</div>
+                                    <input @bind="createModel.AuthorName" @bind:after="ClearAuthorIdIfNeeded" placeholder="Enter new author name" class="w-full rounded border border-white/10 bg-black/30 p-2 text-white" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="text-white">Category</label>
+                                    <select @bind="createModel.CategoryId" class="w-full rounded border border-white/10 bg-black/30 p-2 text-white">
+                                        <option value="">-- Select Category --</option>
+                                        @foreach (var category in options.Categories)
+                                        {
+                                            <option value="@category.CategoryId">@category.CategoryName</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="text-white">Publisher</label>
+                                    <select @bind="createModel.PublisherId" class="w-full rounded border border-white/10 bg-black/30 p-2 text-white">
+                                        <option value="">-- Select Publisher --</option>
+                                        @foreach (var publisher in options.Publishers)
+                                        {
+                                            <option value="@publisher.PublisherId">@publisher.PublisherName</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="text-white">ISBN</label>
+                                    <input @bind="createModel.ISBN" class="w-full rounded border border-white/10 bg-black/30 p-2 text-white" />
+                                </div>
+
+                                <div class="mb-3 flex items-center gap-2">
+                                    <input @bind="createModel.IsActive" class="h-4 w-4 rounded border-white/10 bg-black/30 text-primary focus:ring-primary focus:ring-offset-background-dark" type="checkbox" />
+                                    <label class="text-sm text-white">Is Active</label>
+                                </div>
+
+                                <div class="mt-8 flex justify-end gap-3">
+                                    <a href="/Books/AllBooks" class="flex items-center rounded-xl border border-white/10 px-8 py-3 text-sm font-bold uppercase tracking-wider text-white/40 transition-all hover:bg-white/5 hover:text-white">
+                                        Cancel
+                                    </a>
+                                    <button type="button" @onclick="CreateBookAsync" disabled="@submittingSingle" class="rounded-xl bg-primary px-8 py-3 text-sm font-black uppercase tracking-wider text-background-dark transition-all hover:shadow-xl hover:shadow-primary/30 disabled:cursor-not-allowed disabled:opacity-70">
+                                        @(submittingSingle ? "Creating..." : "Create Book")
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="mt-6 w-full">
+                        <div class="rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/10 p-8 shadow-2xl backdrop-blur-xl">
+                            <h2 class="mb-2 text-2xl font-bold text-white">Import Books</h2>
+                            <p class="mb-6 text-sm text-white/60">Upload your Excel file using our template format.</p>
+
+                            @if (!string.IsNullOrWhiteSpace(importSuccessMessage))
+                            {
+                                <div class="mb-5 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 font-semibold text-green-300">
+                                    @importSuccessMessage
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(importErrorMessage))
+                            {
+                                <div class="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 font-semibold text-red-300">
+                                    @importErrorMessage
+                                </div>
+                            }
+                            @if (importErrors.Any())
+                            {
+                                <pre class="mb-5 whitespace-pre-wrap rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">@string.Join(Environment.NewLine, importErrors)</pre>
+                            }
+
+                            <button type="button"
+                                    @onclick="DownloadTemplateAsync"
+                                    class="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-yellow-300">
+                                <span class="material-symbols-outlined text-lg">download</span>
+                                Download Template
+                            </button>
+
+                            <label for="importFileInput" class="flex h-40 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-white/20 transition-all hover:border-primary hover:bg-white/5">
+                                <span class="material-symbols-outlined mb-2 text-4xl text-primary">upload_file</span>
+                                <span class="text-sm text-white/70">Click to upload or drag and drop</span>
+                                <span class="mt-1 text-xs text-white/40">Only .xlsx files supported</span>
+                            </label>
+                            <InputFile id="importFileInput" OnChange="OnImportFileSelected" accept=".xlsx" class="hidden" />
+
+                            @if (!string.IsNullOrWhiteSpace(importFileName))
+                            {
+                                <p class="mt-3 text-sm text-white/60">Selected file: @importFileName</p>
+                            }
+
+                            <div class="mt-8 flex gap-3">
+                                <a href="/Books/AllBooks" class="flex flex-1 items-center justify-center rounded-xl border border-white/10 py-3 text-sm font-bold uppercase tracking-wider text-white/40 transition-all hover:bg-white/5 hover:text-white">
+                                    Cancel
+                                </a>
+                                <button type="button"
+                                        @onclick="ImportBooksAsync"
+                                        disabled="@(importFile is null || importing)"
+                                        class="flex-[2] rounded-xl bg-primary py-3 font-bold text-background-dark shadow-lg transition-all hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60">
+                                    @(importing ? "Uploading..." : "Upload & Import")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else if (view == "update" && updateModel is not null)
+{
+    <div class="p-10">
+        <div class="mx-auto max-w-6xl">
+            <div class="grid grid-cols-1 gap-14 lg:grid-cols-2">
+                <div class="h-fit top-10">
+                    <div class="flex aspect-[3/4] items-center justify-center overflow-hidden rounded-2xl border border-primary/30 bg-black/40 p-4 shadow-2xl">
+                        <img class="h-full w-full rounded object-contain drop-shadow-2xl"
+                             alt="@updateModel.Title"
+                             src="@currentUpdateCoverUrl"
+                             onerror="this.onerror=null;this.src='/images/book-placeholder.svg';" />
+                    </div>
+                </div>
+
+                <div>
+                    <div class="mb-8">
+                        <h1 class="mb-2 text-4xl font-bold text-white">Update Book</h1>
+                    </div>
+
+                    <div class="flex flex-col gap-6">
+                        <div>
+                            <label class="text-sm text-white/60">Cover Image (Upload to replace)</label>
+                            <InputFile OnChange="OnUpdateCoverSelectedAsync" accept="image/*" class="w-full rounded-xl border border-white/20 bg-white/10 p-2 text-white file:mr-4 file:rounded-xl file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-black hover:file:bg-primary/90" />
+                        </div>
+
+                        <div>
+                            <label class="text-sm text-white/60">Title</label>
+                            <input @bind="updateModel.Title" class="w-full rounded-xl border border-white/20 bg-white/10 p-3 text-white" />
+                        </div>
+
+                        <div>
+                            <label class="text-sm text-white/60">ISBN</label>
+                            <input @bind="updateModel.ISBN" class="w-full rounded-xl border border-white/20 bg-white/10 p-3 text-white" />
+                        </div>
+
+                        <div>
+                            <label class="text-sm text-white/60">Author</label>
+                            <select @bind="updateModel.AuthorId" class="mb-2 w-full rounded border border-white/10 bg-black/30 p-2 text-white">
+                                @foreach (var author in options.Authors)
+                                {
+                                    <option value="@author.AuthorId">@author.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-sm text-white/60">Category</label>
+                            <select @bind="updateModel.CategoryId" class="mb-2 w-full rounded border border-white/10 bg-black/30 p-2 text-white">
+                                @foreach (var category in options.Categories)
+                                {
+                                    <option value="@category.CategoryId">@category.CategoryName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-sm text-white/60">Publisher</label>
+                            <select @bind="updateModel.PublisherId" class="mb-2 w-full rounded border border-white/10 bg-black/30 p-2 text-white">
+                                @foreach (var publisher in options.Publishers)
+                                {
+                                    <option value="@publisher.PublisherId">@publisher.PublisherName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="text-sm text-white/60">Edition</label>
+                                <input @bind="updateModel.EditionNumber" class="w-full rounded-xl border border-white/20 bg-white/10 p-3 text-white" />
+                            </div>
+                            <div>
+                                <label class="text-sm text-white/60">Publish Year</label>
+                                <input @bind="updateModel.PublishYear" class="w-full rounded-xl border border-white/20 bg-white/10 p-3 text-white" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-sm text-white/60">Description</label>
+                            <textarea @bind="updateModel.Description" class="h-32 w-full rounded-xl border border-white/20 bg-white/10 p-3 text-white"></textarea>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <input @bind="updateModel.IsActive" type="checkbox" class="h-5 w-5 accent-yellow-400" />
+                            <label class="text-white/70">Active</label>
+                        </div>
+
+                        <div class="mt-4 flex gap-4">
+                            <button type="button"
+                                    @onclick="UpdateBookAsync"
+                                    disabled="@submittingUpdate"
+                                    class="rounded-xl bg-yellow-400 px-8 py-3 font-semibold text-black transition-all hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60">
+                                @(submittingUpdate ? "Saving..." : "Save")
+                            </button>
+                            <a href="/Books/AllBooks" class="block rounded-xl border border-white/20 px-8 py-3 text-center text-white transition-all hover:bg-white/10">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    [SupplyParameterFromQuery] public string? Keyword { get; set; }
+    [SupplyParameterFromQuery] public string? Category { get; set; }
+    [SupplyParameterFromQuery] public int? PublisherId { get; set; }
+    [SupplyParameterFromQuery] public int? PublishYear { get; set; }
+    [SupplyParameterFromQuery] public bool? IsActive { get; set; }
+    [SupplyParameterFromQuery] public string? Availability { get; set; }
+    [SupplyParameterFromQuery] public int? MinRating { get; set; }
+    [SupplyParameterFromQuery] public string? Sort { get; set; }
+    [SupplyParameterFromQuery] public int Page { get; set; } = 1;
+    [SupplyParameterFromQuery] public string? Mode { get; set; }
+    [SupplyParameterFromQuery] public int? NewBookId { get; set; }
+
+    private string view = "list";
+    private BookListApiResult listResult = new();
+    private BookOptionsApiResult options = new();
+    private BookCreateModelRequest createModel = new()
+    {
+        IsActive = true,
+        EditionNumber = 1
+    };
+    private BookUpdateModelRequest? updateModel;
+    private IBrowserFile? coverImageFile;
+    private IBrowserFile? updateCoverImageFile;
+    private IBrowserFile? importFile;
+    private string? coverPreviewUrl;
+    private string? updateCoverPreviewUrl;
+    private string? importFileName;
+    private string? importSuccessMessage;
+    private string? importErrorMessage;
+    private List<string> importErrors = new();
+    private bool submittingSingle;
+    private bool importing;
+    private bool submittingUpdate;
+
+    private string CurrentMode => string.Equals(Mode, "import", StringComparison.OrdinalIgnoreCase) ? "import" : "single";
+    private bool HasFilters => !string.IsNullOrWhiteSpace(Keyword)
+        || !string.IsNullOrWhiteSpace(Category)
+        || PublisherId.HasValue
+        || PublishYear.HasValue
+        || IsActive.HasValue
+        || !string.IsNullOrWhiteSpace(Availability)
+        || MinRating.HasValue
+        || !string.IsNullOrWhiteSpace(Sort);
+    private string currentUpdateCoverUrl => updateCoverPreviewUrl ?? BookImageHelper.Resolve(updateModel?.ImageUrl, updateModel?.Title);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var relativePath = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0];
+        view = relativePath switch
+        {
+            var path when path.StartsWith("/Books/AddBook", StringComparison.OrdinalIgnoreCase) => "add",
+            var path when path.StartsWith("/Books/Update", StringComparison.OrdinalIgnoreCase) => "update",
+            _ => "list"
+        };
+
+        if (view == "list")
+        {
+            options = await BooksService.GetBookOptionsAsync();
+            listResult = await BooksService.GetBookListAsync(new BookListQuery
+            {
+                Keyword = Keyword,
+                Category = Category,
+                PublisherId = PublisherId,
+                PublishYear = PublishYear,
+                IsActive = IsActive,
+                Availability = Availability,
+                MinRating = MinRating,
+                Sort = Sort,
+                Page = Page,
+                PageSize = 10
+            });
+            return;
+        }
+
+        options = await BooksService.GetBookOptionsAsync();
+
+        if (view == "add")
+        {
+            createModel.IsActive = true;
+            createModel.EditionNumber = createModel.EditionNumber <= 0 ? 1 : createModel.EditionNumber;
+            return;
+        }
+
+        if (Id.HasValue)
+        {
+            var book = await BooksService.GetBookAsync(Id.Value);
+            if (book is not null)
+            {
+                updateModel = new BookUpdateModelRequest
+                {
+                    BookId = book.BookId,
+                    Title = book.Title,
+                    Description = book.Description ?? string.Empty,
+                    PublishYear = book.PublishYear ?? 0,
+                    EditionNumber = book.EditionNumber,
+                    AuthorId = book.AuthorId,
+                    CategoryId = book.CategoryId,
+                    PublisherId = book.PublisherId,
+                    ISBN = book.ISBN,
+                    ImageUrl = book.ImageUrl ?? string.Empty,
+                    IsActive = book.IsActive
+                };
+                updateCoverPreviewUrl = null;
+            }
+        }
+    }
+
+    private void ClearAuthorNameIfNeeded()
+    {
+        if (createModel.AuthorId.HasValue)
+        {
+            createModel.AuthorName = string.Empty;
+        }
+    }
+
+    private void ClearAuthorIdIfNeeded()
+    {
+        if (!string.IsNullOrWhiteSpace(createModel.AuthorName))
+        {
+            createModel.AuthorId = null;
+        }
+    }
+
+    private async Task OnCoverSelectedAsync(InputFileChangeEventArgs args)
+    {
+        coverImageFile = args.File;
+        coverPreviewUrl = await ToDataUrlAsync(coverImageFile);
+    }
+
+    private async Task OnUpdateCoverSelectedAsync(InputFileChangeEventArgs args)
+    {
+        updateCoverImageFile = args.File;
+        updateCoverPreviewUrl = await ToDataUrlAsync(updateCoverImageFile);
+    }
+
+    private void OnImportFileSelected(InputFileChangeEventArgs args)
+    {
+        importFile = args.File;
+        importFileName = importFile?.Name;
+    }
+
+    private async Task CreateBookAsync()
+    {
+        submittingSingle = true;
+        var result = await BooksService.CreateBookAsync(new BookMutationRequest
+        {
+            Model = createModel,
+            ImageFile = coverImageFile
+        });
+        submittingSingle = false;
+
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo($"/Books/AllBooks?newBookId={result.Value}");
+        }
+        else
+        {
+            Toasts.Error(result.Message);
+        }
+    }
+
+    private async Task UpdateBookAsync()
+    {
+        if (updateModel is null || !Id.HasValue)
+        {
+            return;
+        }
+
+        submittingUpdate = true;
+        var result = await BooksService.UpdateBookAsync(Id.Value, new BookUpdateMutationRequest
+        {
+            Model = updateModel,
+            ImageFile = updateCoverImageFile
+        });
+        submittingUpdate = false;
+
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo($"/Books/Details/{Id.Value}");
+        }
+        else
+        {
+            Toasts.Error(result.Message);
+        }
+    }
+
+    private async Task ToggleStatusAsync(int bookId)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to change this book's status?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var result = await BooksService.ToggleStatusAsync(bookId);
+        if (result.IsSuccess)
+        {
+            listResult = await BooksService.GetBookListAsync(new BookListQuery
+            {
+                Keyword = Keyword,
+                Category = Category,
+                PublisherId = PublisherId,
+                PublishYear = PublishYear,
+                IsActive = IsActive,
+                Availability = Availability,
+                MinRating = MinRating,
+                Sort = Sort,
+                Page = Page,
+                PageSize = 10
+            });
+        }
+        else
+        {
+            Toasts.Error(result.Message);
+        }
+    }
+
+    private async Task DownloadTemplateAsync()
+    {
+        var bytes = BooksService.BuildImportTemplate();
+        await JS.InvokeVoidAsync(
+            "libraryManagement.downloadFileFromBase64",
+            "Books_Import_Template.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Convert.ToBase64String(bytes));
+    }
+
+    private async Task ImportBooksAsync()
+    {
+        if (importFile is null)
+        {
+            importErrorMessage = "Please choose an Excel file.";
+            return;
+        }
+
+        importing = true;
+        importErrors.Clear();
+        importErrorMessage = null;
+        importSuccessMessage = null;
+
+        var result = await BooksService.ImportAsync(importFile);
+        importing = false;
+
+        if (result.IsSuccess)
+        {
+            importSuccessMessage = result.Message;
+            importErrors = result.Value?.Errors.Take(20).ToList() ?? new List<string>();
+        }
+        else
+        {
+            importErrorMessage = result.Message;
+            importErrors = result.Errors.Take(20).ToList();
+        }
+    }
+
+    private string GetAllBooksUrl(int page)
+    {
+        var query = new Dictionary<string, string?>();
+        if (!string.IsNullOrWhiteSpace(Keyword)) query["keyword"] = Keyword;
+        if (!string.IsNullOrWhiteSpace(Category)) query["category"] = Category;
+        if (PublisherId.HasValue) query["publisherId"] = PublisherId.Value.ToString();
+        if (PublishYear.HasValue) query["publishYear"] = PublishYear.Value.ToString();
+        if (IsActive.HasValue) query["isActive"] = IsActive.Value.ToString().ToLowerInvariant();
+        if (!string.IsNullOrWhiteSpace(Availability)) query["availability"] = Availability;
+        if (MinRating.HasValue) query["minRating"] = MinRating.Value.ToString();
+        if (!string.IsNullOrWhiteSpace(Sort)) query["sort"] = Sort;
+        query["page"] = page.ToString();
+        return QueryHelpers.AddQueryString("/Books/AllBooks", query!);
+    }
+
+    private static async Task<string?> ToDataUrlAsync(IBrowserFile? file)
+    {
+        if (file is null)
+        {
+            return null;
+        }
+
+        await using var stream = file.OpenReadStream(10 * 1024 * 1024);
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory);
+        return $"data:{file.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}";
+    }
+}

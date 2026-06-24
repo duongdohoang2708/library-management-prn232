@@ -1,0 +1,63 @@
+@implements IDisposable
+@inject ToastService Toasts
+
+@if (Toasts.Messages.Count > 0)
+{
+    <div class="fixed left-1/2 top-10 z-[70] flex w-full max-w-3xl -translate-x-1/2 flex-col gap-3 px-4">
+        @foreach (var toast in Toasts.Messages)
+        {
+            <div class="rounded-2xl border border-white/10 px-6 py-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl @GetBackgroundClass(toast.Kind)">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-xl">@GetIcon(toast.Kind)</span>
+                        <div>
+                            <div class="font-semibold">@toast.Message</div>
+                            @if (toast.Action is not null)
+                            {
+                                <a href="@toast.Action.Url" class="mt-2 inline-block text-sm font-semibold text-white/80 underline transition hover:text-white">
+                                    @toast.Action.Text
+                                </a>
+                            }
+                        </div>
+                    </div>
+                    <button type="button" class="text-white/60 transition hover:text-white" @onclick="() => Toasts.Remove(toast.Id)">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        Toasts.Changed += HandleChanged;
+    }
+
+    private void HandleChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetBackgroundClass(string kind) => kind switch
+    {
+        "success" => "bg-gradient-to-r from-emerald-600/90 to-teal-500/90",
+        "error" => "bg-gradient-to-r from-red-600/90 to-rose-500/90",
+        "warning" => "bg-gradient-to-r from-amber-500/90 to-yellow-400/90 text-background-dark",
+        _ => "bg-gradient-to-r from-slate-700/90 to-slate-600/90"
+    };
+
+    private static string GetIcon(string kind) => kind switch
+    {
+        "success" => "check_circle",
+        "error" => "error",
+        "warning" => "warning",
+        _ => "info"
+    };
+
+    public void Dispose()
+    {
+        Toasts.Changed -= HandleChanged;
+    }
+}

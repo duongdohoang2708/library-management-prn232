@@ -1,0 +1,139 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+<div class="custom-scrollbar flex-1 min-w-0 overflow-y-auto bg-[#0A0F1E] p-8">
+    <div class="mx-auto max-w-5xl">
+        <div class="mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+            <div>
+                <h1 class="mb-2 text-4xl font-black text-white">My Fines</h1>
+                <p class="font-medium text-white/40">Manage and pay your outstanding library charges.</p>
+            </div>
+
+            <div class="flex items-center gap-6 rounded-[2rem] border border-rose-500/20 bg-rose-500/10 p-6 backdrop-blur-xl">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-500">
+                    <span class="material-symbols-outlined text-3xl">payments</span>
+                </div>
+                <div>
+                    <p class="mb-1 text-[10px] font-black uppercase tracking-widest text-rose-500/60">Total Outstanding</p>
+                    <p class="text-2xl font-black text-white">@TotalOwed.ToString("N0") <span class="text-xs">VND</span></p>
+                </div>
+            </div>
+        </div>
+
+        @if (Fines.Any())
+        {
+            <div class="overflow-hidden rounded-[2.5rem] border border-white/5 bg-white/5 shadow-2xl backdrop-blur-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-left">
+                        <thead>
+                            <tr class="border-b border-white/5 bg-white/[0.02]">
+                                <th class="px-8 py-6">
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox"
+                                               checked="@AreAllSelected"
+                                               @onchange="async args => await ToggleAllSelected(args.Value as bool? == true)"
+                                               class="h-5 w-5 cursor-pointer rounded-lg border-white/5 bg-white/5 text-primary transition-all focus:ring-primary" />
+                                        <span class="text-[10px] font-black uppercase tracking-widest text-white/30">Select</span>
+                                    </div>
+                                </th>
+                                <th class="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-white/30">Book/Reason</th>
+                                <th class="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-white/30">Due Date</th>
+                                <th class="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-white/30">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            @foreach (var fine in Fines)
+                            {
+                                var remaining = GetRemainingAmount(fine);
+
+                                        <tr class="group transition-colors hover:bg-white/[0.03]">
+                                    <td class="px-8 py-7">
+                                        <input type="checkbox"
+                                               checked="@SelectedFineIds.Contains(fine.BorrowDetailId)"
+                                               @onchange="async args => await ToggleFine(fine.BorrowDetailId, args.Value as bool? == true)"
+                                               class="fine-checkbox h-5 w-5 cursor-pointer rounded-lg border-white/5 bg-white/5 text-primary transition-all focus:ring-primary" />
+                                    </td>
+                                    <td class="px-8 py-7">
+                                        <div class="flex items-center gap-4">
+                                            @if (fine.BookCopy?.Book is not null)
+                                            {
+                                                <div class="h-14 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-white/5 shadow-lg">
+                                                    <img src="@BookImageHelper.Resolve(fine.BookCopy.Book.ImageUrl, fine.BookCopy.Book.Title)"
+                                                         alt="@fine.BookCopy.Book.Title"
+                                                         onerror="this.onerror=null;this.src='@BookImageHelper.Placeholder';"
+                                                         class="h-full w-full object-cover" />
+                                                </div>
+                                                <div>
+                                                    <p class="mb-0.5 font-bold text-white transition-colors group-hover:text-primary">@fine.BookCopy.Book.Title</p>
+                                                    <p class="text-[10px] font-bold uppercase tracking-widest text-white/30">Barcode: @fine.BookCopy.Barcode</p>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                                                    <span class="material-symbols-outlined">warning</span>
+                                                </div>
+                                                <div>
+                                                    <p class="mb-0.5 font-bold text-white">Manual Charge</p>
+                                                    <p class="text-[10px] font-bold uppercase tracking-widest text-white/30">Check with librarian</p>
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="px-8 py-7">
+                                        <p class="font-bold text-white/60">@fine.DueDate.ToString("MMM dd, yyyy")</p>
+                                    </td>
+                                    <td class="px-8 py-7">
+                                        <p class="font-black text-rose-400">@remaining.ToString("N0") <span class="text-[10px]">VND</span></p>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-col items-center justify-between gap-8 border-t border-white/5 bg-white/[0.02] p-8 md:flex-row">
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm font-bold text-white/40">Amount to pay:</span>
+                        <span class="text-3xl font-black text-white">@SelectedAmount.ToString("N0") <span class="text-sm">VND</span></span>
+                    </div>
+
+                    <div class="flex w-full items-center gap-4 md:w-auto">
+                        <select disabled class="flex-1 cursor-pointer rounded-2xl border border-white/5 bg-white/5 px-4 py-4 text-sm font-bold text-white outline-none">
+                            <option value="VnPay">VNPAY Online</option>
+                        </select>
+                        <button type="button"
+                                @onclick="SubmitPayment"
+                                disabled="@(!SelectedFineIds.Any() || IsBusy)"
+                                class="flex-1 rounded-2xl bg-primary px-10 py-4 font-black text-background-dark shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100">
+                            Pay Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="flex flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-white/5 bg-white/[0.01] p-20 text-center">
+                <div class="mb-8 flex h-20 w-20 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
+                    <span class="material-symbols-outlined text-4xl">check_circle</span>
+                </div>
+                <h2 class="mb-3 text-2xl font-black text-white">All Settled!</h2>
+                <p class="max-w-xs leading-relaxed text-white/30">Great job! You have no outstanding fines or charges on your account.</p>
+                <a href="/Books/ViewBooks" class="mt-10 rounded-xl border border-white/5 bg-white/5 px-8 py-3 font-bold text-white transition-all hover:border-primary/30 hover:bg-white/10">Explore more books</a>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<LibraryManagementDAL.Models.BorrowDetail> Fines { get; set; } = Array.Empty<LibraryManagementDAL.Models.BorrowDetail>();
+    [Parameter] public HashSet<int> SelectedFineIds { get; set; } = new();
+    [Parameter] public decimal SelectedAmount { get; set; }
+    [Parameter] public decimal TotalOwed { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public Func<LibraryManagementDAL.Models.BorrowDetail, decimal> GetRemainingAmount { get; set; } = default!;
+    [Parameter] public Func<string, string> ResolveBookImage { get; set; } = default!;
+    [Parameter] public Func<int, bool, Task> ToggleFine { get; set; } = default!;
+    [Parameter] public Func<bool, Task> ToggleAllSelected { get; set; } = default!;
+    [Parameter] public EventCallback SubmitPayment { get; set; }
+    [Parameter] public bool AreAllSelected { get; set; }
+}

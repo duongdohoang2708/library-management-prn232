@@ -1,0 +1,396 @@
+@page "/"
+@page "/Home"
+@page "/Home/Index"
+@implements IDisposable
+@using Microsoft.AspNetCore.WebUtilities
+@inject HomeClientService HomeService
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="relative flex flex-1 overflow-hidden bg-[#0A0F1E]">
+    <div class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div class="animate-blob absolute left-[-10%] top-[-10%] h-[40%] w-[40%] rounded-full opacity-30 mix-blend-screen blur-[150px]" style="background-color: #10B981;"></div>
+        <div class="animate-blob animation-delay-2000 absolute right-[-10%] top-[20%] h-[50%] w-[50%] rounded-full opacity-20 mix-blend-screen blur-[150px]" style="background-color: #14B8A6;"></div>
+        <div class="animate-blob animation-delay-4000 absolute bottom-[-20%] left-[20%] h-[60%] w-[60%] rounded-full opacity-20 mix-blend-screen blur-[150px]" style="background-color: #eab308;"></div>
+        <div class="absolute inset-0 opacity-[0.03] mix-blend-overlay" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+    </div>
+
+    <div class="custom-scrollbar relative z-10 min-w-0 flex-1 overflow-y-auto p-8">
+        @if (!string.IsNullOrWhiteSpace(model.ErrorMessage))
+        {
+            <div class="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-300">
+                @model.ErrorMessage
+            </div>
+        }
+
+        <div class="group relative mb-6 flex min-h-[360px] items-center overflow-hidden rounded-3xl shadow-2xl" id="spotlightCarousel">
+            @if (SpotlightBooks.Count > 0)
+            {
+                @for (var index = 0; index < SpotlightBooks.Count; index++)
+                {
+                    var spotlightBook = SpotlightBooks[index];
+                    var isActive = index == activeSpotlightIndex;
+                    <div class="absolute inset-0 h-full w-full transition-opacity duration-1000 @(isActive ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0")">
+                        <div class="absolute inset-0 z-0">
+                            <img src="@BookImageHelper.Resolve(spotlightBook.ImageUrl, spotlightBook.Title)" class="h-full w-full scale-110 object-cover opacity-30 blur-2xl" />
+                            <div class="absolute inset-0 bg-gradient-to-r from-background-dark via-background-dark/80 to-transparent"></div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/50 to-transparent"></div>
+                        </div>
+
+                        <div class="relative z-10 flex h-full w-full flex-col items-center gap-8 p-8 md:flex-row md:p-12">
+                            <div class="flex-1">
+                                <span class="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary shadow-[0_0_15px_rgba(231,216,15,0.2)] backdrop-blur-md">
+                                    <span class="material-symbols-outlined text-xs">local_fire_department</span> Spotlight
+                                </span>
+                                <h1 class="mb-4 text-4xl font-black leading-tight text-white drop-shadow-lg md:text-5xl">
+                                    @spotlightBook.Title
+                                </h1>
+                                <p class="mb-8 max-w-xl line-clamp-3 text-sm leading-relaxed text-white/70 md:text-base">
+                                    @(spotlightBook.Description ?? "Dive into this week's most highly recommended read. Explore our vast collection of literature and research materials directly from your personalized digital dashboard.")
+                                </p>
+
+                                <div class="flex items-center gap-4">
+                                    <a href="@GetDetailsUrl(spotlightBook.BookId)" class="rounded-xl bg-primary px-6 py-3 text-xs font-black uppercase tracking-widest text-background-dark shadow-[0_0_20px_rgba(231,216,15,0.4)] transition-transform hover:scale-105">
+                                        Read Now
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="relative hidden flex-shrink-0 transition-transform duration-700 group-hover:-translate-y-2 md:block">
+                                <div class="relative z-10 aspect-[3/4.5] w-48 overflow-hidden rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                                    <img src="@BookImageHelper.Resolve(spotlightBook.ImageUrl, spotlightBook.Title)" class="h-full w-full object-cover" />
+                                </div>
+                                <div class="absolute -inset-4 rounded-full bg-primary/20 opacity-0 blur-3xl transition-opacity duration-700 group-hover:opacity-100"></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+                    @for (var i = 0; i < SpotlightBooks.Count; i++)
+                    {
+                        var isActive = i == activeSpotlightIndex;
+                        <button type="button"
+                                class="carousel-dot h-2 rounded-full transition-all duration-300 @(isActive ? "w-6 bg-primary" : "w-2 bg-white/30 hover:bg-white/50")"
+                                @onclick="() => activeSpotlightIndex = i">
+                        </button>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="absolute inset-0 z-0 border border-white/5 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent"></div>
+                <div class="relative z-10 w-full p-8 md:p-12">
+                    <span class="mb-3 inline-block rounded-full border border-primary/30 bg-primary/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary backdrop-blur-md">
+                        Library Management System
+                    </span>
+                    <h1 class="mb-2 text-3xl font-black leading-tight text-white md:text-5xl">Your Personal <span class="bg-gradient-to-r from-primary to-yellow-300 bg-clip-text text-transparent">Knowledge Sanctuary</span></h1>
+                    <p class="max-w-lg text-sm text-white/50 md:text-base">Access the world's best collection of literature and research materials from your digital dashboard.</p>
+                </div>
+            }
+        </div>
+
+        <div class="mb-16 grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div class="group flex cursor-pointer items-center gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 backdrop-blur-md transition-all hover:border-primary/30 hover:bg-white/10">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                    <span class="material-symbols-outlined">menu_book</span>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-white">10k+</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-white/40">Books</div>
+                </div>
+            </div>
+            <div class="group flex cursor-pointer items-center gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 backdrop-blur-md transition-all hover:border-primary/30 hover:bg-white/10">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                    <span class="material-symbols-outlined">category</span>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-white">@($"{model.Categories.Count}+")</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-white/40">Genres</div>
+                </div>
+            </div>
+            <div class="group flex cursor-pointer items-center gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 backdrop-blur-md transition-all hover:border-primary/30 hover:bg-white/10">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                    <span class="material-symbols-outlined">star</span>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-white">4.8</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-white/40">Avg Rating</div>
+                </div>
+            </div>
+            <a href="/Books/ViewBooks" class="group flex flex-col items-center justify-center gap-1 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/20 to-background-dark/20 p-4 shadow-[0_10px_20px_rgba(231,216,15,0.1)] backdrop-blur-md transition-all hover:from-primary/30 hover:to-background-dark/30">
+                <span class="material-symbols-outlined text-primary transition-transform group-hover:-translate-y-1">search</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-primary">Explore Library</span>
+            </a>
+        </div>
+
+        <section class="mb-16">
+            <div class="mb-8 flex items-center justify-between px-2">
+                <div class="flex items-center gap-4">
+                    <div class="h-10 w-1.5 rounded-full bg-primary shadow-[0_0_20px_rgba(231,216,15,0.5)]"></div>
+                    <h2 class="text-3xl font-black tracking-tight text-white">Recommended</h2>
+                </div>
+                <a href="/Books/ViewBooks" class="group flex items-center gap-2 text-sm font-black text-primary transition-all hover:gap-3">
+                    Explores All
+                    <span class="material-symbols-outlined text-lg">arrow_right_alt</span>
+                </a>
+            </div>
+
+            <div class="custom-scrollbar relative z-20 flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory">
+                @foreach (var book in model.Books)
+                {
+                    <div class="group relative flex h-[180px] w-[380px] flex-shrink-0 snap-start gap-6 overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-5 transition-all hover:border-primary/40 hover:bg-white/10 hover:shadow-[0_10px_30px_rgba(16,185,129,0.1)] md:h-[200px] md:w-[460px]">
+                        <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
+
+                        <div class="relative z-10 aspect-[3/4.5] w-24 flex-shrink-0 overflow-hidden rounded-xl shadow-lg transition-transform group-hover:-translate-y-2 md:w-32">
+                            <img src="@BookImageHelper.Resolve(book.ImageUrl, book.Title)" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.onerror=null;this.src='/images/book-placeholder.svg';" />
+                        </div>
+
+                        <div class="relative z-10 flex min-w-0 flex-1 flex-col justify-center py-1">
+                            <div class="mb-3 line-clamp-1 w-fit rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
+                                @book.Category?.CategoryName
+                            </div>
+                            <h4 class="mb-2 line-clamp-2 text-base font-black leading-snug text-white transition-colors group-hover:text-primary md:text-lg" title="@book.Title">
+                                <a href="@GetDetailsUrl(book.BookId)">@book.Title</a>
+                            </h4>
+                            <p class="mb-auto line-clamp-1 text-[11px] font-bold text-white/50 md:text-sm">@book.Author?.Name</p>
+
+                            <div class="mt-3 flex items-center justify-between">
+                                <div class="flex items-center text-xs text-amber-400">
+                                    <span class="material-symbols-outlined text-[16px]">star</span>
+                                    <span class="ml-1 text-[11px] font-bold text-white">@(GetAverageRating(book) > 0 ? GetAverageRating(book).ToString("0.0") : "New")</span>
+                                </div>
+                                <span class="rounded-md border border-white/5 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-white/40">
+                                    @book.PublishYear
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="mb-20">
+            <h2 class="mb-8 flex items-center gap-4 text-xl font-black text-white">
+                <span class="h-0.5 w-12 rounded-full bg-white/10"></span>
+                Browse Genres
+            </h2>
+
+            <div class="grid auto-rows-[120px] grid-cols-2 gap-4 grid-flow-row-dense md:grid-cols-4 lg:grid-cols-6">
+                @for (var index = 0; index < model.Categories.Count; index++)
+                {
+                    var category = model.Categories[index];
+                    var isLarge = index is 0 or 4;
+                    var bentoClass = index switch
+                    {
+                        0 => "col-span-2 row-span-2 lg:col-start-1 lg:row-start-1",
+                        8 => "col-span-2 row-span-1 lg:col-start-1 lg:row-start-3",
+                        9 => "col-span-2 row-span-1 lg:col-start-5 lg:row-start-1",
+                        4 => "col-span-2 row-span-2 lg:col-start-5 lg:row-start-2",
+                        _ => "col-span-1 row-span-1"
+                    };
+                    var bgClass = isLarge ? "bg-gradient-to-br from-primary/20 to-background-dark/40 border-primary/20" : "bg-white/5 border-white/5";
+                    var iconSize = isLarge ? "text-5xl" : "text-3xl";
+                    <a href="@GetBooksUrl(category: category.CategoryName)" class="@($"{bentoClass} group relative overflow-hidden rounded-3xl")">
+                        <div class="absolute inset-0 rounded-3xl border border-transparent transition-all duration-500 group-hover:border-primary/40"></div>
+                        <div class="@($"flex h-full w-full flex-col items-center justify-center gap-4 p-6 transition-all duration-500 group-hover:scale-105 {bgClass}")">
+                            <span class="@($"{iconSize} material-symbols-outlined text-white/80 transition-transform duration-500 group-hover:rotate-12 group-hover:text-primary")">
+                                @(isLarge ? "local_library" : "auto_stories")
+                            </span>
+                            <span class="line-clamp-2 text-center text-[10px] font-black uppercase tracking-[0.15em] text-white/80 group-hover:text-white">@category.CategoryName</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        </section>
+
+        <section class="mb-20">
+            <h2 class="mb-8 flex items-center gap-4 text-xl font-black text-white">
+                <span class="h-0.5 w-12 rounded-full bg-white/10"></span>
+                Trending Authors
+            </h2>
+            <div class="custom-scrollbar flex gap-8 overflow-x-auto pb-4">
+                @foreach (var author in TrendingAuthors)
+                {
+                    var initial = string.IsNullOrWhiteSpace(author.Name) ? "A" : author.Name[..1];
+                    <div class="group w-24 flex-shrink-0 cursor-pointer">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-white/10 bg-gradient-to-br from-primary/20 to-background-dark/40 text-2xl font-black text-white/50 shadow-lg transition-all duration-500 group-hover:border-primary group-hover:text-primary group-hover:shadow-[0_0_20px_rgba(231,216,15,0.3)]">
+                                <span>@initial</span>
+                            </div>
+                            <span class="line-clamp-2 text-center text-xs font-bold text-white/70 transition-colors group-hover:text-white">@author.Name</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <div class="mb-10 flex items-end justify-between px-2">
+                <div>
+                    <span class="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-primary">Top Rated</span>
+                    <h2 class="text-4xl font-black leading-tight text-white">Popular Collections</h2>
+                </div>
+                <div class="hidden gap-4 md:flex">
+                    <div class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/30"><span class="material-symbols-outlined">star</span></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+                @foreach (var book in model.PopularBooks)
+                {
+                    var reviews = book.BookReviews?.ToList() ?? new List<BookReview>();
+                    var avgRating = reviews.Any() ? Math.Round(reviews.Average(r => r.Rating), 1) : 0;
+                    var totalReviews = reviews.Count;
+                    var latestReview = reviews.OrderByDescending(r => r.CreatedAt).FirstOrDefault();
+                    var latestReviewerName = latestReview?.User?.FullName ?? latestReview?.Account?.FullName ?? "Reader";
+                    var latestReviewerInitial = string.IsNullOrWhiteSpace(latestReviewerName) ? "R" : latestReviewerName[..1];
+
+                    <div class="group flex flex-col">
+                        <div class="relative mb-6 aspect-[3/4.4] overflow-hidden rounded-[2.5rem] shadow-2xl transition-all duration-700 group-hover:-translate-y-3 group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
+                            <img class="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                 alt="@book.Title"
+                                 src="@BookImageHelper.Resolve(book.ImageUrl, book.Title)"
+                                 onerror="this.onerror=null;this.src='/images/book-placeholder.svg';" />
+
+                            <div class="absolute right-6 top-6 flex items-center gap-1.5 rounded-2xl border border-white/10 bg-black/40 px-3 py-1.5 shadow-2xl backdrop-blur-xl">
+                                <span class="material-symbols-outlined text-sm text-amber-400 fill-current">star</span>
+                                <span class="text-sm font-black text-white">@avgRating</span>
+                            </div>
+
+                            <div class="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black via-black/90 to-transparent p-8 transition-transform duration-500 group-hover:translate-y-0">
+                                @if (latestReview is not null)
+                                {
+                                    <div class="mb-6">
+                                        <div class="mb-3 flex items-center gap-2">
+                                            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">@latestReviewerInitial</div>
+                                            <span class="text-[10px] font-black uppercase tracking-widest text-white/50">Latest Review</span>
+                                        </div>
+                                        <p class="line-clamp-3 text-xs italic leading-relaxed text-white">"@latestReview.Comment"</p>
+                                    </div>
+                                }
+                                <div class="flex flex-col gap-3">
+                                    <a href="@GetDetailsUrl(book.BookId)"
+                                       class="block w-full rounded-xl bg-white py-3 text-center text-[10px] font-black uppercase tracking-widest text-background-dark shadow-lg transition-transform hover:scale-105">
+                                        View details
+                                    </a>
+                                    <a href="@GetReviewUrl(book.BookId)"
+                                       class="block w-full rounded-xl border border-primary/30 bg-primary/20 py-3 text-center text-[10px] font-black uppercase tracking-widest text-primary shadow-lg transition-all hover:bg-primary hover:text-black">
+                                        Write Review
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="px-3">
+                            <h3 class="truncate text-xl font-black text-white transition-colors group-hover:text-primary">
+                                <a href="@GetDetailsUrl(book.BookId)">@book.Title</a>
+                            </h3>
+                            <div class="mt-2 flex items-center justify-between">
+                                <p class="text-xs font-bold uppercase tracking-widest text-white/40">@book.Author?.Name</p>
+                                <span class="text-[10px] font-black text-white/20">@($"{totalReviews} Reviews")</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+<style>
+    .fill-current {
+        font-variation-settings: 'FILL' 1;
+    }
+
+    @@keyframes blob {
+        0% { transform: translate(0px, 0px) scale(1); }
+        33% { transform: translate(30px, -50px) scale(1.1); }
+        66% { transform: translate(-20px, 20px) scale(0.9); }
+        100% { transform: translate(0px, 0px) scale(1); }
+    }
+
+    .animate-blob {
+        animation: blob 20s infinite alternate;
+    }
+
+    .animation-delay-2000 {
+        animation-delay: 2s;
+    }
+
+    .animation-delay-4000 {
+        animation-delay: 4s;
+    }
+</style>
+
+@code {
+    private readonly CancellationTokenSource disposal = new();
+    private HomePageViewModel model = new();
+    private int activeSpotlightIndex;
+    private bool carouselStarted;
+
+    private List<LibraryManagementDAL.Models.Book> SpotlightBooks => model.PopularBooks.Take(5).ToList();
+
+    private List<LibraryManagementDAL.Models.Author> TrendingAuthors => model.Books
+        .Select(book => book.Author)
+        .Where(author => author is not null)
+        .GroupBy(author => author!.AuthorId)
+        .Select(group => group.First()!)
+        .Take(8)
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = await HomeService.GetHomeAsync(disposal.Token);
+
+        if (!carouselStarted && SpotlightBooks.Count > 1)
+        {
+            carouselStarted = true;
+            _ = RunCarouselAsync(disposal.Token);
+        }
+    }
+
+    private async Task RunCarouselAsync(CancellationToken cancellationToken)
+    {
+        var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                activeSpotlightIndex = (activeSpotlightIndex + 1) % SpotlightBooks.Count;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            timer.Dispose();
+        }
+    }
+
+    private static double GetAverageRating(LibraryManagementDAL.Models.Book book)
+    {
+        return book.BookReviews?.Any() == true
+            ? Math.Round(book.BookReviews.Average(review => review.Rating), 1)
+            : 0;
+    }
+
+    private static string GetDetailsUrl(int bookId) => $"/Books/Details/{bookId}";
+
+    private static string GetReviewUrl(int bookId) => $"/Review?bookId={bookId}";
+
+    private static string GetBooksUrl(string? category = null)
+    {
+        return string.IsNullOrWhiteSpace(category)
+            ? "/Books/ViewBooks"
+            : QueryHelpers.AddQueryString("/Books/ViewBooks", new Dictionary<string, string?> { ["category"] = category });
+    }
+
+    public void Dispose()
+    {
+        disposal.Cancel();
+        disposal.Dispose();
+    }
+}

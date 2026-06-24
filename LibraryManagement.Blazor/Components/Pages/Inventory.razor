@@ -1,0 +1,483 @@
+@page "/Inventory"
+@page "/Inventory/Index"
+@page "/Inventory/ManageCopies"
+@page "/Inventory/ManageCopies/{BookId:int}"
+@attribute [Authorize(Roles = "Admin,Manager,Librarian")]
+@using LibraryManagement.Blazor.DTO.Inventory
+@using LibraryManagementDAL.Models
+@inject InventoryClientService InventoryService
+@inject NavigationManager Navigation
+@inject ToastService Toasts
+
+<PageTitle>Quản lý Kho sách Vật lý</PageTitle>
+
+@if (isLoading)
+{
+    <div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+        <SurfacePanel ContainerClass="rounded-2xl border border-white/5 bg-black/20 p-10 text-center text-white/60"
+                     Title="Loading inventory..."
+                     TitleClass="text-base font-medium text-white/60" />
+    </div>
+}
+else if (isManageCopiesView)
+{
+    <div class="custom-scrollbar flex-1 min-w-0 overflow-y-auto p-8">
+        <div class="mb-8">
+            <a href="/Inventory/Index" class="mb-4 inline-flex items-center text-sm font-medium text-white/40 transition-colors hover:text-primary">
+                <span class="material-symbols-outlined mr-1 text-[18px]">arrow_back</span>
+                Back to list
+            </a>
+            <h1 class="mb-2 font-display text-4xl font-bold text-white">Manage Copy Inventory (Import)</h1>
+            <p class="text-white/60">Book: <strong class="text-white">@bookCopies.BookTitle</strong></p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-400">@errorMessage</div>
+        }
+
+        <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+            <div class="rounded-2xl border border-white/5 bg-black/20 p-6 backdrop-blur-md lg:col-span-1">
+                <h2 class="mb-6 flex items-center gap-2 text-xl font-bold text-white">
+                    <span class="material-symbols-outlined text-primary">add_box</span>
+                    Import Hard Copies
+                </h2>
+                <EditForm Model="@addCopies" OnValidSubmit="AddCopiesAsync" class="space-y-5">
+                    <div>
+                        <label class="mb-2 block text-sm font-medium text-white/60">Number of Copies to Import</label>
+                        <input @bind="addCopies.NumberOfCopies" type="number" min="1" max="50" required class="w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-medium text-white/60">Shelf Location (Optional)</label>
+                        <input @bind="addCopies.Location" type="text" placeholder="Example: Shelf A1, Compartment 2..." class="w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none" />
+                    </div>
+
+                    <div class="rounded-xl border border-primary/20 bg-primary/10 p-4">
+                        <p class="flex items-start gap-2 text-sm text-primary/80">
+                            <span class="material-symbols-outlined text-[18px]">info</span>
+                            <span>The barcode will be <strong>automatically generated</strong> by the system for each new book.</span>
+                        </p>
+                    </div>
+
+                    <button disabled="@isBusy" class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-background-dark transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">
+                        <span class="material-symbols-outlined">playlist_add</span>
+                        Generate Barcode & Add to Inventory
+                    </button>
+                </EditForm>
+            </div>
+
+            <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20 backdrop-blur-md lg:col-span-2">
+                <div class="flex items-center justify-between border-b border-white/5 bg-white/5 p-6">
+                    <h2 class="text-xl font-bold text-white">Current Hard Copies</h2>
+                    <div class="rounded-lg bg-white/10 px-3 py-1 text-sm font-medium text-white/80">
+                        Total: <span class="text-white">@bookCopies.Items.Count</span> copies
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-left">
+                        <thead>
+                        <tr class="border-b border-white/5">
+                                <th class="px-6 py-4 font-medium text-white/60">Barcode</th>
+                                <th class="px-6 py-4 font-medium text-white/60">Status</th>
+                                <th class="px-6 py-4 font-medium text-white/60">Condition</th>
+                                <th class="px-6 py-4 font-medium text-white/60">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-white/80">
+                            @if (bookCopies.Items.Any())
+                            {
+                                @foreach (var copy in bookCopies.Items)
+                                {
+                                    <tr class="group relative transition-colors hover:bg-white/[0.02]">
+                                        <td class="whitespace-nowrap px-6 py-4">
+                                            <span class="rounded border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-primary">@copy.Barcode</span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            @if (copy.Status == BookCopyStatus.Available || copy.Status == BookCopyStatus.Lost || copy.Status == BookCopyStatus.Damaged)
+                                            {
+                                                <select @bind="copy.Status" class="rounded-lg border border-white/5 bg-black/40 px-3 py-2 text-sm text-white focus:border-primary focus:outline-none">
+                                                    <option value="@BookCopyStatus.Available">Available</option>
+                                                    <option value="@BookCopyStatus.Lost">Lost</option>
+                                                    <option value="@BookCopyStatus.Damaged">Damaged</option>
+                                                </select>
+                                            }
+                                            else
+                                            {
+                                                <div class="flex items-center gap-2">
+                                                    @if (copy.Status == BookCopyStatus.Borrowed)
+                                                    {
+                                                        <span class="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-primary">Borrowed</span>
+                                                    }
+                                                    else if (copy.Status == BookCopyStatus.Reserved)
+                                                    {
+                                                        <span class="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">Reserved</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <select @bind="copy.Condition" class="rounded-lg border border-white/5 bg-black/40 px-3 py-2 text-sm text-white focus:border-primary focus:outline-none">
+                                                <option value="@BookCondition.New">New</option>
+                                                <option value="@BookCondition.Good">Good</option>
+                                                <option value="@BookCondition.Fair">Fair</option>
+                                                <option value="@BookCondition.Poor">Poor</option>
+                                                <option value="@BookCondition.Damaged">Damaged</option>
+                                            </select>
+                                        </td>
+                                        <td class="whitespace-nowrap px-6 py-3">
+                                            <input @bind="copy.Location" type="text" placeholder="Location" class="mb-2 w-full max-w-[120px] rounded-lg border border-white/5 bg-black/40 px-3 py-2 text-sm text-white focus:border-primary focus:outline-none" />
+                                            <button type="button" @onclick="() => UpdateCopyAsync(copy)" disabled="@isBusy" class="flex w-full max-w-[120px] items-center justify-center gap-1 rounded-lg bg-primary/20 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-background-dark disabled:cursor-not-allowed disabled:opacity-60">
+                                                <span class="material-symbols-outlined text-[16px]">save</span>
+                                                Save
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="py-12 text-center text-white/40">
+                                        <span class="material-symbols-outlined mb-4 block text-4xl opacity-50">inventory</span>
+                                        No physical copies found. Create new copies by entering the information on the left pane.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="custom-scrollbar flex-1 min-w-0 overflow-y-auto p-8">
+        <div class="mb-8 flex items-end justify-between">
+            <div>
+                <h1 class="mb-2 font-display text-4xl font-bold text-white">Physical Inventory Management</h1>
+                <p class="text-white/60">Manage list of book physical copies, barcodes, and real-time shelf availability</p>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-400">@errorMessage</div>
+        }
+
+        <div class="mb-8 rounded-2xl border border-white/5 bg-black/20 p-6 backdrop-blur-md">
+            <form method="get" action="/Inventory/Index" class="flex flex-col gap-4 md:flex-row">
+                <div class="relative flex-1">
+                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/40">barcode_scanner</span>
+                    <input type="text"
+                           name="searchBarcode"
+                           value="@SearchBarcode"
+                           oninput="clearTimeout(this.delay); this.delay = setTimeout(() => { this.form.requestSubmit(); }, 500);"
+                           placeholder="Scan or enter barcode, book name..."
+                           class="w-full rounded-xl border border-white/5 bg-black/40 py-3 pl-12 pr-4 text-white transition-colors focus:border-primary focus:outline-none" />
+                </div>
+
+                <div class="flex flex-wrap gap-4">
+                    <select name="status"
+                            onchange="this.form.requestSubmit()"
+                            class="cursor-pointer rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                        <option value="">All Statuses</option>
+                        <option value="0" selected="@(Status == BookCopyStatus.Available)">Available</option>
+                        <option value="1" selected="@(Status == BookCopyStatus.Borrowed)">Borrowed</option>
+                        <option value="2" selected="@(Status == BookCopyStatus.Reserved)">Reserved</option>
+                        <option value="3" selected="@(Status == BookCopyStatus.Lost)">Lost</option>
+                        <option value="4" selected="@(Status == BookCopyStatus.Damaged)">Damaged</option>
+                    </select>
+
+                    <select name="condition"
+                            onchange="this.form.requestSubmit()"
+                            class="max-w-[180px] cursor-pointer truncate rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                        <option value="">All Conditions</option>
+                        <option value="0" selected="@(Condition == BookCondition.New)">New</option>
+                        <option value="1" selected="@(Condition == BookCondition.Good)">Good</option>
+                        <option value="2" selected="@(Condition == BookCondition.Fair)">Fair</option>
+                        <option value="3" selected="@(Condition == BookCondition.Poor)">Poor</option>
+                        <option value="4" selected="@(Condition == BookCondition.Damaged)">Damaged</option>
+                    </select>
+
+                    <input type="text"
+                           name="location"
+                           value="@Location"
+                           oninput="clearTimeout(this.delay); this.delay = setTimeout(() => { this.form.requestSubmit(); }, 500);"
+                           placeholder="Shelf location..."
+                           class="min-w-[160px] rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none" />
+
+                    @if (!string.IsNullOrEmpty(SearchBarcode) || Status != null || Condition != null || !string.IsNullOrEmpty(Location))
+                    {
+                        <a href="/Inventory/Index" class="flex items-center rounded-xl bg-white/5 px-4 py-3 font-medium text-white/60 transition-colors hover:border-primary/30 hover:bg-white/10" title="Clear Filters">
+                            <span class="material-symbols-outlined">close</span>
+                        </a>
+                    }
+                </div>
+            </form>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20 backdrop-blur-md">
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-left">
+                    <thead>
+                        <tr class="border-b border-white/5 bg-white/5">
+                            <th class="px-6 py-4 font-medium text-white/60">Barcode</th>
+                            <th class="px-6 py-4 font-medium text-white/60">Book Title</th>
+                            <th class="px-6 py-4 font-medium text-white/60">Status</th>
+                            <th class="px-6 py-4 font-medium text-white/60">Condition</th>
+                            <th class="px-6 py-4 font-medium text-white/60">Shelf Location</th>
+                            <th class="px-6 py-4 text-right font-medium text-white/60">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-white/80">
+                        @if (listResult.Items.Any())
+                        {
+                            @foreach (var copy in listResult.Items)
+                            {
+                            <tr class="group transition-colors hover:bg-white/[0.03]">
+                                    <td class="whitespace-nowrap px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-sm text-white/40">qr_code_2</span>
+                                            <span class="rounded border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-primary">@copy.Barcode</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="line-clamp-1 font-medium text-white" title="@copy.Book.Title">@copy.Book.Title</p>
+                                        <a href="/Books/Details/@copy.BookId" class="text-sm text-primary/70 hover:underline">
+                                            Book ID: @copy.BookId
+                                        </a>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4">
+                                        <span class="rounded-full border px-3 py-1 text-sm @GetStatusClass(copy.Status)">@copy.Status</span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4">
+                                        <span class="@GetConditionClass(copy.Condition)">
+                                            <span class="material-symbols-outlined mr-1 align-middle text-sm">@GetConditionIcon(copy.Condition)</span>@copy.Condition
+                                        </span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-white/60">
+                                        @(string.IsNullOrEmpty(copy.Location) ? "Unknown" : copy.Location)
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-right">
+                                        <a href="/Inventory/ManageCopies?bookId=@copy.BookId" class="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary/20" title="Manage all physical copies for this book">
+                                            <span class="material-symbols-outlined text-[18px]">inventory</span>
+                                            Copies
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="py-12 text-center text-white/40">
+                                    <span class="material-symbols-outlined mb-4 block text-5xl opacity-50">inventory_2</span>
+                                    No physical copies found in inventory.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <PagedFooter CurrentPage="@listResult.CurrentPage" TotalPages="@listResult.TotalPages" BuildHref="@BuildListHref" />
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int? BookId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "bookId")]
+    public int? QueryBookId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "searchBarcode")]
+    public string? SearchBarcode { get; set; }
+
+    [SupplyParameterFromQuery(Name = "status")]
+    public BookCopyStatus? Status { get; set; }
+
+    [SupplyParameterFromQuery(Name = "condition")]
+    public BookCondition? Condition { get; set; }
+
+    [SupplyParameterFromQuery(Name = "location")]
+    public string? Location { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int Page { get; set; } = 1;
+
+    private InventoryListApiResult listResult = new();
+    private BookCopiesApiResult bookCopies = new();
+    private AddCopiesModel addCopies = new();
+    private bool isLoading = true;
+    private bool isBusy;
+    private bool isManageCopiesView;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        isManageCopiesView = GetView() == "managecopies";
+
+        try
+        {
+            if (isManageCopiesView)
+            {
+                var effectiveBookId = BookId ?? QueryBookId;
+                if (!effectiveBookId.HasValue)
+                {
+                    errorMessage = "Book not found.";
+                }
+                else
+                {
+                    var result = await InventoryService.GetBookCopiesAsync(effectiveBookId.Value);
+                    if (result is null)
+                    {
+                        errorMessage = "Book not found.";
+                    }
+                    else
+                    {
+                        bookCopies = result;
+                    }
+                }
+            }
+            else
+            {
+                listResult = await InventoryService.GetCopiesAsync(SearchBarcode, Status, Condition, Location, Page);
+            }
+        }
+        catch
+        {
+            errorMessage = "Could not load inventory right now.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetView()
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var path = relative.Split('?', '#')[0].Trim('/').ToLowerInvariant();
+        return path.StartsWith("inventory/managecopies", StringComparison.OrdinalIgnoreCase) ? "managecopies" : "index";
+    }
+
+    private async Task AddCopiesAsync()
+    {
+        if (bookCopies.BookId <= 0)
+        {
+            Toasts.Error("Book not found.");
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var result = await InventoryService.AddCopiesAsync(bookCopies.BookId, addCopies.NumberOfCopies, addCopies.Location);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                addCopies = new AddCopiesModel();
+                bookCopies = (await InventoryService.GetBookCopiesAsync(bookCopies.BookId)) ?? bookCopies;
+            }
+            else
+            {
+                Toasts.Error(result.Message);
+            }
+        }
+        catch
+        {
+            Toasts.Error("Add copies failed.");
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task UpdateCopyAsync(BookCopy copy)
+    {
+        isBusy = true;
+        try
+        {
+            var result = await InventoryService.UpdateCopyAsync(copy.BookCopyId, bookCopies.BookId, copy.Status, copy.Condition, copy.Location);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                bookCopies = (await InventoryService.GetBookCopiesAsync(bookCopies.BookId)) ?? bookCopies;
+            }
+            else
+            {
+                Toasts.Error(result.Message);
+            }
+        }
+        catch
+        {
+            Toasts.Error("Update copy failed.");
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private string BuildListHref(int page)
+    {
+        var query = new List<string> { $"page={page}" };
+        AddQuery(query, "searchBarcode", SearchBarcode);
+        AddQuery(query, "status", Status.HasValue ? ((int)Status.Value).ToString() : null);
+        AddQuery(query, "condition", Condition.HasValue ? ((int)Condition.Value).ToString() : null);
+        AddQuery(query, "location", Location);
+        return "/Inventory/Index?" + string.Join("&", query);
+    }
+
+    private static void AddQuery(List<string> query, string name, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            query.Add($"{name}={Uri.EscapeDataString(value.Trim())}");
+        }
+    }
+
+    private static string GetStatusClass(BookCopyStatus status) => status switch
+    {
+        BookCopyStatus.Available => "border-green-500/20 bg-green-500/10 text-green-400",
+        BookCopyStatus.Borrowed => "border-primary/20 bg-primary/10 text-primary",
+        BookCopyStatus.Reserved => "border-purple-500/20 bg-purple-500/10 text-purple-400",
+        BookCopyStatus.Lost => "border-red-500/20 bg-red-500/10 text-red-400",
+        BookCopyStatus.Damaged => "border-orange-500/20 bg-orange-500/10 text-orange-400",
+        _ => "border-white/10 bg-white/10 text-white/60"
+    };
+
+    private static string GetConditionClass(BookCondition condition) => condition switch
+    {
+        BookCondition.New => "text-white/80",
+        BookCondition.Good => "text-white/80",
+        BookCondition.Fair => "text-white/80",
+        BookCondition.Poor => "text-white/60",
+        BookCondition.Damaged => "text-red-400",
+        _ => "text-white/60"
+    };
+
+    private static string GetConditionIcon(BookCondition condition) => condition switch
+    {
+        BookCondition.New => "star",
+        BookCondition.Good => "thumb_up",
+        BookCondition.Fair => "horizontal_rule",
+        BookCondition.Poor => "warning",
+        BookCondition.Damaged => "error",
+        _ => "help"
+    };
+
+    private sealed class AddCopiesModel
+    {
+        public int NumberOfCopies { get; set; } = 1;
+        public string? Location { get; set; }
+    }
+}

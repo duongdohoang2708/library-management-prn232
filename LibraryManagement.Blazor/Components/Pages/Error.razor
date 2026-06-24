@@ -1,0 +1,46 @@
+@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Error - Standard Library</PageTitle>
+
+<div class="flex flex-1 items-center justify-center px-8 py-16">
+    <div class="w-full max-w-2xl rounded-[2rem] border border-red-500/20 bg-red-500/10 p-10 text-center shadow-2xl shadow-black/30 backdrop-blur">
+        <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 text-red-300">
+            <span class="material-symbols-outlined text-4xl">error</span>
+        </div>
+        <h1 class="mt-6 text-4xl font-black text-white">Something went wrong</h1>
+        <p class="mt-4 text-sm leading-7 text-white/70">
+            An error occurred while processing your request.
+        </p>
+
+        @if (ShowRequestId)
+        {
+            <div class="mt-6 rounded-2xl border border-white/10 bg-black/20 px-5 py-4 text-left">
+                <div class="text-[10px] font-black uppercase tracking-widest text-white/30">Request ID</div>
+                <code class="mt-2 block break-all text-sm text-white">@RequestId</code>
+            </div>
+        }
+
+        <div class="mt-8 flex justify-center gap-3">
+            <a href="/" class="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white/70 transition hover:border-primary/30 hover:text-white">
+                Back to home
+            </a>
+            <a href="/Home/Dashboard" class="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background-dark transition hover:brightness-105">
+                Open dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized()
+    {
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+    }
+}

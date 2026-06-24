@@ -1,0 +1,76 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+<div class="flex flex-1 items-center justify-center p-4">
+    <div class="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-background-dark shadow-2xl backdrop-blur-md">
+        <div class="border-b border-white/10 bg-black/20 p-6 text-center">
+            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/30 bg-primary/20 text-primary">
+                <span class="material-symbols-outlined text-3xl">@LogoIcon</span>
+            </div>
+            <h1 class="mb-1 text-2xl font-bold text-white">@ProviderName</h1>
+            <p class="text-sm text-white/50">Secure Library Payment Gateway</p>
+        </div>
+
+        <div class="p-8">
+            <div class="mb-8 text-center">
+                <p class="mb-2 text-white/50">Amount to pay</p>
+                <div class="text-4xl font-bold text-rose-400">@CheckoutAmount.ToString("N0") <span class="text-xl text-rose-400/70">VND</span></div>
+            </div>
+
+            <div class="relative mx-auto mb-8 flex h-48 w-48 items-center justify-center overflow-hidden rounded-xl bg-white p-3 shadow-inner">
+                <div class="absolute inset-x-0 top-0 h-[2px] animate-pulse bg-red-500 shadow-[0_0_20px_#ef4444]"></div>
+                <div class="grid h-full w-full grid-cols-5 gap-1 opacity-80">
+                    @for (var i = 0; i < 25; i++)
+                    {
+                        var isDark = i % 2 == 0 || i % 7 == 0;
+                        <div class="rounded-sm @(isDark ? "bg-black" : "bg-white")"></div>
+                    }
+                </div>
+                <div class="absolute bottom-2 left-2 h-4 w-4 border-b-4 border-l-4 border-black"></div>
+                <div class="absolute left-2 top-2 h-4 w-4 border-l-4 border-t-4 border-black"></div>
+                <div class="absolute right-2 top-2 h-4 w-4 border-r-4 border-t-4 border-black"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-200 bg-white">
+                        <span class="material-symbols-outlined text-primary" style="font-size: 16px;">@LogoIcon</span>
+                    </div>
+                </div>
+            </div>
+
+            <p class="mx-auto mb-8 max-w-xs text-center text-sm leading-relaxed text-white/50">
+                Open the <strong>@ProviderName</strong> app on your phone and scan the QR Code to complete the payment.
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(GatewayUrl))
+            {
+                <button type="button"
+                        @onclick="async () => await ContinueToExternalGateway.InvokeAsync()"
+                        class="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-4 font-bold text-white transition-all hover:border-primary/30 hover:bg-white/10">
+                    <span class="material-symbols-outlined">open_in_new</span>
+                    Continue to Gateway
+                </button>
+            }
+
+            <button type="button"
+                    @onclick="async () => await SimulateExternalPaymentSuccess.InvokeAsync()"
+                    class="flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-primary py-4 font-bold text-background-dark shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover">
+                <span class="flex items-center gap-2">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    Simulate Successful Payment
+                </span>
+                <span class="text-xs font-normal text-background-dark/70 opacity-70">(Demo only - for testing purposes)</span>
+            </button>
+
+            <a href="@BackLink" class="mt-4 block text-center text-sm text-white/50 transition-colors hover:text-white">
+                Back, select another method
+            </a>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string ProviderName { get; set; } = string.Empty;
+    [Parameter] public string LogoIcon { get; set; } = string.Empty;
+    [Parameter] public decimal CheckoutAmount { get; set; }
+    [Parameter] public string? GatewayUrl { get; set; }
+    [Parameter] public string BackLink { get; set; } = "/";
+    [Parameter] public EventCallback ContinueToExternalGateway { get; set; }
+    [Parameter] public EventCallback SimulateExternalPaymentSuccess { get; set; }
+}

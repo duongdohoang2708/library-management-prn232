@@ -1,0 +1,176 @@
+@page "/Reports"
+@page "/Reports/Index"
+@attribute [Authorize(Roles = "Admin,Manager")]
+@using LibraryManagementDAL.DTO.Reports
+@inject ReportsClientService ReportsService
+@inject IJSRuntime JS
+@inject ToastService Toasts
+
+<PageTitle>Advanced Reports - Standard Library</PageTitle>
+
+<div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+    <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+            <h1 class="mb-2 text-4xl font-black text-white">Advanced Reports</h1>
+            <p class="text-white/50">Most borrowed books, overdue users, and fine revenue.</p>
+        </div>
+        <form method="get" action="/Reports/Index" class="flex flex-wrap gap-3">
+            <input type="date" name="from" value="@FormatDate(From)" class="rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+            <input type="date" name="to" value="@FormatDate(To)" class="rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+            <button class="rounded-xl bg-primary px-5 py-3 font-black text-background-dark">Apply</button>
+            <button type="button" @onclick='() => ExportAsync("excel")' disabled="@isExporting" class="rounded-xl border border-white/5 bg-white/10 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60">Excel</button>
+            <button type="button" @onclick='() => ExportAsync("pdf")' disabled="@isExporting" class="rounded-xl border border-white/5 bg-white/10 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60">PDF</button>
+        </form>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 font-bold text-red-300">@errorMessage</div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="rounded-2xl border border-white/5 bg-black/20 p-10 text-center text-white/60">Loading report data...</div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <section class="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+                <div class="border-b border-white/5 p-5 font-black text-white">Most Borrowed Books</div>
+                <table class="w-full text-left text-sm">
+                    <thead class="text-[10px] uppercase tracking-widest text-white/40">
+                        <tr><th class="p-4">Book</th><th class="p-4 text-right">Borrows</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        @foreach (var item in report.MostBorrowedBooks)
+                        {
+                            <tr>
+                                <td class="p-4">
+                                    <div class="font-bold text-white">@item.Title</div>
+                                    <div class="text-xs text-white/40">@item.AuthorName</div>
+                                </td>
+                                <td class="p-4 text-right font-black text-primary">@item.BorrowCount</td>
+                            </tr>
+                        }
+                        @if (!report.MostBorrowedBooks.Any())
+                        {
+                            <tr><td colspan="2" class="p-8 text-center text-white/30">No data available.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+                <div class="border-b border-white/5 p-5 font-black text-white">Top Overdue Users</div>
+                <table class="w-full text-left text-sm">
+                    <thead class="text-[10px] uppercase tracking-widest text-white/40">
+                        <tr><th class="p-4">User</th><th class="p-4 text-right">Fine</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        @foreach (var item in report.TopOverdueUsers)
+                        {
+                            <tr>
+                                <td class="p-4">
+                                    <div class="font-bold text-white">@item.FullName</div>
+                                    <div class="text-xs text-white/40">@item.Email</div>
+                                    <div class="text-xs text-red-300">@item.OverdueCount overdue books</div>
+                                </td>
+                                <td class="p-4 text-right font-black text-red-300">@item.TotalFine.ToString("N0")</td>
+                            </tr>
+                        }
+                        @if (!report.TopOverdueUsers.Any())
+                        {
+                            <tr><td colspan="2" class="p-8 text-center text-white/30">No data available.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+                <div class="border-b border-white/5 p-5 font-black text-white">Fine Revenue By Month</div>
+                <table class="w-full text-left text-sm">
+                    <thead class="text-[10px] uppercase tracking-widest text-white/40">
+                        <tr><th class="p-4">Month</th><th class="p-4 text-right">Amount</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        @foreach (var item in report.FineRevenueByMonth)
+                        {
+                            <tr>
+                                <td class="p-4 text-white">@item.Month</td>
+                                <td class="p-4 text-right font-black text-emerald-300">@item.Amount.ToString("N0")</td>
+                            </tr>
+                        }
+                        @if (!report.FineRevenueByMonth.Any())
+                        {
+                            <tr><td colspan="2" class="p-8 text-center text-white/30">No data available.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "from")]
+    public DateTime? From { get; set; }
+
+    [SupplyParameterFromQuery(Name = "to")]
+    public DateTime? To { get; set; }
+
+    private AdvancedReportResult report = new();
+    private bool isLoading = true;
+    private bool isExporting;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            report = await ReportsService.GetReportAsync(From, To);
+        }
+        catch
+        {
+            report = new AdvancedReportResult();
+            errorMessage = "Could not load report data right now.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ExportAsync(string format)
+    {
+        isExporting = true;
+
+        try
+        {
+            var result = await ReportsService.ExportAsync(format, From, To);
+            if (!result.IsSuccess || result.Value is null)
+            {
+                Toasts.Error(result.Message);
+                return;
+            }
+
+            await JS.InvokeVoidAsync(
+                "libraryManagement.downloadFileFromBase64",
+                result.Value.FileName,
+                result.Value.ContentType,
+                Convert.ToBase64String(result.Value.Content));
+        }
+        catch
+        {
+            Toasts.Error("Export report failed.");
+        }
+        finally
+        {
+            isExporting = false;
+        }
+    }
+
+    private static string? FormatDate(DateTime? value) => value?.ToString("yyyy-MM-dd");
+}

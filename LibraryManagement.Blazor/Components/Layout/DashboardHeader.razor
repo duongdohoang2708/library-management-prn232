@@ -1,0 +1,177 @@
+<header class="sticky top-0 z-40 flex h-20 items-center justify-between border-b border-white/10 bg-background-dark/80 px-8 backdrop-blur-md">
+    <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-3xl font-bold text-primary">library_books</span>
+        <span class="text-2xl font-black tracking-tighter text-primary">LMS Standard</span>
+    </div>
+
+    <div class="ml-8 flex items-center gap-6">
+        <div class="relative">
+            <button type="button"
+                    @onclick="ToggleNotifications"
+                    class="relative p-2 text-white/60 transition-colors hover:text-primary">
+                <span class="material-symbols-outlined">notifications</span>
+                <span class="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-white @(notificationOpen ? "hidden" : null)">
+                    @(UserState.IsStaff ? "3" : "2")
+                </span>
+            </button>
+
+            @if (notificationOpen)
+            {
+                <div class="absolute right-0 mt-3 w-80 rounded-xl border border-white/10 bg-[#1e1e1e] shadow-lg">
+                    <div class="border-b border-white/10 p-3 text-sm font-semibold text-white">
+                        @(UserState.IsStaff ? "System Notifications" : "Notifications")
+                    </div>
+                    <div class="max-h-60 overflow-y-auto">
+                        @if (UserState.IsStaff)
+                        {
+                            @NotificationRow("Admin Action: 5 books stock updated.", "10:00 AM")
+                            @NotificationRow("User \"John Doe\" paid fine 50,000 VND.", "09:15 AM")
+                        }
+                        else
+                        {
+                            @NotificationRow("Book \"Introduction to Algorithms\" is due tomorrow.", "10:30 AM")
+                            @NotificationRow("New book \"Clean Architecture\" has been added to Catalog!", "Yesterday")
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (UserState.IsAuthenticated)
+        {
+            <div class="relative">
+                <button type="button"
+                        @onclick="ToggleUserMenu"
+                        class="relative z-50 flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-2 transition-all hover:border-primary/30 hover:bg-white/8">
+                    <div>
+                        <div class="leading-tight text-sm font-semibold text-white">@DisplayName</div>
+                        <div class="mt-0.5 flex items-center gap-1">
+                            <span class="rounded-md border px-1.5 py-0.5 text-[10px] font-bold @RoleBadgeClass">
+                                @PrimaryRole
+                            </span>
+                        </div>
+                    </div>
+                    <span class="material-symbols-outlined text-lg text-white/20 transition-transform @(userMenuOpen ? "rotate-180" : null)">expand_more</span>
+                </button>
+
+                @if (userMenuOpen)
+                {
+                    <div class="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1c1e] shadow-2xl">
+                        <div class="border-b border-white/10 bg-white/5 p-6">
+                            <div class="flex flex-col items-center text-center">
+                                <div class="relative mb-3">
+                                    <div class="flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/30 bg-primary/20 text-3xl font-black text-primary shadow-lg">
+                                        @AvatarLetter
+                                    </div>
+                                    <div class="absolute bottom-0 right-0 h-5 w-5 rounded-full border-4 border-[#1a1c1e] bg-emerald-500" title="Active now"></div>
+                                </div>
+                                <div class="mb-0.5 text-xl font-bold text-white">@UserState.FullName</div>
+                                <div class="mb-1 text-sm font-medium italic tracking-tight text-primary/80">@("@")@UserState.Username</div>
+                                <div class="mb-4 text-xs text-white/40">@UserState.Email</div>
+
+                                <div class="mb-2 flex flex-wrap justify-center gap-1.5">
+                                    @foreach (var role in UserState.Roles)
+                                    {
+                                        <span class="rounded-md bg-primary px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-background-dark">
+                                            @role
+                                        </span>
+                                    }
+                                </div>
+
+                                <a href="/User/Profile" class="mt-4 flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-white/20">
+                                    <span class="material-symbols-outlined text-sm">person</span>
+                                    Edit Profile
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="bg-black/20 p-4">
+                            <a href="/User/Profile" class="flex items-center gap-3 rounded-xl bg-white/5 p-3 transition-all hover:bg-white/10">
+                                <span class="material-symbols-outlined text-lg text-primary">manage_accounts</span>
+                                <div class="flex-1">
+                                    <div class="text-[10px] font-bold uppercase tracking-widest text-white/30">Personal Information</div>
+                                    <div class="text-sm text-white/80">View and update your profile details</div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="border-t border-white/5 p-2">
+                            <a href="/Auth/ChangePassword" class="mb-1 flex w-full items-center justify-center gap-3 rounded-xl p-3 text-sm font-bold text-white/70 transition-all hover:bg-white/5 hover:text-white">
+                                <span class="material-symbols-outlined text-lg">password</span>
+                                <span>Change Password</span>
+                            </a>
+                            <form method="post" action="/auth/logout">
+                                <button type="submit" class="group/logout flex w-full items-center justify-center gap-3 rounded-xl p-3 text-sm font-bold text-red-400 transition-all hover:bg-red-500/10">
+                                    <span class="material-symbols-outlined text-lg transition-transform group-hover/logout:rotate-12">logout</span>
+                                    <span>Sign Out</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <a href="/Auth/Login"
+               class="flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-background-dark transition-all active:scale-95 hover:bg-primary/90">
+                <span class="material-symbols-outlined text-lg">login</span>
+                Login
+            </a>
+
+            <a href="/Auth/Register"
+               class="flex items-center gap-2 rounded-lg border border-white/20 px-5 py-2 text-sm font-semibold text-white/70 transition-all active:scale-95 hover:border-white/40 hover:text-white">
+                Register
+            </a>
+        }
+    </div>
+</header>
+
+@code {
+    [Parameter] public ShellUserState UserState { get; set; } = ShellUserState.Empty;
+
+    private bool notificationOpen;
+    private bool userMenuOpen;
+
+    private string DisplayName => UserState.DisplayName;
+    private string PrimaryRole => UserState.Roles.FirstOrDefault() ?? (UserState.IsStaff ? "Staff" : "Member");
+    private string RoleBadgeClass => PrimaryRole == "Admin"
+        ? "border-primary/30 bg-primary/20 text-primary"
+        : "border-white/20 bg-white/10 text-white/70";
+    private string AvatarLetter => string.IsNullOrWhiteSpace(DisplayName) ? "?" : DisplayName[..1].ToUpperInvariant();
+
+    private void ToggleNotifications()
+    {
+        notificationOpen = !notificationOpen;
+        if (notificationOpen)
+        {
+            userMenuOpen = false;
+        }
+    }
+
+    private void ToggleUserMenu()
+    {
+        userMenuOpen = !userMenuOpen;
+        if (userMenuOpen)
+        {
+            notificationOpen = false;
+        }
+    }
+
+    private RenderFragment NotificationRow(string message, string time) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "border-b border-white/10 p-3 text-sm text-white/80 transition hover:bg-white/5");
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class", "flex flex-col");
+        builder.OpenElement(4, "span");
+        builder.AddContent(5, message);
+        builder.CloseElement();
+        builder.OpenElement(6, "span");
+        builder.AddAttribute(7, "class", "mt-1 text-xs text-white/40");
+        builder.AddContent(8, time);
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+}

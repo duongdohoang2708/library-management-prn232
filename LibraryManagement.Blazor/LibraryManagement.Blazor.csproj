@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\LibraryManagement.DAL\LibraryManagement.DAL.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EPPlus" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TailwindInput Include="Components\**\*.razor" />
+    <TailwindInput Include="Components\**\*.razor.js" />
+    <TailwindInput Include="wwwroot\js\**\*.js" />
+    <TailwindInput Include="Styles\tailwind.css" />
+    <TailwindInput Include="tailwind.config.js" />
+    <TailwindInput Include="package.json" />
+  </ItemGroup>
+
+  <Target Name="EnsureTailwindDependencies"
+          BeforeTargets="BuildTailwindCss"
+          Condition="!Exists('node_modules\\.bin\\tailwindcss.cmd')">
+    <Exec WorkingDirectory="$(ProjectDir)" Command="cmd /c npm.cmd ci --no-audit --no-fund" />
+  </Target>
+
+  <Target Name="BuildTailwindCss"
+          BeforeTargets="Build;Publish"
+          Inputs="@(TailwindInput)"
+          Outputs="$(ProjectDir)wwwroot\css\tailwind.css">
+    <Exec WorkingDirectory="$(ProjectDir)" Command="npm run build:css" />
+  </Target>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,133 @@
+@page "/Audit"
+@page "/Audit/Index"
+@attribute [Authorize(Roles = "Admin,Manager")]
+@using LibraryManagement.Blazor.DTO.Admin
+@using LibraryManagementDAL.DTO.Pagination
+@inject AuditClientService AuditService
+
+<PageTitle>Audit Logs</PageTitle>
+
+<div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+    <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+            <h1 class="mb-2 text-4xl font-black text-white">Audit Logs</h1>
+            <p class="text-white/50">Trace important actions across books, users, circulation, and reservations.</p>
+        </div>
+        <form method="get" action="/Audit/Index" class="flex gap-3">
+            <input name="search" value="@Search" placeholder="Search action, entity, summary..." class="w-80 rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white" />
+            <button class="rounded-xl bg-primary px-5 py-3 font-black text-background-dark">Search</button>
+        </form>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 font-bold text-red-300">@errorMessage</div>
+    }
+
+    <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+        @if (isLoading)
+        {
+            <div class="p-10 text-center text-white/60">Loading audit logs...</div>
+        }
+        else
+        {
+            <table class="w-full text-left text-sm">
+                <thead class="bg-white/5 text-[10px] uppercase tracking-widest text-white/40">
+                    <tr>
+                        <th class="p-4">Time</th>
+                        <th class="p-4">Action</th>
+                        <th class="p-4">Entity</th>
+                        <th class="p-4">Summary</th>
+                        <th class="p-4">Actor</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    @foreach (var item in result.Items)
+                    {
+                        <tr>
+                            <td class="p-4 text-white/60">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="p-4 font-black text-primary">@item.Action</td>
+                            <td class="p-4 text-white">@item.EntityName #@item.EntityId</td>
+                            <td class="p-4 text-white/70">@item.Summary</td>
+                            <td class="p-4">
+                                <div class="font-semibold text-white">@item.ActorName</div>
+                                @if (!string.IsNullOrEmpty(item.ActorRole))
+                                {
+                                    <span class="mt-1 inline-flex items-center rounded border px-2 py-0.5 text-[10px] font-medium @GetRoleBadgeClass(item.ActorRole)">
+                                        @item.ActorRole
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (!result.Items.Any())
+                    {
+                        <tr><td colspan="5" class="p-8 text-center text-white/30">No audit logs found.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    @if (!isLoading && result.TotalPages > 1)
+    {
+        <div class="mt-6 flex justify-center gap-2">
+            @for (var i = 1; i <= result.TotalPages; i++)
+            {
+                <a href="@BuildPageHref(i)" class="rounded-lg px-4 py-2 @(i == result.CurrentPage ? "bg-primary font-black text-background-dark" : "bg-white/10 text-white")">@i</a>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "search")]
+    public string? Search { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int Page { get; set; } = 1;
+
+    private PaginationResponseModel<AuditLogItemDto> result = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            result = await AuditService.GetAuditPageAsync(Search, Page);
+        }
+        catch
+        {
+            result = new PaginationResponseModel<AuditLogItemDto>();
+            errorMessage = "Could not load audit logs right now.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string BuildPageHref(int page)
+    {
+        var parts = new List<string> { $"page={page}" };
+        if (!string.IsNullOrWhiteSpace(Search))
+        {
+            parts.Add($"search={Uri.EscapeDataString(Search)}");
+        }
+
+        return "/Audit/Index?" + string.Join("&", parts);
+    }
+
+    private static string GetRoleBadgeClass(string role) => role.ToLowerInvariant() switch
+    {
+        "admin" or "superadmin" => "border-red-500/20 bg-red-500/10 text-red-400",
+        "librarian" => "border-primary/20 bg-primary/10 text-primary",
+        "member" => "border-green-500/20 bg-green-500/10 text-green-400",
+        "system/api" or "system" => "border-white/10 bg-white/5 text-white/40",
+        _ => "border-yellow-500/20 bg-yellow-500/10 text-yellow-400"
+    };
+}

@@ -1,0 +1,151 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+<div class="custom-scrollbar flex-1 min-w-0 overflow-y-auto p-8">
+    <div class="mb-8">
+        <a href="/Payment/Index" class="inline-flex items-center text-sm font-medium text-white/40 transition-colors hover:text-primary">
+            <span class="material-symbols-outlined mr-1 text-[18px]">arrow_back</span>
+            Fines List
+        </a>
+        <h1 class="mb-2 mt-4 text-3xl font-bold text-white">Pay Fines</h1>
+        <p class="text-white/60">
+            Member: <strong class="text-white">@DetailUserName</strong> (@DetailUserEmail)
+        </p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="mb-6 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-400">
+            <span class="material-symbols-outlined">error</span>
+            @ErrorMessage
+        </div>
+    }
+
+    <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+        <div class="sticky top-24 rounded-2xl border border-white/5 bg-black/20 p-6 backdrop-blur-md lg:col-span-1">
+            <h2 class="mb-6 flex items-center gap-2 text-xl font-bold text-white">
+                <span class="material-symbols-outlined text-primary">point_of_sale</span>
+                Cash / Bank Transfer
+            </h2>
+
+            <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+                <p class="mb-1 text-sm text-red-400">Total Member Debt</p>
+                <p class="text-3xl font-bold text-red-500">@TotalOwed.ToString("N0") <span class="text-xl">VND</span></p>
+            </div>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-white/60">Amount Paid by Customer (VND)</label>
+                    <input type="number"
+                           min="1000"
+                           step="1000"
+                           max="@TotalOwed"
+                           value="@AmountPaid"
+                           @oninput="HandleAmountChanged"
+                    class="w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-lg font-bold text-white transition-colors focus:border-primary focus:outline-none" />
+                    <p class="mt-2 text-xs text-white/40">Enter actual collected amount. You can collect full or partial payment.</p>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-white/60">Payment Method</label>
+                    <select value="@PaymentMethod" @onchange="HandlePaymentMethodChanged" class="w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none">
+                        <option value="Cash">Cash</option>
+                        <option value="VnPay">VnPay Gateway</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-white/60">Notes (Optional)</label>
+                    <textarea rows="2"
+                              class="w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none"
+                              placeholder="Example: Collected fine for overdue book..."></textarea>
+                </div>
+
+                <div class="rounded-xl border border-primary/20 bg-primary/10 p-4">
+                    <p class="flex items-start gap-2 text-sm text-primary/80">
+                        <span class="material-symbols-outlined text-[18px]">info</span>
+                        <span>By default, the system deducts amounts from the oldest debts first until the collected amount is fully exhausted.</span>
+                    </p>
+                </div>
+
+                <button type="button"
+                        @onclick="SubmitPayment"
+                        disabled="@IsBusy"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-lg font-bold text-background-dark transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    Confirm Collection
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20 backdrop-blur-md lg:col-span-2">
+            <div class="flex items-center justify-between border-b border-white/5 bg-white/5 p-6">
+                <h2 class="text-xl font-bold text-white">Fine Details</h2>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-left">
+                    <thead>
+                        <tr class="border-b border-white/5">
+                            <th class="px-6 py-4 font-medium text-white/60">Book / Transaction</th>
+                            <th class="px-6 py-4 text-right font-medium text-white/60">Total Fine</th>
+                            <th class="px-6 py-4 text-right font-medium text-white/60">Paid</th>
+                            <th class="px-6 py-4 text-right font-medium text-white/60">Remaining Debt</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-white/80">
+                        @foreach (var detail in Details)
+                        {
+                            var requiredAmount = detail.FineAmount ?? 0;
+                            var paidAmount = detail.FinePaidAmount ?? 0;
+                            var remainingAmount = GetRemainingAmount(detail);
+
+                            <tr class="group relative transition-colors hover:bg-white/[0.03]">
+                                <td class="px-6 py-4">
+                                    <p class="mb-1 line-clamp-1 font-medium text-white" title="@GetBookTitle(detail)">@GetBookTitle(detail)</p>
+                                    <div class="flex items-center gap-3 text-sm text-white/60">
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[14px]">receipt</span>
+                                            TX: #@detail.BorrowTransactionId
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[14px]">event</span>
+                                            @detail.CreatedAt.ToString("dd/MM/yyyy")
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right">@requiredAmount.ToString("N0") VND</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right text-green-400">@paidAmount.ToString("N0") VND</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right font-bold text-red-400">@remainingAmount.ToString("N0") VND</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string DetailUserName { get; set; } = string.Empty;
+    [Parameter] public string DetailUserEmail { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyList<LibraryManagementDAL.Models.BorrowDetail> Details { get; set; } = Array.Empty<LibraryManagementDAL.Models.BorrowDetail>();
+    [Parameter] public decimal TotalOwed { get; set; }
+    [Parameter] public decimal AmountPaid { get; set; }
+    [Parameter] public string PaymentMethod { get; set; } = "Cash";
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public Func<LibraryManagementDAL.Models.BorrowDetail, decimal> GetRemainingAmount { get; set; } = default!;
+    [Parameter] public EventCallback<string> AmountPaidChanged { get; set; }
+    [Parameter] public EventCallback<string> PaymentMethodChanged { get; set; }
+    [Parameter] public EventCallback SubmitPayment { get; set; }
+    [Parameter] public Func<LibraryManagementDAL.Models.BorrowDetail, string> GetBookTitle { get; set; } = default!;
+
+    private async Task HandleAmountChanged(ChangeEventArgs e)
+    {
+        await AmountPaidChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+    }
+
+    private async Task HandlePaymentMethodChanged(ChangeEventArgs e)
+    {
+        await PaymentMethodChanged.InvokeAsync(e.Value?.ToString() ?? "Cash");
+    }
+}

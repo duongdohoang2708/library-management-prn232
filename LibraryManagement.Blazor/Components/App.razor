@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title>Standard Library</title>
+    <meta name="description" content="Standard Library smart library management system" />
+    <link rel="icon" type="image/svg+xml" href="@Assets["images/lms-favicon.svg"]" />
+    <link rel="shortcut icon" href="@Assets["favicon.ico"]" />
+    <link rel="stylesheet" href="@Assets["css/tailwind.css"]" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="@Assets["css/site.css"]" />
+    <link rel="stylesheet" href="@Assets["css/dashboard-custom.css"]" />
+    <link rel="stylesheet" href="@Assets["LibraryManagement.Blazor.styles.css"]" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <ImportMap />
+    <HeadOutlet />
+</head>
+
+<body class="bg-background-dark font-display text-slate-100 antialiased">
+    <Routes />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@Assets["lib/jquery/dist/jquery.min.js"]"></script>
+    <script src="@Assets["js/site.js"]"></script>
+    <script src="@Assets["js/blazor-library.js"]"></script>
+    <script src="@Assets["js/chat-ai.js"]"></script>
+</body>
+
+</html>

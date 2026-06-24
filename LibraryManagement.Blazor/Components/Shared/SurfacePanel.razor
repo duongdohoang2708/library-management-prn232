@@ -1,0 +1,35 @@
+<div class="@ContainerClass">
+    @if (!string.IsNullOrWhiteSpace(Icon))
+    {
+        <div class="@IconWrapperClass">
+            <span class="@IconClass">@Icon</span>
+        </div>
+    }
+
+    <div class="@ContentClass">
+        @if (!string.IsNullOrWhiteSpace(Title))
+        {
+            <h3 class="@TitleClass">@Title</h3>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <p class="@MessageClass">@Message</p>
+        }
+
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string ContainerClass { get; set; } = string.Empty;
+    [Parameter] public string IconWrapperClass { get; set; } = string.Empty;
+    [Parameter] public string IconClass { get; set; } = string.Empty;
+    [Parameter] public string Icon { get; set; } = string.Empty;
+    [Parameter] public string ContentClass { get; set; } = string.Empty;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string TitleClass { get; set; } = string.Empty;
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string MessageClass { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

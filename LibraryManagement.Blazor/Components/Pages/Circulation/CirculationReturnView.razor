@@ -1,0 +1,149 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+@using LibraryManagementDAL.Models
+<div class="custom-scrollbar flex-1 min-w-0 overflow-y-auto p-8">
+    <div class="group mb-8 flex w-fit cursor-pointer items-center gap-3">
+        <a href="/Circulation/Index" class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-white/40 transition-colors group-hover:text-primary">arrow_back</span>
+            <span class="text-sm font-medium tracking-wide text-white/40 transition-colors group-hover:text-primary">Back to list</span>
+        </a>
+    </div>
+
+    <div class="mx-auto max-w-4xl">
+        <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl">
+            <div class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl"></div>
+
+            <div class="relative z-10 border-b border-white/5 p-8">
+                <h2 class="mb-2 flex items-center gap-3 text-2xl font-bold tracking-tight text-white">
+                    <span class="material-symbols-outlined text-3xl text-primary">assignment_return</span>
+                    Return Books - Transaction #@ReturnDetails?.TransactionId
+                </h2>
+                <div class="mt-3 flex items-center gap-2">
+                    <span class="text-sm text-white/40">Borrower:</span>
+                    <span class="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-sm font-medium text-white">
+                        @ReturnDetails?.UserFullName (ID: @ReturnDetails?.UserId)
+                    </span>
+                </div>
+            </div>
+
+            <div class="relative z-10 bg-black/10 p-8">
+                @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+                {
+                    <div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm font-medium text-red-500">@ErrorMessage</div>
+                }
+
+                <div class="flex flex-col gap-8">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-white/80">
+                                <span class="material-symbols-outlined text-[18px] text-white/40">library_books</span>
+                                Select books to return
+                            </label>
+                            <span class="text-xs text-white/40">By default selects all unreturned books</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            @if (ReturnDetails?.UnreturnedDetails.Any() == true)
+                            {
+                                @foreach (var detail in ReturnDetails.UnreturnedDetails)
+                                {
+                                    var isOverdue = DateTime.UtcNow.Date > detail.DueDate.Date;
+                                    var lateDays = isOverdue ? (DateTime.UtcNow.Date - detail.DueDate.Date).Days : 0;
+                                    var expectedFine = lateDays * 5000;
+
+                                    <div class="group relative flex flex-col rounded-xl border border-white/10 bg-white/5 p-4 transition-all">
+                                        <div class="flex items-start gap-4">
+                                            <div class="pt-1">
+                                                <input type="checkbox"
+                                                       checked="@SelectedBorrowDetailIds.Contains(detail.BorrowDetailId)"
+                                                       @onchange="async args => await ToggleBorrowDetail.InvokeAsync((detail.BorrowDetailId, args.Value as bool? == true))"
+                                                       class="h-5 w-5 rounded border-white/20 bg-black/50 text-primary focus:ring-primary focus:ring-offset-background-dark" />
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-start justify-between gap-2">
+                                                    <div>
+                                                        <h4 class="mb-1 text-sm font-bold leading-tight text-white">@detail.BookTitle</h4>
+                                                        <p class="mb-2 font-mono text-[11px] tracking-wider text-primary">Code: @detail.Barcode</p>
+                                                    </div>
+                                                    <div class="flex gap-1">
+                                                        <button type="button"
+                                                                @onclick="async () => await ReportIssue.InvokeAsync((detail.BorrowDetailId, BookCopyStatus.Damaged, 50000m))"
+                                                                disabled="@IsBusy"
+                                                                class="rounded-lg border border-orange-500/20 bg-orange-500/10 p-1.5 text-orange-400 transition-all hover:border-orange-500/40 hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                title="Report Damaged (Fine 50,000)">
+                                                            <span class="material-symbols-outlined text-sm">heart_broken</span>
+                                                        </button>
+                                                        <button type="button"
+                                                                @onclick="async () => await ReportIssue.InvokeAsync((detail.BorrowDetailId, BookCopyStatus.Lost, 100000m))"
+                                                                disabled="@IsBusy"
+                                                                class="rounded-lg border border-red-500/20 bg-red-500/10 p-1.5 text-red-400 transition-all hover:border-red-500/40 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                title="Report Lost (Fine 100,000)">
+                                                            <span class="material-symbols-outlined text-sm">block</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                @if (isOverdue)
+                                                {
+                                                    <div class="mt-2 flex flex-col gap-1 rounded-lg border border-red-500/20 bg-red-500/10 p-2">
+                                                        <span class="text-[10px] font-bold uppercase tracking-wider text-red-400">Overdue by @lateDays days</span>
+                                                        <span class="text-xs font-bold text-red-300">Expected fine: @expectedFine.ToString("N0") VND</span>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="inline-block rounded border border-green-500/20 bg-green-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-green-400">In Time</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-white/80">
+                            <span class="material-symbols-outlined text-[18px] text-white/40">note_alt</span>
+                            Book Condition Notes (Optional)
+                        </label>
+                        <textarea value="@ConditionRemarks"
+                                  @oninput="HandleConditionInput"
+                                  rows="2"
+                                  class="custom-scrollbar w-full rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white placeholder:text-white/20 transition-all focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                  placeholder="Notes if the book is torn, wet, missing pages..."></textarea>
+                    </div>
+
+                    <div class="flex items-center gap-4 border-t border-white/10 pt-6">
+                        <a href="/Circulation/Index" class="flex-1 rounded-xl border border-white/10 bg-white/5 py-3 text-center font-bold text-white/80 transition-all hover:bg-white/10">
+                            Cancel
+                        </a>
+                        <button type="button"
+                                @onclick="async () => await SubmitReturn.InvokeAsync()"
+                                disabled="@IsBusy"
+                                class="flex flex-1 items-center justify-center gap-2 rounded-xl border border-primary bg-primary py-3 font-black text-background-dark transition-all hover:shadow-xl hover:shadow-primary/30 disabled:cursor-not-allowed disabled:opacity-60">
+                            <span class="material-symbols-outlined">how_to_reg</span>
+                            Confirm Return
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public LibraryManagementDAL.DTO.Circulation.ReturnDetailsResult? ReturnDetails { get; set; }
+    [Parameter] public IReadOnlyCollection<int> SelectedBorrowDetailIds { get; set; } = Array.Empty<int>();
+    [Parameter] public string ConditionRemarks { get; set; } = string.Empty;
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public EventCallback<(int BorrowDetailId, bool IsSelected)> ToggleBorrowDetail { get; set; }
+    [Parameter] public EventCallback<(int BorrowDetailId, BookCopyStatus Status, decimal FineAmount)> ReportIssue { get; set; }
+    [Parameter] public EventCallback SubmitReturn { get; set; }
+    [Parameter] public EventCallback<string> ConditionRemarksChanged { get; set; }
+
+    private async Task HandleConditionInput(ChangeEventArgs e)
+    {
+        await ConditionRemarksChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+    }
+}

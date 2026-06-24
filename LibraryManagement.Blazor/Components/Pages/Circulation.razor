@@ -1,0 +1,489 @@
+@page "/Circulation"
+@page "/Circulation/Index"
+@page "/Circulation/Borrow"
+@page "/Circulation/Return"
+@attribute [Authorize(Roles = "Admin,Manager,Librarian")]
+@using LibraryManagementDAL.DTO.Circulation
+@using LibraryManagementDAL.Models
+@inject CirculationClientService CirculationService
+@inject NavigationManager Navigation
+@inject ToastService Toasts
+
+<PageTitle>Circulation - Standard Library</PageTitle>
+
+@if (isLoading)
+{
+    <div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+        <SurfacePanel ContainerClass="rounded-2xl border border-white/10 bg-black/20 p-10 text-center text-white/60"
+                     Title="Loading circulation data..."
+                     TitleClass="text-base font-medium text-white/60" />
+    </div>
+}
+else if (view == "borrow")
+{
+    <CirculationBorrowView ErrorMessage="@errorMessage"
+                           UserSearchQuery="@userSearchQuery"
+                           UserSearchResultsVisible="@userSearchResultsVisible"
+                           SearchingUsers="@searchingUsers"
+                           UserSearchResults="@userSearchResults"
+                           SelectedUserId="@borrowModel.UserId"
+                           SelectedUserName="@selectedUserName"
+                           SelectedUserEmail="@selectedUserEmail"
+                           BookSearchQuery="@bookSearchQuery"
+                           AvailableCopies="@availableCopies"
+                           SelectedBarcodes="@borrowModel.Barcodes"
+                           FilteredAvailableCopies="@FilteredAvailableCopies"
+                           IsBusy="@isBusy"
+                           UserSearchQueryChanged="@OnBorrowUserSearchChanged"
+                           BookSearchQueryChanged="@OnBorrowBookSearchChanged"
+                           SelectUser="@SelectUser"
+                           ClearSelectedUser="@ClearSelectedUser"
+                           ToggleBookSelection="@OnToggleBorrowBook"
+                           SubmitBorrow="@SubmitBorrowAsync" />
+}
+else if (view == "return")
+{
+    <CirculationReturnView ErrorMessage="@errorMessage"
+                           ReturnDetails="@returnDetails"
+                           SelectedBorrowDetailIds="@returnModel.BorrowDetailIds"
+                           ConditionRemarks="@returnModel.ConditionRemarks"
+                           IsBusy="@isBusy"
+                           ToggleBorrowDetail="@OnToggleBorrowDetail"
+                           ReportIssue="@OnReportIssue"
+                           SubmitReturn="@SubmitReturnAsync"
+                           ConditionRemarksChanged="@OnConditionRemarksChanged" />
+}
+else
+{
+    <CirculationIndexView ErrorMessage="@errorMessage"
+                          SearchQuery="@SearchQuery"
+                          StatusFilter="@StatusFilter"
+                          ListResult="@listResult"
+                          IsBusy="@isBusy"
+                          BuildHref="@BuildListHref"
+                          GetTransactionStatusClass="@GetTransactionStatusClass"
+                          GetTransactionStatusText="@GetTransactionStatusText"
+                          RenewAsync="@RenewAsync" />
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "searchQuery")]
+    public string? SearchQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "statusFilter")]
+    public string? StatusFilter { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int Page { get; set; } = 1;
+
+    [SupplyParameterFromQuery(Name = "id")]
+    public int? Id { get; set; }
+
+    private string view = "index";
+    private bool isLoading = true;
+    private bool isBusy;
+    private string? errorMessage;
+    private CirculationListResult listResult = new();
+    private BorrowRequest borrowModel = new();
+    private ReturnRequest returnModel = new();
+    private ReturnDetailsResult? returnDetails;
+    private List<AvailableCopyResult> availableCopies = new();
+    private string? userSearchQuery;
+    private bool userSearchResultsVisible;
+    private bool searchingUsers;
+    private List<UserSearchResult> userSearchResults = new();
+    private string selectedUserName = "---";
+    private string selectedUserEmail = string.Empty;
+    private string? bookSearchQuery;
+    private CancellationTokenSource? debounceCts;
+
+    private IEnumerable<AvailableCopyResult> FilteredAvailableCopies =>
+        string.IsNullOrWhiteSpace(bookSearchQuery)
+            ? availableCopies
+            : availableCopies.Where(copy =>
+                copy.BookTitle.Contains(bookSearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                copy.AuthorName.Contains(bookSearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                copy.Barcode.Contains(bookSearchQuery, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        view = GetView();
+
+        try
+        {
+            if (view == "borrow")
+            {
+                availableCopies = await CirculationService.GetAvailableCopiesAsync();
+                borrowModel = new BorrowRequest { LoanDays = 14 };
+                userSearchQuery = null;
+                userSearchResultsVisible = false;
+                userSearchResults.Clear();
+                selectedUserName = "---";
+                selectedUserEmail = string.Empty;
+                bookSearchQuery = null;
+            }
+            else if (view == "return")
+            {
+                if (!Id.HasValue)
+                {
+                    errorMessage = "Transaction not found.";
+                }
+                else
+                {
+                    returnDetails = await CirculationService.GetReturnDetailsAsync(Id.Value);
+                    if (returnDetails is null)
+                    {
+                        errorMessage = "Transaction not found.";
+                    }
+                    else
+                    {
+                        returnModel = new ReturnRequest
+                        {
+                            BorrowDetailIds = returnDetails.UnreturnedDetails.Select(detail => detail.BorrowDetailId).ToList()
+                        };
+                    }
+                }
+            }
+            else
+            {
+                listResult = await CirculationService.GetTransactionsAsync(SearchQuery, StatusFilter, Page);
+            }
+        }
+        catch
+        {
+            errorMessage = "Could not load circulation data right now.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetView()
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var path = relative.Split('?', '#')[0].Trim('/').ToLowerInvariant();
+
+        return path switch
+        {
+            "circulation/borrow" => "borrow",
+            "circulation/return" => "return",
+            _ => "index"
+        };
+    }
+
+    private string BuildListHref(int page)
+    {
+        var query = new List<string> { $"page={page}" };
+        AddQuery(query, "searchQuery", SearchQuery);
+        AddQuery(query, "statusFilter", StatusFilter);
+        return "/Circulation/Index?" + string.Join("&", query);
+    }
+
+    private static void AddQuery(List<string> query, string name, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            query.Add($"{name}={Uri.EscapeDataString(value.Trim())}");
+        }
+    }
+
+    private static string GetTransactionStatusClass(string status, bool isOverdue)
+    {
+        if (status == "Borrowing" && !isOverdue)
+        {
+            return "bg-primary/10 text-primary border-primary/20";
+        }
+
+        if (status == "Overdue" || (status == "Borrowing" && isOverdue))
+        {
+            return "bg-red-500/10 text-red-500 border-red-500/20";
+        }
+
+        if (status == "Returned")
+        {
+            return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+        }
+
+        return "bg-white/10 text-white/60 border-white/10";
+    }
+
+    private static string GetTransactionStatusText(string status, bool isOverdue)
+    {
+        return status == "Borrowing" && isOverdue ? "Overdue" : status;
+    }
+
+    private void GoBackToIndex()
+    {
+        Navigation.NavigateTo("/Circulation/Index");
+    }
+
+    private async Task OnBorrowUserSearchChanged(string? value)
+    {
+        userSearchQuery = value;
+        await HandleUserSearchChangedAsync();
+    }
+
+    private Task OnBorrowBookSearchChanged(string? value)
+    {
+        bookSearchQuery = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnToggleBorrowBook(string barcode)
+    {
+        ToggleBookSelection(barcode);
+        return Task.CompletedTask;
+    }
+
+    private Task OnToggleBorrowDetail((int BorrowDetailId, bool IsSelected) args)
+    {
+        ToggleBorrowDetail(args.BorrowDetailId, args.IsSelected);
+        return Task.CompletedTask;
+    }
+
+    private Task OnReportIssue((int BorrowDetailId, BookCopyStatus Status, decimal FineAmount) args)
+    {
+        return ReportIssueAsync(args.BorrowDetailId, args.Status, args.FineAmount);
+    }
+
+    private Task OnConditionRemarksChanged(string value)
+    {
+        return InvokeAsync(() =>
+        {
+            returnModel.ConditionRemarks = value;
+            StateHasChanged();
+        });
+    }
+
+    private async Task HandleUserSearchChangedAsync()
+    {
+        debounceCts?.Cancel();
+
+        if (string.IsNullOrWhiteSpace(userSearchQuery))
+        {
+            userSearchResultsVisible = false;
+            userSearchResults.Clear();
+            searchingUsers = false;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var localCts = new CancellationTokenSource();
+        debounceCts = localCts;
+        searchingUsers = true;
+        userSearchResultsVisible = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await Task.Delay(300, localCts.Token);
+            userSearchResults = await CirculationService.SearchUsersAsync(userSearchQuery, localCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        finally
+        {
+            if (debounceCts == localCts)
+            {
+                searchingUsers = false;
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void SelectUser(UserSearchResult user)
+    {
+        borrowModel.UserId = user.UserId;
+        selectedUserName = user.FullName;
+        selectedUserEmail = user.Email;
+        userSearchQuery = string.Empty;
+        userSearchResults.Clear();
+        userSearchResultsVisible = false;
+    }
+
+    private void ClearSelectedUser()
+    {
+        borrowModel.UserId = 0;
+        selectedUserName = "---";
+        selectedUserEmail = string.Empty;
+        userSearchQuery = string.Empty;
+        userSearchResults.Clear();
+        userSearchResultsVisible = false;
+    }
+
+    private void ToggleBookSelection(string barcode)
+    {
+        if (borrowModel.Barcodes.Contains(barcode))
+        {
+            borrowModel.Barcodes.Remove(barcode);
+            return;
+        }
+
+        if (borrowModel.Barcodes.Count >= 5)
+        {
+            Toasts.Error("You can only select a maximum of 5 books.");
+            return;
+        }
+
+        borrowModel.Barcodes.Add(barcode);
+    }
+
+    private async Task SubmitBorrowAsync()
+    {
+        if (borrowModel.UserId <= 0)
+        {
+            Toasts.Error("Please select a reader.");
+            return;
+        }
+
+        if (!borrowModel.Barcodes.Any())
+        {
+            Toasts.Error("Please select at least one book.");
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var result = await CirculationService.BorrowAsync(borrowModel);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                Navigation.NavigateTo("/Circulation/Index");
+            }
+            else
+            {
+                errorMessage = result.Message;
+            }
+        }
+        catch
+        {
+            errorMessage = "Create loan failed.";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void ToggleBorrowDetail(int borrowDetailId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            if (!returnModel.BorrowDetailIds.Contains(borrowDetailId))
+            {
+                returnModel.BorrowDetailIds.Add(borrowDetailId);
+            }
+
+            return;
+        }
+
+        returnModel.BorrowDetailIds.Remove(borrowDetailId);
+    }
+
+    private async Task SubmitReturnAsync()
+    {
+        if (!Id.HasValue)
+        {
+            errorMessage = "Transaction not found.";
+            return;
+        }
+
+        if (!returnModel.BorrowDetailIds.Any())
+        {
+            Toasts.Error("Please select at least one book to return.");
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var result = await CirculationService.ReturnAsync(Id.Value, returnModel);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                Navigation.NavigateTo("/Circulation/Index");
+            }
+            else
+            {
+                errorMessage = result.Message;
+            }
+        }
+        catch
+        {
+            errorMessage = "Return books failed.";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task RenewAsync(int borrowDetailId)
+    {
+        isBusy = true;
+        try
+        {
+            var result = await CirculationService.RenewAsync(borrowDetailId);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                listResult = await CirculationService.GetTransactionsAsync(SearchQuery, StatusFilter, Page);
+            }
+            else
+            {
+                Toasts.Error(result.Message);
+            }
+        }
+        catch
+        {
+            Toasts.Error("Renew book failed.");
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task ReportIssueAsync(int borrowDetailId, BookCopyStatus status, decimal fineAmount)
+    {
+        if (!Id.HasValue)
+        {
+            errorMessage = "Transaction not found.";
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var result = await CirculationService.ReportIssueAsync(borrowDetailId, status, fineAmount);
+            if (result.IsSuccess)
+            {
+                Toasts.Success(result.Message);
+                returnDetails = await CirculationService.GetReturnDetailsAsync(Id.Value);
+                if (returnDetails is not null)
+                {
+                    returnModel.BorrowDetailIds = returnDetails.UnreturnedDetails.Select(detail => detail.BorrowDetailId).ToList();
+                }
+            }
+            else
+            {
+                Toasts.Error(result.Message);
+            }
+        }
+        catch
+        {
+            Toasts.Error("Report issue failed.");
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

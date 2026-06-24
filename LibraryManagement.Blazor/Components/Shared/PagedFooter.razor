@@ -1,0 +1,54 @@
+@if (TotalPages > 1)
+{
+    <div class="flex items-center justify-between border-t border-white/5 bg-black/10 p-8">
+        <div class="mr-4 mb-0 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
+            @PageLabel <span class="text-white">@CurrentPage</span> / <span class="text-white">@TotalPages</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+            @if (CurrentPage > 1)
+            {
+                <a href="@BuildHref(CurrentPage - 1)" class="group flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 py-2 text-xs font-bold text-white/80 shadow-lg transition-all hover:border-white/20 hover:bg-white/10">
+                    <span class="material-symbols-outlined mr-1 text-[18px] transition-transform group-hover:-translate-x-1">@PreviousIcon</span>
+                    @PreviousLabel
+                </a>
+            }
+
+            <div class="mx-2 flex items-center gap-2">
+                @for (var i = 1; i <= TotalPages; i++)
+                {
+                    if (i == 1 || i == TotalPages || (i >= CurrentPage - 1 && i <= CurrentPage + 1))
+                    {
+                        <a href="@BuildHref(i)" class="flex h-10 w-10 items-center justify-center rounded-full text-sm font-black transition-all duration-300 @(i == CurrentPage ? "bg-primary text-background-dark shadow-[0_0_20px_rgba(234,179,8,0.3)] ring-4 ring-primary/20" : "border border-white/10 bg-transparent text-white/40 hover:border-white/30 hover:text-white")">@i</a>
+                    }
+                    else if (i == 2 || i == TotalPages - 1)
+                    {
+                        @if ((i == 2 && CurrentPage > 3) || (i == TotalPages - 1 && CurrentPage < TotalPages - 2))
+                        {
+                            <span class="px-1 font-black text-white/20">...</span>
+                        }
+                    }
+                }
+            </div>
+
+            @if (CurrentPage < TotalPages)
+            {
+                <a href="@BuildHref(CurrentPage + 1)" class="group flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 py-2 text-xs font-bold text-white/80 shadow-lg transition-all hover:border-white/20 hover:bg-white/10">
+                    @NextLabel
+                    <span class="material-symbols-outlined ml-1 text-[18px] transition-transform group-hover:translate-x-1">@NextIcon</span>
+                </a>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int CurrentPage { get; set; }
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter] public Func<int, string> BuildHref { get; set; } = default!;
+    [Parameter] public string PageLabel { get; set; } = "Page";
+    [Parameter] public string PreviousLabel { get; set; } = "Prev";
+    [Parameter] public string NextLabel { get; set; } = "Next";
+    [Parameter] public string PreviousIcon { get; set; } = "chevron_left";
+    [Parameter] public string NextIcon { get; set; } = "chevron_right";
+}

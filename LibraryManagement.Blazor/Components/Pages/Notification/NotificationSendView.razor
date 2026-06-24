@@ -1,0 +1,171 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+<div class="flex flex-1 overflow-hidden">
+    <div class="custom-scrollbar flex-1 overflow-y-auto px-8 py-12">
+        <div class="mx-auto max-w-3xl pb-20">
+            <div class="mb-10">
+                <h1 class="mb-2 text-4xl font-bold text-white">Send Notification</h1>
+                <p class="text-sm text-white/60">
+                    Search member by ID, name or email and send a custom notification
+                </p>
+            </div>
+
+            <div class="relative overflow-visible rounded-2xl border border-white/5 bg-white/5 p-8 shadow-2xl">
+                <div class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl"></div>
+
+                <div class="relative z-10">
+                    <h2 class="mb-8 flex items-center gap-3 text-2xl font-bold text-white">
+                        <span class="material-symbols-outlined text-3xl text-primary">notifications_active</span>
+                        Notification Details
+                    </h2>
+
+                    <div class="flex flex-col gap-6">
+                        <div class="relative flex flex-col gap-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-white/80">
+                                <span class="material-symbols-outlined text-[18px] text-white/40">person_search</span>
+                                Member Information (ID / Name / Email)
+                            </label>
+
+                            <div class="group relative">
+                                <input value="@UserSearchQuery"
+                                       @oninput="HandleUserSearchInputAsync"
+                                       class="w-full rounded-xl border border-white/5 bg-black/30 py-3.5 pl-4 pr-10 text-white placeholder:text-white/20 shadow-inner shadow-black/20 transition-all focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                       placeholder="Type ID, name or email to search..."
+                                       autocomplete="off" />
+
+                                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-2xl text-white/20 transition-colors group-focus-within:text-primary">
+                                    manage_search
+                                </span>
+                            </div>
+
+                            @if (UserSearchResultsVisible)
+                            {
+                                <div class="absolute left-0 right-0 top-full z-[100] mt-2 overflow-hidden rounded-xl border border-white/5 bg-background-dark shadow-2xl backdrop-blur-xl">
+                                    <div class="custom-scrollbar max-h-[300px] overflow-y-auto">
+                                        @if (SearchingUsers)
+                                        {
+                                            <div class="p-4 text-center text-sm text-white/40">Searching...</div>
+                                        }
+                                        else if (UserSearchResults.Any())
+                                        {
+                                            @foreach (var user in UserSearchResults)
+                                            {
+                                                <button type="button"
+                                                        @onclick="async () => await SelectUser.InvokeAsync(user)"
+                                                        class="group flex w-full cursor-pointer items-center justify-between gap-3 border-b border-white/5 px-4 py-3 text-left transition-colors hover:bg-white/5 last:border-0">
+                                                    <div class="min-w-0">
+                                                        <div class="truncate text-sm font-bold text-white transition-colors group-hover:text-primary">
+                                                            @user.FullName
+                                                        </div>
+                                                        <div class="truncate font-mono text-[10px] text-white/40">
+                                                            @user.Email
+                                                        </div>
+                                                    </div>
+                                                    <div class="whitespace-nowrap rounded bg-white/5 px-2 py-0.5 text-[10px] font-bold text-primary">
+                                                        ID: @user.UserId
+                                                    </div>
+                                                </button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="p-4 text-center text-sm text-white/40">No matching users found.</div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            @if (SelectedUserId.HasValue && SelectedUserId > 0)
+                            {
+                                <div class="mt-2 flex items-center justify-between rounded-xl border border-primary/30 bg-primary/10 p-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary">
+                                            <span class="material-symbols-outlined">person</span>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-sm font-bold text-white">@SelectedUserName</h4>
+                                            <p class="font-mono text-[11px] text-primary/70">ID: @SelectedUserId | @SelectedUserEmail</p>
+                                        </div>
+                                    </div>
+
+                                    <button type="button"
+                                            @onclick="async () => await ClearSelectedUser.InvokeAsync()"
+                                            class="rounded-lg p-1.5 text-white/40 transition-colors hover:bg-white/5 hover:text-red-400">
+                                        <span class="material-symbols-outlined text-sm">close</span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-white/80">
+                                <span class="material-symbols-outlined text-[18px] text-white/40">title</span>
+                                Title
+                            </label>
+                            <input @bind="Title"
+                                   class="w-full rounded-xl border border-white/5 bg-black/30 p-3 text-white shadow-inner shadow-black/20 transition-all focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40" />
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-white/80">
+                                <span class="material-symbols-outlined text-[18px] text-white/40">edit_note</span>
+                                Message
+                            </label>
+                            <textarea @bind="Message"
+                                      rows="5"
+                                      class="w-full rounded-xl border border-white/5 bg-black/30 p-3 text-white shadow-inner shadow-black/20 transition-all focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40"></textarea>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-white/80">
+                                <span class="material-symbols-outlined text-[18px] text-white/40">category</span>
+                                Type
+                            </label>
+                            <select @bind="Type"
+                                    class="w-full rounded-xl border border-white/5 bg-black/30 p-3 text-white shadow-inner shadow-black/20 transition-all focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40">
+                                <option value="General">General</option>
+                                <option value="Manual">Manual</option>
+                                <option value="Warning">Warning</option>
+                            </select>
+                        </div>
+
+                        <div class="mt-4 flex justify-end gap-3 border-t border-white/5 pt-6">
+                            <a href="/Notification/Index" class="flex items-center rounded-xl border border-white/5 px-8 py-3 text-sm font-bold uppercase tracking-wider text-white/50 transition-all hover:border-primary/30 hover:bg-white/5 hover:text-white">
+                                Cancel
+                            </a>
+
+                            <button type="button"
+                                    @onclick="async () => await SendNotificationAsync.InvokeAsync()"
+                                    disabled="@SendingNotification"
+                                    class="rounded-xl bg-primary px-8 py-3 text-sm font-black uppercase tracking-wider text-background-dark transition-all hover:shadow-xl hover:shadow-primary/30 disabled:cursor-not-allowed disabled:opacity-60">
+                                @(SendingNotification ? "Sending..." : "Send Notification")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? UserSearchQuery { get; set; }
+    [Parameter] public bool UserSearchResultsVisible { get; set; }
+    [Parameter] public bool SearchingUsers { get; set; }
+    [Parameter] public IReadOnlyList<LibraryManagementDAL.DTO.Circulation.UserSearchResult> UserSearchResults { get; set; } = Array.Empty<LibraryManagementDAL.DTO.Circulation.UserSearchResult>();
+    [Parameter] public int? SelectedUserId { get; set; }
+    [Parameter] public string SelectedUserName { get; set; } = "---";
+    [Parameter] public string SelectedUserEmail { get; set; } = string.Empty;
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public string Type { get; set; } = "General";
+    [Parameter] public bool SendingNotification { get; set; }
+    [Parameter] public EventCallback<string?> HandleUserSearchChangedAsync { get; set; }
+    [Parameter] public EventCallback<LibraryManagementDAL.DTO.Circulation.UserSearchResult> SelectUser { get; set; }
+    [Parameter] public EventCallback ClearSelectedUser { get; set; }
+    [Parameter] public EventCallback SendNotificationAsync { get; set; }
+
+    private async Task HandleUserSearchInputAsync(ChangeEventArgs e)
+    {
+        await HandleUserSearchChangedAsync.InvokeAsync(e.Value?.ToString());
+    }
+}

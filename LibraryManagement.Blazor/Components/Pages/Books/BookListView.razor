@@ -1,0 +1,174 @@
+@namespace LibraryManagement.Blazor.Components.Pages
+@using LibraryManagementDAL.DTO.Book
+
+<div class="flex flex-1 overflow-hidden">
+    <div class="custom-scrollbar flex-1 overflow-y-auto p-8">
+        <div class="mb-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h2 class="mb-1 text-3xl font-bold text-white">All Books</h2>
+                <p class="text-sm text-white/40">Browse all available books</p>
+            </div>
+        </div>
+
+        <form id="searchForm" method="get" action="/Books/ViewBooks">
+            <input type="hidden" name="page" value="@Page" />
+
+            <div class="mb-8 flex gap-4 flex-wrap rounded-3xl border border-white/10 bg-white/5 p-4 shadow-lg backdrop-blur-md">
+                <div class="relative min-w-[250px] flex-1">
+                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/40">search</span>
+                    <input type="text"
+                           name="keyword"
+                           value="@Keyword"
+                           oninput="clearTimeout(this.delay); this.delay = setTimeout(() => { this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit(); }, 500);"
+                           placeholder="Search books by title, author..."
+                           class="h-full w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-12 pr-4 text-white transition-colors focus:border-primary/50 focus:bg-white/10 focus:outline-none" />
+                </div>
+
+                <div class="relative min-w-[180px]">
+                    <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-white/40">category</span>
+                    <select name="category"
+                            onchange="this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit()"
+                            class="h-full w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-10 text-white transition-colors focus:border-primary/50 focus:bg-white/10 focus:outline-none">
+                        <option value="" class="bg-gray-900">All Categories</option>
+                        @foreach (var category in ListResult.Categories)
+                        {
+                            <option value="@category.CategoryName" class="bg-gray-900" selected="@(Category == category.CategoryName)">
+                                @category.CategoryName
+                            </option>
+                        }
+                    </select>
+                    <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-white/40">expand_more</span>
+                </div>
+
+                <div class="relative min-w-[150px]">
+                    <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-white/40">calendar_month</span>
+                    <select name="publishYear"
+                            onchange="this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit()"
+                            class="h-full w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-10 text-white transition-colors focus:border-primary/50 focus:bg-white/10 focus:outline-none">
+                        <option value="" class="bg-gray-900">Any Year</option>
+                        @foreach (var publishYear in ListResult.PublishYears)
+                        {
+                            <option value="@publishYear" class="bg-gray-900" selected="@(PublishYear == publishYear)">
+                                @publishYear
+                            </option>
+                        }
+                    </select>
+                    <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-white/40">expand_more</span>
+                </div>
+
+                <div class="relative min-w-[150px]">
+                    <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-white/40">star</span>
+                    <select name="minRating"
+                            onchange="this.form.querySelector('input[name=\'page\']').value = 1; this.form.requestSubmit()"
+                            class="h-full w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-10 text-white transition-colors focus:border-primary/50 focus:bg-white/10 focus:outline-none">
+                        <option value="" class="bg-gray-900">Any Rating</option>
+                        <option value="4" class="bg-gray-900" selected="@(MinRating == 4)">4+ Stars</option>
+                        <option value="3" class="bg-gray-900" selected="@(MinRating == 3)">3+ Stars</option>
+                        <option value="2" class="bg-gray-900" selected="@(MinRating == 2)">2+ Stars</option>
+                    </select>
+                    <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-white/40">expand_more</span>
+                </div>
+
+                <div class="relative min-w-[170px]">
+                    <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-white/40">sort</span>
+                    <select name="sort"
+                            onchange="this.form.requestSubmit()"
+                            class="h-full w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-10 text-white transition-colors focus:border-primary/50 focus:bg-white/10 focus:outline-none">
+                        <option value="" class="bg-gray-900">Sort: Default</option>
+                        <option value="newest" class="bg-gray-900" selected="@(Sort == "newest")">Sort: Newest</option>
+                        <option value="year" class="bg-gray-900" selected="@(Sort == "year")">Sort: Year</option>
+                    </select>
+                    <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-white/40">expand_more</span>
+                </div>
+            </div>
+        </form>
+
+        <div id="booksGridContainer">
+            <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                @if (ListResult.Items.Any())
+                {
+                    @foreach (var item in ListResult.Items)
+                    {
+                        var rating = item.BookReviews?.Any() == true ? Math.Round(item.BookReviews.Average(review => review.Rating), 1) : 0;
+                        <div class="group relative flex flex-col gap-3">
+                            <div class="relative aspect-[3/4.5] w-full cursor-pointer overflow-hidden rounded-3xl border border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all duration-500 group-hover:border-primary/50">
+                                <img src="@BookImageHelper.Resolve(item.ImageUrl, item.Title)" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.onerror=null;this.src='/images/book-placeholder.svg';" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
+
+                                <div class="absolute bottom-0 left-0 right-0 flex translate-y-full justify-center p-4 transition-transform duration-500 group-hover:translate-y-0">
+                                    <a href="/Books/Details/@item.BookId" class="rounded-full bg-primary px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-background-dark shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-transform hover:scale-105">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="px-1">
+                                <h3 class="line-clamp-1 text-base font-black text-white transition-colors group-hover:text-primary" title="@item.Title">
+                                    <a href="/Books/Details/@item.BookId">@item.Title</a>
+                                </h3>
+                                <p class="mt-1 line-clamp-1 text-[11px] font-bold uppercase tracking-widest text-white/50">@item.Author?.Name</p>
+
+                                <div class="mt-3 flex items-center justify-between">
+                                    <div class="flex items-center text-xs text-amber-400">
+                                        <span class="material-symbols-outlined text-[16px]">star</span>
+                                        <span class="ml-1 text-[11px] font-bold text-white">@(rating > 0 ? rating.ToString("0.0") : "New")</span>
+                                    </div>
+                                    <span class="rounded-md border border-white/5 bg-white/5 px-2 py-1 text-[10px] font-bold text-white/40">@item.PublishYear</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <SurfacePanel ContainerClass="col-span-full rounded-2xl border border-white/10 bg-black/20 p-12 text-center text-white/40"
+                                 Title="No books found."
+                                 TitleClass="text-base font-medium text-white/40" />
+                }
+            </div>
+
+            @if (ListResult.TotalPages > 1)
+            {
+                <div class="mt-12 flex justify-center">
+                    <div class="flex flex-wrap items-center gap-2">
+                        @if (Page > 1)
+                        {
+                            <a href="@GetViewBooksUrl(Page - 1)" class="rounded-lg bg-white/10 px-4 py-2 text-white transition hover:bg-primary">
+                                Previous
+                            </a>
+                        }
+
+                        @for (var i = 1; i <= ListResult.TotalPages; i++)
+                        {
+                            <a href="@GetViewBooksUrl(i)"
+                               class="rounded-lg px-4 py-2 transition @(i == Page ? "bg-primary font-bold text-white shadow-lg" : "bg-white/10 text-white hover:bg-primary")">
+                                @i
+                            </a>
+                        }
+
+                        @if (Page < ListResult.TotalPages)
+                        {
+                            <a href="@GetViewBooksUrl(Page + 1)" class="rounded-lg bg-white/10 px-4 py-2 text-white transition hover:bg-primary">
+                                Next
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public BookListApiResult ListResult { get; set; } = new();
+    [Parameter] public string? Keyword { get; set; }
+    [Parameter] public string? Category { get; set; }
+    [Parameter] public int? PublisherId { get; set; }
+    [Parameter] public int? PublishYear { get; set; }
+    [Parameter] public bool? IsActive { get; set; }
+    [Parameter] public string? Availability { get; set; }
+    [Parameter] public int? MinRating { get; set; }
+    [Parameter] public string? Sort { get; set; }
+    [Parameter] public int Page { get; set; }
+    [Parameter, EditorRequired] public Func<int, string> GetViewBooksUrl { get; set; } = default!;
+}

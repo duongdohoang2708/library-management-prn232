@@ -1,0 +1,50 @@
+<section class="mx-auto flex w-full max-w-7xl flex-col gap-8">
+    <div class="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/8 via-white/5 to-transparent shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+        <div class="grid gap-8 px-6 py-8 lg:grid-cols-[1.35fr_0.9fr] lg:px-8 lg:py-10">
+            <div>
+                <div class="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.24em] text-primary">
+                    <span class="material-symbols-outlined text-sm">layers</span>
+                    <span>@Eyebrow</span>
+                </div>
+                <h1 class="mt-5 text-3xl font-black tracking-tight text-white lg:text-5xl">@Title</h1>
+                <p class="mt-4 max-w-3xl text-sm leading-7 text-white/65 lg:text-base">
+                    @Description
+                </p>
+            </div>
+
+            <div class="rounded-[1.6rem] border border-white/10 bg-black/20 p-5">
+                <div class="text-xs uppercase tracking-[0.22em] text-white/40">Mapped routes</div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    @foreach (var route in Routes)
+                    {
+                        <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70">@route</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (ChildContent is not null)
+    {
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            @ChildContent
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public string Eyebrow { get; set; } = "Section";
+
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Description { get; set; } = string.Empty;
+
+    [Parameter]
+    public IReadOnlyList<string> Routes { get; set; } = Array.Empty<string>();
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

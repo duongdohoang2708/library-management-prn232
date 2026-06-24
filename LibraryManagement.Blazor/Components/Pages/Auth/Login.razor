@@ -1,0 +1,218 @@
+@page "/Auth/Login"
+@layout AuthLayout
+
+<PageTitle>Login - LMS Library</PageTitle>
+
+<AuthSplitShell LeftClass="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden border-r border-white/5"
+                RightClass="flex-1 flex flex-col justify-center items-center p-8 lg:p-16">
+    <LeftContent>
+        <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30">
+                <span class="material-symbols-outlined text-xl font-bold text-background-dark">menu_book</span>
+            </div>
+            <span class="text-lg font-bold tracking-tight text-white">Standard Library</span>
+        </div>
+
+        <div class="flex flex-col items-center text-center">
+            <div class="relative mb-10">
+                <div class="flex h-48 w-48 items-center justify-center rounded-3xl border border-white/10 bg-white/5 shadow-2xl shadow-black/50">
+                    <span class="material-symbols-outlined text-[96px] text-primary/80">auto_stories</span>
+                </div>
+                <div class="absolute -right-4 -top-4 flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-black text-background-dark shadow-lg shadow-primary/30">
+                    <span class="material-symbols-outlined text-sm">verified</span>
+                    Verified
+                </div>
+                <div class="absolute -bottom-4 -left-4 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-white glass-card">
+                    <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+                    500K+ Books
+                </div>
+            </div>
+
+            <h1 class="mb-4 text-3xl font-black leading-tight text-white">
+                I Vault<br />
+                <span class="text-primary">at your fingertips</span>
+            </h1>
+            <p class="max-w-xs text-sm leading-relaxed text-white/50">
+                Smart library management system - borrow books, track history, easily manage your account.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4">
+            <div class="glass-card rounded-xl p-4 text-center">
+                <div class="text-xl font-black text-primary">500K+</div>
+                <div class="mt-1 text-xs text-white/40">Books</div>
+            </div>
+            <div class="glass-card rounded-xl p-4 text-center">
+                <div class="text-xl font-black text-primary">12K+</div>
+                <div class="mt-1 text-xs text-white/40">Readers</div>
+            </div>
+            <div class="glass-card rounded-xl p-4 text-center">
+                <div class="text-xl font-black text-primary">98%</div>
+                <div class="mt-1 text-xs text-white/40">Satisfied</div>
+            </div>
+        </div>
+    </LeftContent>
+
+    <RightContent>
+        <div class="w-full max-w-md">
+            <div class="mb-10 flex items-center gap-3 lg:hidden">
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+                    <span class="material-symbols-outlined text-lg text-background-dark">menu_book</span>
+                </div>
+                <span class="font-bold text-white">Standard Library</span>
+            </div>
+
+            <div class="mb-8">
+                <h2 class="mb-2 text-3xl font-black text-white">Welcome Back 👋</h2>
+                <p class="text-sm text-white/50">Log in to continue your reading journey</p>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Success))
+            {
+                <div class="mb-5 flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+                    <span class="material-symbols-outlined text-lg">check_circle</span>
+                    @Success
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Error))
+            {
+                <div class="mb-5 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    <span class="material-symbols-outlined mt-0.5 flex-shrink-0 text-lg">error</span>
+                    <div>@Error</div>
+                </div>
+            }
+
+            <form method="post" action="/auth/login" id="loginForm" class="space-y-5">
+                <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+
+                <AuthField Icon="alternate_email" IconLeftClass="4" ContainerClass="space-y-2">
+                    <LabelContent>Email</LabelContent>
+                    <ChildContent>
+                        <input name="Email"
+                               id="emailInput"
+                               @bind="Model.Email"
+                               @bind:event="oninput"
+                               class="auth-input !pl-12"
+                               placeholder="your@email.com"
+                               autocomplete="email"
+                               autofocus />
+                    </ChildContent>
+                </AuthField>
+
+                <div>
+                    <div class="mb-2 flex items-center justify-between">
+                        <label class="text-sm font-semibold text-white/70">Password</label>
+                        <a href="/Auth/ForgotPassword" class="text-xs font-medium text-primary transition-colors hover:text-primary/80">Forgot password?</a>
+                    </div>
+                    <div class="relative">
+                        <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-white/30">lock</span>
+                        <input name="Password"
+                               id="passwordInput"
+                               @bind="Model.Password"
+                               @bind:event="oninput"
+                               type="@(showPassword ? "text" : "password")"
+                               class="auth-input !pl-12 !pr-12"
+                               placeholder="••••••••"
+                               autocomplete="current-password" />
+                        <button type="button"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/70"
+                                @onclick="TogglePassword">
+                            <span class="material-symbols-outlined text-lg">@(showPassword ? "visibility" : "visibility_off")</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <input name="RememberMe"
+                           @bind="Model.RememberMe"
+                           type="checkbox"
+                           id="rememberMe"
+                           class="h-4 w-4 cursor-pointer rounded border-white/20 bg-white/5 text-primary focus:ring-primary/40" />
+                    <label for="rememberMe" class="cursor-pointer select-none text-sm text-white/60">
+                        Remember me for 7 days
+                    </label>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn-primary-auth mt-2 flex items-center justify-center gap-2">
+                    <span id="btnIcon" class="material-symbols-outlined text-lg">login</span>
+                    <span id="btnText">Log In</span>
+                </button>
+            </form>
+
+            <div class="my-6 flex items-center gap-4">
+                <div class="h-px flex-1 bg-white/10"></div>
+                <span class="text-xs font-medium uppercase tracking-widest text-white/30">Or</span>
+                <div class="h-px flex-1 bg-white/10"></div>
+            </div>
+
+            <form method="post" action="/auth/login-with-google">
+                <button type="submit" class="btn-social group">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
+                        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853" />
+                        <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05" />
+                        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335" />
+                    </svg>
+                    <span class="transition-colors group-hover:text-white">Continue with Google</span>
+                </button>
+            </form>
+
+            <p class="mt-8 text-center text-sm text-white/40">
+                Don't have an account?
+                <a href="/Auth/Register" class="ml-1 font-semibold text-primary transition-colors hover:text-primary/80">
+                    Register for free
+                </a>
+            </p>
+
+            <div class="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-white/30">TEST ACCOUNTS</p>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <button type="button"
+                            @onclick='() => Fill("admin@lms.com", "Admin@123")'
+                            class="rounded-lg p-2 text-left text-white/50 transition-colors hover:bg-white/5 hover:text-primary">
+                        <div class="font-semibold text-white/70">👑 Admin</div>
+                        <div class="truncate text-white/30" title="admin@lms.com">admin@lms.com</div>
+                    </button>
+                    <button type="button"
+                            @onclick='() => Fill("librarian1@lms.com", "Member@123")'
+                            class="rounded-lg p-2 text-left text-white/50 transition-colors hover:bg-white/5 hover:text-primary">
+                        <div class="font-semibold text-white/70">📚 Librarian</div>
+                        <div class="truncate text-white/30" title="librarian1@lms.com">librarian1@lms.com</div>
+                    </button>
+                    <button type="button"
+                            @onclick='() => Fill("member1@mail.com", "Member@123")'
+                            class="rounded-lg p-2 text-left text-white/50 transition-colors hover:bg-white/5 hover:text-primary">
+                        <div class="font-semibold text-white/70">👤 Member</div>
+                        <div class="truncate text-white/30" title="member1@mail.com">member1@mail.com</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </RightContent>
+</AuthSplitShell>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Success { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private LoginRequestDto Model { get; } = new();
+    private bool showPassword;
+
+    private void Fill(string email, string password)
+    {
+        Model.Email = email;
+        Model.Password = password;
+    }
+
+    private void TogglePassword()
+    {
+        showPassword = !showPassword;
+    }
+}
