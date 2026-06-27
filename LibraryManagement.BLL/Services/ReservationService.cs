@@ -73,6 +73,11 @@ namespace LibraryManagement.BLL.Services
                 .ToListAsync();
         }
 
+        public async Task<int> CountPendingReservationsAsync(int bookId)
+        {
+            return await reservationRepository.CountPendingReservationsAsync(bookId);
+        }
+
         public async Task<ReservationActionResponse> CreateReservationAsync(ReservationCreateRequest request)
         {
             var user = await reservationRepository.GetAccountAsync(request.UserId);
@@ -97,8 +102,32 @@ namespace LibraryManagement.BLL.Services
                 return Fail("This reader already has an open reservation for this book.");
             }
 
+            if (await reservationRepository.IsCurrentlyBorrowingBookAsync(request.UserId, request.BookId))
+            {
+                return Fail("You cannot reserve this book because you are currently borrowing a copy of it.");
+            }
+
             var now = DateTime.UtcNow;
             var policy = await systemSettingService.GetPolicyAsync();
+
+            var overdueCount = await reservationRepository.CountOverdueBooksAsync(request.UserId, now);
+            if (overdueCount > 0)
+            {
+                return Fail($"You cannot reserve books because you have {overdueCount} overdue book(s) that must be returned first.");
+            }
+
+            var unpaidFines = await reservationRepository.GetTotalUnpaidFinesAsync(request.UserId);
+            if (unpaidFines > 0)
+            {
+                return Fail($"You cannot reserve books because you have unpaid fines of {unpaidFines:N0} đ. Fines must be paid off first.");
+            }
+
+            var openBorrowedBooks = await reservationRepository.CountOpenBorrowedBooksAsync(request.UserId);
+            var allocatedReservations = await reservationRepository.CountAllocatedReservationsAsync(request.UserId);
+            if (openBorrowedBooks + allocatedReservations >= policy.MaxOpenBorrowedBooks)
+            {
+                return Fail($"You cannot reserve more books. You have reached your limit of {policy.MaxOpenBorrowedBooks} active borrowed book(s)/allocated reservation(s).");
+            }
             var availableCopy = await reservationRepository.GetFirstAvailableCopyAsync(request.BookId);
             var queuePosition = await reservationRepository.CountPendingReservationsAsync(request.BookId) + 1;
             var reservation = new Reservation
@@ -160,7 +189,31 @@ namespace LibraryManagement.BLL.Services
             }
 
             var now = DateTime.UtcNow;
+
+            var overdueCount = await reservationRepository.CountOverdueBooksAsync(reservation.UserId, now);
+            if (overdueCount > 0)
+            {
+                return Fail($"This reader cannot pick up books because they have {overdueCount} overdue book(s) that must be returned first.");
+            }
+
+            var unpaidFines = await reservationRepository.GetTotalUnpaidFinesAsync(reservation.UserId);
+            if (unpaidFines > 0)
+            {
+                return Fail($"This reader cannot pick up books because they have unpaid fines of {unpaidFines:N0} đ. Fines must be paid off first.");
+            }
+
             var policy = await systemSettingService.GetPolicyAsync();
+            var openBorrowedBooks = await reservationRepository.CountOpenBorrowedBooksAsync(reservation.UserId);
+            if (openBorrowedBooks >= policy.MaxOpenBorrowedBooks)
+            {
+                return Fail($"This reader cannot borrow more books because they have reached their limit of {policy.MaxOpenBorrowedBooks} borrowed books.");
+            }
+
+            if (await reservationRepository.IsCurrentlyBorrowingBookAsync(reservation.UserId, reservation.BookId))
+            {
+                return Fail("This reader is already borrowing another copy of the same book.");
+            }
+
             var dueDate = now.Date.AddDays(policy.DefaultLoanDays);
 
             reservation.Status = ReservationStatus.Completed;
@@ -193,6 +246,24 @@ namespace LibraryManagement.BLL.Services
             reservationRepository.AddTransaction(transaction);
             await reservationRepository.SaveChangesAsync();
             await auditLogService.LogAsync("ApproveReservation", "Reservation", reservation.ReservationId.ToString(), $"Reservation #{reservation.ReservationId} approved and transaction #{transaction.BorrowTransactionId} created.");
+
+            // Send borrow notification
+            try
+            {
+                var bookTitle = reservation.Book?.Title ?? "Unknown Book";
+                var dueDateStr = dueDate.ToLocalTime().ToString("dd/MM/yyyy");
+                await notificationService.CreateAsync(new NotificationRequest
+                {
+                    UserId = reservation.UserId,
+                    Title = "Books Checked Out",
+                    Message = $"You have borrowed: \"{bookTitle}\". Please return it by {dueDateStr}.",
+                    Type = "Borrow"
+                });
+            }
+            catch (Exception ex)
+            {
+                await auditLogService.LogAsync("BorrowNotificationError", "Reservation", reservation.ReservationId.ToString(), $"Failed to send borrow notification on reservation approval: {ex.Message}");
+            }
 
             return new ReservationActionResponse
             {

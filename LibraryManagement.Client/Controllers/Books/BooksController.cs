@@ -6,6 +6,8 @@ using LibraryManagementDAL.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml;
+using LibraryManagementDAL.DTO.Reservation;
+using LibraryManagementDAL.DTO.Circulation;
 
 namespace LibraryManagement.Client.Controllers.Books
 {
@@ -88,6 +90,46 @@ namespace LibraryManagement.Client.Controllers.Books
                 return NotFound();
             }
 
+            var hasActiveReservation = false;
+            var isCurrentlyBorrowing = false;
+            var userIdText = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdText, out var userId))
+            {
+                try
+                {
+                    var userReservations = await client.GetFromJsonAsync<List<ReservationItem>>(
+                        $"{GetApiBaseUrl()}/api/reservations/users/{userId}");
+                    if (userReservations != null)
+                    {
+                        hasActiveReservation = userReservations.Any(r => 
+                            r.BookId == id && 
+                            (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Allocated));
+                    }
+                }
+                catch (Exception)
+                {
+                    // Default to false on error
+                }
+
+                try
+                {
+                    var userBorrowings = await client.GetFromJsonAsync<List<CirculationTransactionItem>>(
+                        $"{GetApiBaseUrl()}/api/circulation/users/{userId}/borrow-history");
+                    if (userBorrowings != null)
+                    {
+                        isCurrentlyBorrowing = userBorrowings.Any(t => 
+                            t.BorrowDetails != null && 
+                            t.BorrowDetails.Any(d => d.BookId == id && d.ActualReturnDate == null));
+                    }
+                }
+                catch (Exception)
+                {
+                    // Default to false on error
+                }
+            }
+
+            ViewBag.HasActiveReservation = hasActiveReservation;
+            ViewBag.IsCurrentlyBorrowing = isCurrentlyBorrowing;
             return View(book);
         }
 

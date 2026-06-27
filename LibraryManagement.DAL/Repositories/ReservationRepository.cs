@@ -88,6 +88,52 @@ namespace LibraryManagement.DAL.Repositories
             db.BorrowTransactions.Add(transaction);
         }
 
+        public async Task<int> CountOpenBorrowedBooksAsync(int userId)
+        {
+            return await db.BorrowDetails
+                .Where(x =>
+                    x.BorrowTransaction.UserId == userId &&
+                    x.ActualReturnDate == null)
+                .CountAsync();
+        }
+
+        public async Task<int> CountOverdueBooksAsync(int userId, DateTime now)
+        {
+            return await db.BorrowDetails
+                .Where(x =>
+                    x.BorrowTransaction.UserId == userId &&
+                    x.ActualReturnDate == null &&
+                    x.DueDate.Date < now.Date)
+                .CountAsync();
+        }
+
+        public async Task<decimal> GetTotalUnpaidFinesAsync(int userId)
+        {
+            return await db.BorrowDetails
+                .Where(x =>
+                    x.BorrowTransaction.UserId == userId &&
+                    x.FineAmount > (x.FinePaidAmount ?? 0))
+                .SumAsync(x => (x.FineAmount ?? 0) - (x.FinePaidAmount ?? 0));
+        }
+
+        public async Task<int> CountAllocatedReservationsAsync(int userId)
+        {
+            return await db.Reservations
+                .Where(x =>
+                    x.UserId == userId &&
+                    x.Status == ReservationStatus.Allocated)
+                .CountAsync();
+        }
+
+        public async Task<bool> IsCurrentlyBorrowingBookAsync(int userId, int bookId)
+        {
+            return await db.BorrowDetails
+                .AnyAsync(x => 
+                    x.BorrowTransaction.UserId == userId && 
+                    x.ActualReturnDate == null && 
+                    x.BookCopy.BookId == bookId);
+        }
+
         public async Task SaveChangesAsync()
         {
             await db.SaveChangesAsync();
