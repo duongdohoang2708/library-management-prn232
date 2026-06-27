@@ -86,8 +86,43 @@
                                                         <h4 class="text-sm font-bold text-white mb-1 leading-tight">@detail.BookTitle</h4>
                                                         <p class="text-[11px] text-primary font-mono tracking-wider mb-2">Code: @detail.Barcode</p>
                                                     </div>
-                                                    <!-- Quick Report Actions -->
-                                                    <div class="flex gap-1">
+                                                    <!-- Quick Report & Renew Actions -->
+                                                    <div class="flex gap-1 items-center">
+                                                        @{
+                                                            var isCopyAlreadyRenewed = (detail.DueDate.Date - detail.BorrowDate.Date).Days > (ViewBag.DefaultLoanDays ?? 14);
+                                                        }
+                                                        @if (isOverdue)
+                                                        {
+                                                            <button type="button" disabled 
+                                                                    class="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 cursor-not-allowed opacity-50" 
+                                                                    title="Overdue - Cannot Renew">
+                                                                <span class="material-symbols-outlined text-sm">error</span>
+                                                            </button>
+                                                        }
+                                                        else if (isCopyAlreadyRenewed)
+                                                        {
+                                                            <button type="button" disabled 
+                                                                    class="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/20 cursor-not-allowed" 
+                                                                    title="Already Renewed">
+                                                                <span class="material-symbols-outlined text-sm">check_circle</span>
+                                                            </button>
+                                                        }
+                                                        else
+                                                        {
+                                                            <form asp-action="Renew" method="post" class="inline">
+                                                                @Html.AntiForgeryToken()
+                                                                <input type="hidden" name="borrowDetailId" value="@detail.BorrowDetailId" />
+                                                                <input type="hidden" name="transactionId" value="@ViewBag.TransactionId" />
+                                                                <input type="hidden" name="extraDays" value="7" />
+                                                                <input type="hidden" name="redirectToAction" value="Return" />
+                                                                <button type="submit"
+                                                                        class="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-black hover:border-amber-550 transition-all"
+                                                                        title="Renew 7 days">
+                                                                    <span class="material-symbols-outlined text-sm">autorenew</span>
+                                                                </button>
+                                                            </form>
+                                                        }
+
                                                         <button type="button" 
                                                                 onclick="submitReport('@detail.BorrowDetailId', '@BookCopyStatus.Damaged', 50000)"
                                                                 class="p-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500/20 hover:border-orange-500/40 transition-all" 

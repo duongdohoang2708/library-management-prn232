@@ -157,17 +157,40 @@
                                                     <div class="text-[12px] text-white truncate" title="@detail.BookTitle">@detail.BookTitle</div>
                                                     <div class="text-[10px] text-primary font-mono tracking-wider">@detail.Barcode</div>
                                                 </div>
-                                                <form asp-action="Renew" method="post" class="shrink-0">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="borrowDetailId" value="@detail.BorrowDetailId" />
-                                                    <input type="hidden" name="transactionId" value="@item.BorrowTransactionId" />
-                                                    <input type="hidden" name="extraDays" value="7" />
-                                                    <button type="submit"
-                                                            class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-white/5 text-amber-300 border border-white/10 hover:bg-amber-400 hover:text-black hover:border-amber-400 transition-all"
-                                                            title="Renew 7 days">
-                                                        <span class="material-symbols-outlined text-sm">update</span>
+                                                @{
+                                                    var isCopyOverdue = detail.DueDate.Date < DateTime.UtcNow.Date;
+                                                    var isAlreadyRenewed = (detail.DueDate.Date - detail.BorrowDate.Date).Days > (ViewBag.DefaultLoanDays ?? 14);
+                                                }
+                                                @if (isCopyOverdue)
+                                                {
+                                                    <button type="button" disabled
+                                                            class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 cursor-not-allowed"
+                                                            title="Overdue - Cannot Renew">
+                                                        <span class="material-symbols-outlined text-sm">error</span>
                                                     </button>
-                                                </form>
+                                                }
+                                                else if (isAlreadyRenewed)
+                                                {
+                                                    <button type="button" disabled
+                                                            class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-white/5 text-white/20 border border-white/5 cursor-not-allowed"
+                                                            title="Already Renewed">
+                                                        <span class="material-symbols-outlined text-sm">check_circle</span>
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <form asp-action="Renew" method="post" class="shrink-0">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="borrowDetailId" value="@detail.BorrowDetailId" />
+                                                        <input type="hidden" name="transactionId" value="@item.BorrowTransactionId" />
+                                                        <input type="hidden" name="extraDays" value="7" />
+                                                        <button type="submit"
+                                                                class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-white/5 text-amber-300 border border-white/10 hover:bg-amber-400 hover:text-black hover:border-amber-400 transition-all"
+                                                                title="Renew 7 days">
+                                                            <span class="material-symbols-outlined text-sm">update</span>
+                                                        </button>
+                                                    </form>
+                                                }
                                             </div>
                                         }
                                         @if(!activeDetails.Any())

@@ -36,6 +36,19 @@ namespace LibraryManagement.Client.Controllers
             ViewBag.CurrentPage = result.CurrentPage;
             ViewBag.TotalPages = result.TotalPages;
 
+            int defaultLoanDays = 14;
+            try
+            {
+                var policyNode = await client.GetFromJsonAsync<System.Text.Json.Nodes.JsonNode>($"{GetApiBaseUrl()}/api/settings/policy");
+                if (policyNode?["defaultLoanDays"] != null)
+                {
+                    defaultLoanDays = policyNode["defaultLoanDays"].GetValue<int>();
+                }
+            }
+            catch { }
+
+            ViewBag.DefaultLoanDays = defaultLoanDays;
+
             return View(result.Items);
         }
 
@@ -90,6 +103,19 @@ namespace LibraryManagement.Client.Controllers
             }
 
             PrepareReturnViewBag(result);
+
+            int defaultLoanDays = 14;
+            try
+            {
+                var policyNode = await client.GetFromJsonAsync<System.Text.Json.Nodes.JsonNode>($"{GetApiBaseUrl()}/api/settings/policy");
+                if (policyNode?["defaultLoanDays"] != null)
+                {
+                    defaultLoanDays = policyNode["defaultLoanDays"].GetValue<int>();
+                }
+            }
+            catch { }
+            ViewBag.DefaultLoanDays = defaultLoanDays;
+
             return View(new ReturnRequest
             {
                 BorrowDetailIds = result.UnreturnedDetails.Select(x => x.BorrowDetailId).ToList()
@@ -129,7 +155,7 @@ namespace LibraryManagement.Client.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Renew(int borrowDetailId, int transactionId, int extraDays = 7)
+        public async Task<IActionResult> Renew(int borrowDetailId, int transactionId, int extraDays = 7, string? redirectToAction = null)
         {
             var client = httpClientFactory.CreateClient();
             ApiActorHeaderHelper.AddActorHeaders(client, User);
@@ -143,6 +169,10 @@ namespace LibraryManagement.Client.Controllers
             TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
                 result?.Message ?? (response.IsSuccessStatusCode ? "Book renewed successfully." : "Renew book failed.");
 
+            if (redirectToAction == "Return")
+            {
+                return RedirectToAction("Return", new { id = transactionId });
+            }
             return RedirectToAction(nameof(Index));
         }
 
@@ -199,6 +229,18 @@ namespace LibraryManagement.Client.Controllers
             if (result != null)
             {
                 PrepareReturnViewBag(result);
+
+                int defaultLoanDays = 14;
+                try
+                {
+                    var policyNode = await client.GetFromJsonAsync<System.Text.Json.Nodes.JsonNode>($"{GetApiBaseUrl()}/api/settings/policy");
+                    if (policyNode?["defaultLoanDays"] != null)
+                    {
+                        defaultLoanDays = policyNode["defaultLoanDays"].GetValue<int>();
+                    }
+                }
+                catch { }
+                ViewBag.DefaultLoanDays = defaultLoanDays;
             }
         }
 
