@@ -7,15 +7,19 @@ using System.Linq;
 using System.Threading.Tasks;
 using LibraryManagement.DAL.Data;
 
+using LibraryManagement.BLL.DTO.Notification;
+
 namespace LibraryManagement.BLL.Services
 {
     public class PaymentService
     {
         private readonly ApplicationDbContext _db;
+        private readonly NotificationService _notificationService;
 
-        public PaymentService(ApplicationDbContext db)
+        public PaymentService(ApplicationDbContext db, NotificationService notificationService)
         {
             _db = db;
+            _notificationService = notificationService;
         }
 
         public async Task<List<UserFinesDTO>> GetUsersWithUnpaidFinesAsync()
@@ -146,6 +150,22 @@ namespace LibraryManagement.BLL.Services
             _db.Payments.Add(payment);
             await _db.SaveChangesAsync();
 
+            // Send payment confirmation notification to user
+            try
+            {
+                await _notificationService.CreateAsync(new NotificationRequest
+                {
+                    UserId = userId,
+                    Title = "Payment Received",
+                    Message = $"We have received your payment of {amountPaid:N0} VND for outstanding fines. Thank you!",
+                    Type = "Payment"
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to send payment notification: {ex.Message}");
+            }
+
             return payment;
         }
 
@@ -204,6 +224,22 @@ namespace LibraryManagement.BLL.Services
             _db.BorrowTransactions.Add(trans);
             _db.BorrowDetails.Add(detail);
             await _db.SaveChangesAsync();
+
+            // Send fine issue notification to user
+            try
+            {
+                await _notificationService.CreateAsync(new NotificationRequest
+                {
+                    UserId = userId,
+                    Title = "Fine Issued",
+                    Message = $"A fine of {amount:N0} VND has been issued to your account. Reason: {reason}.",
+                    Type = "Fine"
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to send manual fine notification: {ex.Message}");
+            }
 
             return detail;
         }
