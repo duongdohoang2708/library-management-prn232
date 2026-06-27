@@ -8,7 +8,7 @@
     var primaryRole = userRoles.FirstOrDefault() ?? "Staff";
     var isAdminOrManager = userRoles.Any(r => r == "Admin" || r == "Manager");
     var isLibrarian = userRoles.Any(r => r == "Librarian");
-    var homeAction = isAdminOrManager ? "AdminDashboard" : "Index";
+    var homeAction = isAdminOrManager ? "AdminDashboard" : (isLibrarian ? "Dashboard" : "Index");
 
     // Active controller helpers
     var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
@@ -44,8 +44,8 @@
             else if (isLibrarian)
             {
                 <!-- Dashboard (Librarian Specific) -->
-                <a asp-controller="Home" asp-action="Index"
-                   class="@nav("Home") relative group"
+                <a asp-controller="Home" asp-action="Dashboard"
+                   class="@navAction("Home", "Dashboard") relative group"
                    title="Overview">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span class="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 text-white text-xs rounded-lg font-medium
@@ -56,7 +56,7 @@
                 </a>
             }
 
-            @if (isAdminOrManager || isLibrarian)
+            @if (isLibrarian)
             {
                 <!-- Manage Books List (Đầu sách) -->
                 <a asp-controller="Books" asp-action="AllBooks"
@@ -114,9 +114,9 @@
                         Fees & Fines
                     </span>
                 </a>
-
-                
             }
+
+
             @if (isLibrarian)
             {
                 <!-- Notifications -->
