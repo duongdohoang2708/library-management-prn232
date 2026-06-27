@@ -2,6 +2,7 @@ using LibraryManagement.DAL.Repositories;
 using LibraryManagementDAL.DTO.Circulation;
 using LibraryManagementDAL.Models;
 using Microsoft.EntityFrameworkCore;
+using LibraryManagement.BLL.DTO.Notification;
 
 namespace LibraryManagement.BLL.Services
 {
@@ -9,6 +10,7 @@ namespace LibraryManagement.BLL.Services
     {
         private const int PageSize = 10;
         private readonly CirculationRepository circulationRepository;
+        private readonly NotificationService notificationService;
         private readonly ReservationService reservationService;
         private readonly SystemSettingService systemSettingService;
         private readonly AuditLogService auditLogService;
@@ -17,12 +19,14 @@ namespace LibraryManagement.BLL.Services
             CirculationRepository _circulationRepository,
             ReservationService _reservationService,
             SystemSettingService _systemSettingService,
-            AuditLogService _auditLogService)
+            AuditLogService _auditLogService,
+            NotificationService _notificationService)
         {
             circulationRepository = _circulationRepository;
             reservationService = _reservationService;
             systemSettingService = _systemSettingService;
             auditLogService = _auditLogService;
+            notificationService = _notificationService;
         }
 
         public async Task<CirculationListResult> GetTransactionsAsync(
@@ -55,9 +59,8 @@ namespace LibraryManagement.BLL.Services
             }
 
             query = query
-                .OrderByDescending(x => x.Status != "Returned")
-                .ThenBy(x => x.DueDate)
-                .ThenByDescending(x => x.BorrowDate);
+                .OrderByDescending(x => x.BorrowDate)
+                .ThenByDescending(x => x.BorrowTransactionId);
 
             var totalItems = await query.CountAsync();
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)PageSize));
@@ -151,6 +154,42 @@ namespace LibraryManagement.BLL.Services
 
             var policy = await systemSettingService.GetPolicyAsync();
             var now = DateTime.UtcNow;
+
+            var overdueCount = await circulationRepository.CountOverdueBooksAsync(user.UserId, now);
+            if (overdueCount > 0)
+            {
+                return Fail($"This reader cannot borrow books because they have {overdueCount} overdue book(s) that must be returned first.");
+            }
+
+            var unpaidFines = await circulationRepository.GetTotalUnpaidFinesAsync(user.UserId);
+            if (unpaidFines > 0)
+            {
+                return Fail($"This reader cannot borrow books because they have unpaid fines of {unpaidFines:N0} đ. Fines must be paid off first.");
+            }
+
+            // Check if there are multiple copies of the same book in this checkout request
+            var bookIdsInRequest = copies.Select(x => x.BookId).ToList();
+            if (bookIdsInRequest.Distinct().Count() != bookIdsInRequest.Count)
+            {
+                return Fail("This reader cannot borrow multiple copies of the same book in the same request.");
+            }
+
+            // Check if user is already borrowing any of these books
+            foreach (var copy in copies)
+            {
+                var isBorrowing = await circulationRepository.IsCurrentlyBorrowingBookAsync(user.UserId, copy.BookId);
+                if (isBorrowing)
+                {
+                    return Fail($"This reader is already borrowing a copy of \"{copy.Book?.Title ?? "this book"}\". They cannot borrow another copy of the same book.");
+                }
+            }
+
+            var openBorrowedBooks = await circulationRepository.CountOpenBorrowedBooksAsync(user.UserId);
+            if (openBorrowedBooks + barcodes.Count > policy.MaxOpenBorrowedBooks)
+            {
+                return Fail($"This reader can borrow at most {policy.MaxOpenBorrowedBooks} books. They currently have {openBorrowedBooks} borrowed books, and are trying to borrow {barcodes.Count} more.");
+            }
+
             var dueDate = now.Date.AddDays(request.LoanDays <= 0 ? policy.DefaultLoanDays : request.LoanDays);
 
             var transaction = new BorrowTransaction
@@ -182,6 +221,24 @@ namespace LibraryManagement.BLL.Services
             await circulationRepository.SaveChangesAsync();
             await auditLogService.LogAsync("BorrowBooks", "BorrowTransaction", transaction.BorrowTransactionId.ToString(), $"Borrow transaction created for user #{user.UserId} with {copies.Count} copies.");
 
+            // Send borrow notification to member
+            try
+            {
+                var bookTitles = string.Join(", ", copies.Select(x => $"\"{x.Book?.Title ?? "Unknown Book"}\""));
+                var dueDateStr = dueDate.ToLocalTime().ToString("dd/MM/yyyy");
+                await notificationService.CreateAsync(new NotificationRequest
+                {
+                    UserId = user.UserId,
+                    Title = "Books Checked Out",
+                    Message = $"You have borrowed: {bookTitles}. Please return them by {dueDateStr}.",
+                    Type = "Borrow"
+                });
+            }
+            catch (Exception ex)
+            {
+                await auditLogService.LogAsync("BorrowNotificationError", "BorrowTransaction", transaction.BorrowTransactionId.ToString(), $"Failed to send borrow notification: {ex.Message}");
+            }
+
             return new CirculationActionResponse
             {
                 IsSuccess = true,
@@ -192,63 +249,7 @@ namespace LibraryManagement.BLL.Services
 
         public async Task<CirculationActionResponse> MemberBorrowNowAsync(MemberBorrowRequest request)
         {
-            var user = await circulationRepository.GetMemberAccountAsync(request.UserId);
-            if (user == null)
-            {
-                return Fail("Please login before borrowing.");
-            }
-
-            if (user.Member == null)
-            {
-                return Fail("Only member accounts can use Borrow Now.");
-            }
-
-            var policy = await systemSettingService.GetPolicyAsync();
-            var openBorrowedBooks = await circulationRepository.CountOpenBorrowedBooksAsync(user.UserId);
-            if (openBorrowedBooks >= policy.MaxOpenBorrowedBooks)
-            {
-                return Fail($"You can borrow at most {policy.MaxOpenBorrowedBooks} books at the same time.");
-            }
-
-            var copy = await circulationRepository.GetFirstAvailableCopyByBookIdAsync(request.BookId);
-            if (copy == null)
-            {
-                return Fail("No available copy for this book. Please use Reserve Queue.");
-            }
-
-            var now = DateTime.UtcNow;
-            var dueDate = now.Date.AddDays(request.LoanDays <= 0 ? policy.DefaultLoanDays : request.LoanDays);
-
-            copy.Status = BookCopyStatus.Borrowed;
-            copy.UpdatedAt = now;
-
-            var transaction = new BorrowTransaction
-            {
-                UserId = user.UserId,
-                BorrowDate = now,
-                DueDate = dueDate,
-                Status = "Borrowing",
-                CreatedAt = now,
-                BorrowDetails = new List<BorrowDetail>
-                {
-                    new BorrowDetail
-                    {
-                        BookCopyId = copy.BookCopyId,
-                        BorrowDate = now,
-                        DueDate = dueDate,
-                        FineAmount = 0,
-                        FinePaidAmount = 0,
-                        IsFinePaid = true,
-                        CreatedAt = now
-                    }
-                }
-            };
-
-            circulationRepository.AddTransaction(transaction);
-            await circulationRepository.SaveChangesAsync();
-            await auditLogService.LogAsync("MemberBorrowNow", "BorrowTransaction", transaction.BorrowTransactionId.ToString(), $"Member #{user.UserId} borrowed book #{request.BookId}.");
-
-            return Ok("Book borrowed successfully. Check your Borrowed Books list.", transaction.BorrowTransactionId);
+            return Fail("Direct online checkout is not supported. Please reserve the book instead.");
         }
 
         public async Task<ReturnDetailsResult?> GetReturnDetailsAsync(int transactionId)
@@ -332,6 +333,32 @@ namespace LibraryManagement.BLL.Services
             await reservationService.AllocatePendingReservationsForBooksAsync(returnedBookIds);
             await auditLogService.LogAsync("ReturnBooks", "BorrowTransaction", transaction.BorrowTransactionId.ToString(), $"{selectedDetails.Count} books returned for transaction #{transaction.BorrowTransactionId}.");
 
+            // Send return notification to member
+            try
+            {
+                var returnedBookTitles = string.Join(", ", selectedDetails.Select(x => $"\"{x.BookCopy?.Book?.Title ?? "Unknown Book"}\""));
+                var lateDetails = selectedDetails.Where(x => (x.FineAmount ?? 0) > 0).ToList();
+                var totalOverdueFine = lateDetails.Sum(x => x.FineAmount ?? 0);
+
+                var returnMessage = $"You have returned: {returnedBookTitles}. Thank you!";
+                if (totalOverdueFine > 0)
+                {
+                    returnMessage += $" Overdue fine incurred: {totalOverdueFine:N0} VND.";
+                }
+
+                await notificationService.CreateAsync(new NotificationRequest
+                {
+                    UserId = transaction.UserId,
+                    Title = "Books Returned",
+                    Message = returnMessage,
+                    Type = "Return"
+                });
+            }
+            catch (Exception ex)
+            {
+                await auditLogService.LogAsync("ReturnNotificationError", "BorrowTransaction", transaction.BorrowTransactionId.ToString(), $"Failed to send return notification: {ex.Message}");
+            }
+
             return Ok("Books returned successfully.", transaction.BorrowTransactionId);
         }
 
@@ -350,6 +377,37 @@ namespace LibraryManagement.BLL.Services
 
             var policy = await systemSettingService.GetPolicyAsync();
             var now = DateTime.UtcNow;
+
+            // Check 1: Already Overdue
+            if (detail.DueDate.Date < now.Date)
+            {
+                return Fail("Overdue books cannot be renewed online. Please return the book or contact a librarian.");
+            }
+
+            // Check 2: Unpaid Fines
+            var unpaidFines = await circulationRepository.GetTotalUnpaidFinesAsync(detail.BorrowTransaction.UserId);
+            if (unpaidFines > 0)
+            {
+                return Fail("You cannot renew books because you have unpaid fines. Please pay off your fines first.");
+            }
+
+            // Check 3: Waitlist / Pending Reservations
+            if (detail.BookCopy != null)
+            {
+                var pendingReservationsCount = await reservationService.CountPendingReservationsAsync(detail.BookCopy.BookId);
+                if (pendingReservationsCount > 0)
+                {
+                    return Fail("This book has a pending reservation waitlist. You cannot renew it.");
+                }
+            }
+
+            // Check 4: Limit to maximum 1 renewal
+            var defaultDays = policy.DefaultLoanDays > 0 ? policy.DefaultLoanDays : 14;
+            if ((detail.DueDate.Date - detail.BorrowDate.Date).Days > defaultDays)
+            {
+                return Fail("This book copy has already been renewed once. You cannot renew it again.");
+            }
+
             var baseDate = detail.DueDate.Date < now.Date ? now.Date : detail.DueDate.Date;
             detail.DueDate = baseDate.AddDays(request.ExtraDays <= 0 ? policy.RenewDays : request.ExtraDays);
             detail.UpdatedAt = now;
@@ -479,6 +537,7 @@ namespace LibraryManagement.BLL.Services
             {
                 BorrowDetailId = detail.BorrowDetailId,
                 BookCopyId = detail.BookCopyId,
+                BookId = detail.BookCopy?.BookId,
                 BookTitle = detail.BookCopy?.Book?.Title ?? string.Empty,
                 ImageUrl = detail.BookCopy?.Book?.ImageUrl,
                 Barcode = detail.BookCopy?.Barcode ?? string.Empty,

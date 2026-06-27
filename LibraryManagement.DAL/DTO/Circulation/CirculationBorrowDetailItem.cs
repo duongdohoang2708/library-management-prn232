@@ -4,6 +4,7 @@ namespace LibraryManagementDAL.DTO.Circulation
     {
         public int BorrowDetailId { get; set; }
         public int? BookCopyId { get; set; }
+        public int? BookId { get; set; }
         public string BookTitle { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
         public string Barcode { get; set; } = string.Empty;
