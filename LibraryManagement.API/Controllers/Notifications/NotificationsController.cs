@@ -39,5 +39,12 @@ namespace LibraryManagement.API.Controllers.Notifications
             await notificationService.MarkAllAsReadAsync(userId);
             return Ok(new { message = "Notifications marked as read." });
         }
+
+        [HttpPost("{id:int}/mark-read")]
+        public async Task<IActionResult> MarkAsRead(int id)
+        {
+            await notificationService.MarkAsReadAsync(id);
+            return Ok(new { message = "Notification marked as read." });
+        }
     }
 }

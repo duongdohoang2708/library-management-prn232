@@ -44,12 +44,30 @@ namespace LibraryManagement.Client.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin,Manager,Librarian")]
-        public IActionResult SendNotification()
+        public async Task<IActionResult> SendNotification(int? userId)
         {
-            return View(new NotificationCreateRequest
+            var model = new NotificationCreateRequest
             {
                 Type = "General"
-            });
+            };
+
+            if (userId.HasValue && userId.Value > 0)
+            {
+                try
+                {
+                    var client = httpClientFactory.CreateClient();
+                    var account = await client.GetFromJsonAsync<Account>($"{GetApiBaseUrl()}/api/users/{userId.Value}");
+                    if (account != null)
+                    {
+                        model.UserId = userId.Value;
+                        ViewBag.SelectedUserName = account.FullName;
+                        ViewBag.SelectedUserEmail = account.Email;
+                    }
+                }
+                catch { }
+            }
+
+            return View(model);
         }
 
         [HttpPost]
@@ -96,6 +114,57 @@ namespace LibraryManagement.Client.Controllers
 
             TempData["Success"] = "All notifications marked as read.";
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetLatestNotifications()
+        {
+            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdText, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var client = httpClientFactory.CreateClient();
+            var result = await client.GetFromJsonAsync<PaginationResponseModel<Notification>>(
+                $"{GetApiBaseUrl()}/api/notifications/users/{userId}?page=1")
+                ?? new PaginationResponseModel<Notification>();
+
+            var unreadCount = result.Items?.Count(x => !x.IsRead) ?? 0;
+            return Json(new {
+                items = result.Items ?? new List<Notification>(),
+                unreadCount = unreadCount
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarkAsRead(int id)
+        {
+            var client = httpClientFactory.CreateClient();
+            var response = await client.PostAsync($"{GetApiBaseUrl()}/api/notifications/{id}/mark-read", null);
+            if (response.IsSuccessStatusCode)
+            {
+                return Ok();
+            }
+            return BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarkAllAsReadJson()
+        {
+            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdText, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var client = httpClientFactory.CreateClient();
+            var response = await client.PostAsync($"{GetApiBaseUrl()}/api/notifications/users/{userId}/mark-all-read", null);
+            if (response.IsSuccessStatusCode)
+            {
+                return Ok();
+            }
+            return BadRequest();
         }
 
         private string GetApiBaseUrl()

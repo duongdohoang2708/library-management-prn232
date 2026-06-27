@@ -108,6 +108,12 @@ namespace LibraryManagement.BLL.Services
             await notificationRepository.SaveChangesAsync();
         }
 
+        public async Task MarkAsReadAsync(int notificationId)
+        {
+            await notificationRepository.MarkAsReadAsync(notificationId);
+            await notificationRepository.SaveChangesAsync();
+        }
+
         private async Task SendEmailAsync(string email, string fullName, string title, string message)
         {
             var smtpServer = configuration["EmailSettings:SmtpServer"];

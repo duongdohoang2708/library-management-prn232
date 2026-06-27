@@ -43,6 +43,16 @@ namespace LibraryManagement.DAL.Repositories
             }
         }
 
+        public async Task MarkAsReadAsync(int notificationId)
+        {
+            var notification = await db.Notification.FindAsync(notificationId);
+            if (notification != null)
+            {
+                notification.IsRead = true;
+                notification.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
         public async Task SaveChangesAsync()
         {
             await db.SaveChangesAsync();
