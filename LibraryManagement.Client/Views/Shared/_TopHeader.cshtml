@@ -29,51 +29,38 @@
     <!-- RIGHT SIDE -->
     <div class="flex items-center gap-6 ml-8">
 
-        <!-- Notification -->
-        <div class="relative">
-
-            <!-- Bell -->
-            <button id="notificationButton"
-                    class="relative p-2 text-white/60 hover:text-primary transition-colors">
-
-                <span class="material-symbols-outlined">notifications</span>
-
-                <!-- Badge -->
-                <span id="notificationBadge"
-                        class="absolute -top-1 -right-1 bg-primary text-xs text-white rounded-full px-1.5 py-0.5">
-                    2
-                </span>
-
-            </button>
-
-            <!-- Dropdown -->
-            <div id="notificationDropdown"
-                    class="hidden absolute right-0 mt-3 w-80 bg-[#1e1e1e] rounded-xl shadow-lg border border-white/10 z-50">
-
-                <!-- Header -->
-                <div class="p-3 border-b border-white/10 text-sm font-semibold text-white">
-                    Notifications
-                </div>
-
-                <!-- Notification List -->
-                <div id="notificationList" class="max-h-60 overflow-y-auto">
-                    <div class="p-3 hover:bg-white/5 text-sm border-b border-white/10 text-white/80">
-                        <div class="flex flex-col">
-                            <span>Book "Introduction to Algorithms" is due tomorrow.</span>
-                            <span class="text-xs text-white/40 mt-1">10:30 AM</span>
-                        </div>
+        @if (isAuthenticated)
+        {
+            <!-- Notification -->
+            <div class="relative">
+                <!-- Bell -->
+                <button id="notificationButton"
+                        class="relative p-2 text-white/60 hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <!-- Badge -->
+                    <span id="notificationBadge"
+                            class="hidden absolute -top-1 -right-1 bg-primary text-xs text-white rounded-full px-1.5 py-0.5">
+                        0
+                    </span>
+                </button>
+                <!-- Dropdown -->
+                <div id="notificationDropdown"
+                        class="hidden absolute right-0 mt-3 w-80 bg-[#1e1e1e] rounded-xl shadow-lg border border-white/10 z-50 overflow-hidden">
+                    <!-- Header -->
+                    <div class="p-3 border-b border-white/10 text-sm font-semibold text-white flex justify-between items-center bg-white/5">
+                        <span>Notifications</span>
+                        <button onclick="markAllNotificationsAsRead(event)" class="text-xs text-primary hover:underline font-bold">Mark all read</button>
                     </div>
-                    <div class="p-3 hover:bg-white/5 text-sm border-b border-white/10 text-white/80">
-                        <div class="flex flex-col">
-                            <span>New book "Clean Architecture" has been added to Catalog!</span>
-                            <span class="text-xs text-white/40 mt-1">Yesterday</span>
-                        </div>
+                    <!-- Notification List -->
+                    <div id="notificationList" class="max-h-60 overflow-y-auto">
+                        <div class="p-4 text-center text-sm text-white/40">Loading...</div>
+                    </div>
+                    <div class="p-2 border-t border-white/10 text-center bg-white/5">
+                        <a href="/Notification" class="text-xs text-primary hover:underline font-bold">View all notifications</a>
                     </div>
                 </div>
-
             </div>
-
-        </div>
+        }
 
         @if (isAuthenticated)
         {
@@ -176,14 +163,11 @@
         const badge = document.getElementById("notificationBadge");
 
         if (btn) {
+            // Load notifications initially
+            loadNotifications();
+
             btn.addEventListener("click", () => {
                 dropdown.classList.toggle("hidden");
-                if (!dropdown.classList.contains("hidden")) {
-                    if (badge) {
-                        badge.innerText = "0";
-                        badge.classList.add("hidden");
-                    }
-                }
             });
         }
 
@@ -214,7 +198,94 @@
                     userDropdown.classList.add("hidden");
                     userChevron.classList.remove("rotate-180");
                 }
+                if (dropdown && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+                    dropdown.classList.add("hidden");
+                }
             });
         }
     });
+
+    async function loadNotifications() {
+        try {
+            const res = await fetch('/Notification/GetLatestNotifications');
+            if (!res.ok) return;
+            const data = await res.json();
+            
+            const badge = document.getElementById("notificationBadge");
+            if (badge) {
+                if (data.unreadCount > 0) {
+                    badge.innerText = data.unreadCount;
+                    badge.classList.remove("hidden");
+                } else {
+                    badge.classList.add("hidden");
+                }
+            }
+
+            const list = document.getElementById("notificationList");
+            if (list) {
+                list.innerHTML = "";
+                if (!data.items || data.items.length === 0) {
+                    list.innerHTML = `<div class="p-4 text-center text-sm text-white/40">No notifications</div>`;
+                    return;
+                }
+
+                data.items.forEach(n => {
+                    const item = document.createElement("div");
+                    item.className = `p-3 border-b border-white/10 transition-all cursor-pointer ${n.isRead ? 'hover:bg-white/5 text-white/70' : 'bg-primary/10 text-white font-semibold'}`;
+                    
+                    const date = new Date(n.createdAt);
+                    const formattedDate = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' ' + date.toLocaleDateString([], {day: '2-digit', month: '2-digit'});
+
+                    item.innerHTML = `
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm">${escapeHtml(n.message)}</span>
+                            <span class="text-xs text-white/40">${formattedDate}</span>
+                        </div>
+                    `;
+
+                    item.onclick = async (e) => {
+                        e.stopPropagation();
+                        if (!n.isRead) {
+                            await markNotificationAsRead(n.notificationId);
+                        }
+                    };
+                    list.appendChild(item);
+                });
+            }
+        } catch (err) {
+            console.error("Error loading notifications:", err);
+        }
+    }
+
+    async function markNotificationAsRead(id) {
+        try {
+            const res = await fetch(`/Notification/MarkAsRead?id=${id}`, { method: 'POST' });
+            if (res.ok) {
+                await loadNotifications();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function markAllNotificationsAsRead(e) {
+        if (e) e.stopPropagation();
+        try {
+            const res = await fetch('/Notification/MarkAllAsReadJson', { method: 'POST' });
+            if (res.ok) {
+                await loadNotifications();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 </script>
