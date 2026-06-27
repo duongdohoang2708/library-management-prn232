@@ -1,205 +1,405 @@
-@using LibraryManagementDAL.Models
-@using LibraryManagementBLL.Interfaces
-
+@using LibraryManagementDAL.DTO.Dashboard
 @{
-    ViewData["Title"] = "System Statistics";
+    ViewData["Title"] = "Librarian Dashboard";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
-    var recentTransactions = ViewBag.RecentTransactions as List<BorrowTransaction> ?? new List<BorrowTransaction>();
-    var topDebtors = ViewBag.TopDebtors as List<UserFinesDTO> ?? new List<UserFinesDTO>();
+    var recentUsers = ViewBag.RecentUsers as List<DashboardUserItem> ?? new List<DashboardUserItem>();
+    var recentPayments = ViewBag.RecentPayments as List<DashboardPaymentItem> ?? new List<DashboardPaymentItem>();
+
+    var monthlyLabels = ViewBag.MonthlyLabels as List<string> ?? new List<string>();
+    var monthlyBorrows = ViewBag.MonthlyBorrows as List<int> ?? new List<int>();
+    var monthlyReturns = ViewBag.MonthlyReturns as List<int> ?? new List<int>();
+    var monthlyRegistrations = ViewBag.MonthlyRegistrations as List<int> ?? new List<int>();
+
+    var categoryLabels = ViewBag.CategoryLabels as List<string> ?? new List<string>();
+    var categoryCounts = ViewBag.CategoryCounts as List<int> ?? new List<int>();
+
+    var bookStatusLabels = ViewBag.BookStatusLabels as List<string> ?? new List<string>();
+    var bookStatusCounts = ViewBag.BookStatusCounts as List<int> ?? new List<int>();
 }
 
 <div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
 
-    <div class="mb-10">
-        <h1 class="text-4xl font-extrabold text-white tracking-tight mb-2">
-            Good afternoon, <span class="text-primary">@User.Identity?.Name</span> 📚
-        </h1>
-        <p class="text-white/50 text-lg">Here is an overview of the library's status today.</p>
+    @if (ViewBag.DashboardDataError != null)
+    {
+        <div class="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-300">
+            @ViewBag.DashboardDataError
+        </div>
+    }
+
+    <div class="mb-10 flex justify-between items-end">
+        <div>
+            <h1 class="text-4xl font-extrabold text-white tracking-tight mb-2">
+                Good afternoon, <span class="text-primary">@User.Identity?.Name</span> 📚
+            </h1>
+            <p class="text-white/50 text-lg">Here is your librarian operational overview.</p>
+        </div>
+        <div class="text-right">
+            <p class="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">System Status</p>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                All Systems Operational
+            </div>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <div class="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-primary/40 transition-all shadow-xl shadow-black/20">
-            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
-            <div class="flex items-center gap-4 mb-4">
-                <div class="p-3 bg-primary/20 rounded-2xl text-primary">
-                    <span class="material-symbols-outlined text-3xl">library_books</span>
-                </div>
-                <div>
-                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Total Books</p>
-                    <h3 class="text-3xl font-black text-white">@(((int?)ViewBag.TotalBooks ?? 0).ToString("N0"))</h3>
-                </div>
-            </div>
-            <div class="text-[10px] text-primary/70 font-bold bg-primary/5 w-fit px-2 py-0.5 rounded border border-primary/20">
-                Available for lending
-            </div>
-        </div>
+    <div class="grid grid-cols-1 gap-8 mb-12">
+        <div class="bg-black/20 border border-white/10 p-8 rounded-[2rem] flex flex-col shadow-2xl relative overflow-hidden group">
+            <div class="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-        <div class="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-blue-500/40 transition-all shadow-xl shadow-black/20">
-            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
-            <div class="flex items-center gap-4 mb-4">
-                <div class="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
-                    <span class="material-symbols-outlined text-3xl">compare_arrows</span>
-                </div>
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
                 <div>
-                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Active Borrows</p>
-                    <h3 class="text-3xl font-black text-white">@(((int?)ViewBag.TotalActiveBorrows ?? 0).ToString("N0"))</h3>
-                </div>
-            </div>
-            <div class="text-[10px] text-blue-400/70 font-bold bg-blue-500/5 w-fit px-2 py-0.5 rounded border border-blue-500/20">
-                Open sessions
-            </div>
-        </div>
-
-        <div class="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-red-500/40 transition-all shadow-xl shadow-black/20">
-            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all"></div>
-            <div class="flex items-center gap-4 mb-4">
-                <div class="p-3 bg-red-500/20 rounded-2xl text-red-500">
-                    <span class="material-symbols-outlined text-3xl">warning</span>
-                </div>
-                <div>
-                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Overdue</p>
-                    <h3 class="text-3xl font-black text-white">@(((int?)ViewBag.OverdueBooksCount ?? 0).ToString("N0"))</h3>
-                </div>
-            </div>
-            <div class="text-[10px] text-red-500/70 font-bold bg-red-500/5 w-fit px-2 py-0.5 rounded border border-red-500/20">
-                Needs processing
-            </div>
-        </div>
-
-        <div class="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-green-500/40 transition-all shadow-xl shadow-black/20">
-            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-green-500/10 rounded-full blur-2xl group-hover:bg-green-500/20 transition-all"></div>
-            <div class="flex items-center gap-4 mb-4">
-                <div class="p-3 bg-green-500/20 rounded-2xl text-green-400">
-                    <span class="material-symbols-outlined text-3xl">payments</span>
-                </div>
-                <div>
-                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Unpaid Fines</p>
-                    <h3 class="text-3xl font-black text-white">
-                        @(((decimal?)ViewBag.TotalUnpaidFines ?? 0).ToString("N0")) <span class="text-sm font-normal">đ</span>
+                    <h3 class="text-2xl font-black text-white flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary p-2 bg-primary/10 rounded-xl">auto_graph</span>
+                        Library Growth & Activity
                     </h3>
+                    <p class="text-white/40 text-sm mt-1">
+                        Monthly comparison of new member registrations and borrowing transactions.
+                    </p>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="flex flex-col items-end">
+                        <p class="text-[10px] font-bold text-white/30 uppercase tracking-widest">Active Transactions</p>
+                        <p class="text-xl font-black text-white">@(((int?)ViewBag.TotalTransactions ?? 0).ToString("N0"))</p>
+                    </div>
+                    <div class="w-px h-10 bg-white/10"></div>
+                    <div class="flex flex-col items-end">
+                        <p class="text-[10px] font-bold text-white/30 uppercase tracking-widest">Global Users</p>
+                        <p class="text-xl font-black text-white">@(((int?)ViewBag.TotalUsers ?? 0).ToString("N0"))</p>
+                    </div>
                 </div>
             </div>
-            <div class="text-[10px] text-green-400/70 font-bold bg-green-500/5 w-fit px-2 py-0.5 rounded border border-green-500/20">
-                Pending payments
+
+            <div class="flex-1 w-full h-[350px] relative">
+                <canvas id="performanceChart"></canvas>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-        <div class="lg:col-span-2 bg-black/20 border border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-2xl">
-            <div class="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">history</span>
-                    Recent Transactions
-                </h3>
-                <a asp-controller="Circulation" asp-action="Index" class="text-xs font-bold text-primary hover:underline">Details</a>
-            </div>
-            <div class="flex-1 overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-white/5 text-[10px] uppercase font-bold tracking-widest text-white/40">
-                        <tr>
-                            <th class="px-6 py-4">Borrower</th>
-                            <th class="px-6 py-4">Date</th>
-                            <th class="px-6 py-4">Due Date</th>
-                            <th class="px-6 py-4">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-white/5">
-                        @foreach (var tx in recentTransactions)
-                        {
-                            <tr class="hover:bg-white/[0.02] transition-colors group">
-                                <td class="px-6 py-5">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-primary font-bold text-sm">
-                                            @tx.User?.FullName?[0]
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-bold text-white group-hover:text-primary transition-colors">@tx.User?.FullName</p>
-                                            <p class="text-[10px] text-white/30 font-mono italic">ID: #@tx.UserId</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-5 text-sm text-white/60">@tx.BorrowDate.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td class="px-6 py-5 text-sm text-white/60">@tx.DueDate.ToString("dd/MM/yyyy")</td>
-                                <td class="px-6 py-5">
-                                    @{
-                                        var statusClass = tx.Status == "Returned"
-                                        ? "bg-green-500/10 text-green-400 border-green-500/20"
-                                        : tx.DueDate < DateTime.UtcNow
-                                        ? "bg-red-500/10 text-red-500 border-red-500/20 animate-pulse"
-                                        : "bg-blue-500/10 text-blue-400 border-blue-500/20";
-                                    }
-                                    <span class="px-2 py-1 rounded text-[10px] font-black uppercase border @statusClass">
-                                        @(tx.DueDate < DateTime.UtcNow && tx.Status != "Returned" ? "Overdue" : tx.Status)
-                                    </span>
-                                </td>
-                            </tr>
-                        }
-
-                        @if (!recentTransactions.Any())
-                        {
-                            <tr>
-                                <td colspan="4" class="px-6 py-8 text-center text-sm text-white/30">
-                                    No recent transactions.
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div class="lg:col-span-2 bg-black/20 border border-white/10 p-6 rounded-3xl flex flex-col shadow-2xl relative">
+            <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">published_with_changes</span>
+                Circulation: Borrows vs Returns
+            </h3>
+            <div class="flex-1 w-full h-[300px] relative">
+                <canvas id="borrowChart"></canvas>
             </div>
         </div>
 
-        <div class="flex flex-col gap-8">
-            <div class="bg-primary/10 border border-primary/20 p-8 rounded-3xl relative overflow-hidden">
-                <h3 class="text-xl font-black text-primary mb-6 flex items-center">Quick Actions</h3>
-                <div class="flex flex-col gap-3">
-                    <a asp-controller="Circulation" asp-action="Borrow" class="flex items-center gap-4 bg-primary text-background-dark p-4 rounded-2xl font-black hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20">
-                        <span class="material-symbols-outlined">add_circle</span>
-                        New Loan
-                    </a>
-                    <a asp-controller="Inventory" asp-action="Index" class="flex items-center gap-4 bg-white/5 text-white p-4 rounded-2xl font-bold hover:bg-white/10 active:scale-95 transition-all border border-white/10">
-                        <span class="material-symbols-outlined text-primary">barcode_reader</span>
-                        Check Inventory
-                    </a>
-                </div>
+        <div class="bg-black/20 border border-white/10 p-6 rounded-3xl flex flex-col shadow-2xl relative">
+            <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">donut_large</span>
+                Books by Category
+            </h3>
+            <div class="flex-1 w-full h-[300px] relative flex justify-center items-center">
+                <canvas id="categoryChart"></canvas>
             </div>
+        </div>
 
-            <div class="bg-white/5 border border-white/10 p-6 rounded-3xl flex flex-col shadow-2xl">
-                <h3 class="text-sm font-bold text-white/60 uppercase tracking-widest mb-6 flex items-center justify-between">
-                    Top Debtors
-                    <span class="material-symbols-outlined text-red-500">priority_high</span>
+        <div class="bg-black/20 border border-white/10 p-6 rounded-3xl flex flex-col shadow-2xl relative">
+            <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">analytics</span>
+                Book Status Distribution
+            </h3>
+            <div class="flex-1 w-full h-[300px] relative flex justify-center items-center">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <div class="bg-white/5 border border-white/10 rounded-3xl flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-6 border-b border-white/5 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">person_add</span>
+                    Newest Registrations
                 </h3>
-                <div class="flex flex-col gap-5">
-                    @foreach (var debtor in topDebtors)
+            </div>
+            <div class="p-6 flex-1">
+                <div class="flex flex-col gap-4">
+                    @foreach (var u in recentUsers)
                     {
-                        <div class="flex items-center gap-4 group cursor-pointer" onclick="window.location.href='/Payment/Details?userId=@debtor.UserId'">
-                            <div class="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 font-bold shadow-lg group-hover:bg-red-500 group-hover:text-background-dark transition-all">
-                                @debtor.FullName?[0]
+                        <div class="flex items-center gap-4 group">
+                            <div class="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-bold text-sm shadow-inner group-hover:bg-primary/20 group-hover:text-primary transition-all">
+                                @(u.FullName?[0].ToString() ?? "?")
                             </div>
-                            <div class="min-w-0">
-                                <h4 class="text-xs font-bold text-white truncate group-hover:text-primary transition-colors">@debtor.FullName</h4>
-                                <p class="text-[9px] text-white/30 font-mono italic truncate">@debtor.Email</p>
-                                <div class="mt-1 flex items-center gap-2">
-                                    <span class="text-[10px] font-black text-red-400">@debtor.TotalUnpaidFine.ToString("N0") đ</span>
-                                    <span class="text-[8px] text-white/20">•</span>
-                                    <span class="text-[9px] text-white/40">@debtor.UnpaidBookCount books owed</span>
-                                </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white group-hover:text-primary transition-colors">@u.FullName</h4>
+                                <p class="text-[10px] text-white/40 font-mono">@u.Email</p>
+                            </div>
+                            <div class="ml-auto text-right">
+                                <p class="text-[10px] font-bold text-white/60">@u.CreatedAt.ToString("MMM dd")</p>
+                                <p class="text-[9px] text-white/30 uppercase">Joined</p>
                             </div>
                         </div>
                     }
 
-                    @if (!topDebtors.Any())
+                    @if (!recentUsers.Any())
                     {
-                        <p class="text-xs text-white/20 text-center py-4">No unpaid fines.</p>
+                        <p class="text-sm text-white/30 text-center italic py-4">No users found.</p>
                     }
                 </div>
-                <a asp-controller="Payment" asp-action="Index" class="mt-8 text-[10px] font-black text-center text-primary uppercase tracking-[0.2em] hover:tracking-[0.3em] transition-all">
-                    Manage Fees & Fines
-                </a>
+            </div>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-3xl flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-6 border-b border-white/5 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">receipt_long</span>
+                    Recent Fine Settlements
+                </h3>
+            </div>
+            <div class="p-6 flex-1">
+                <div class="flex flex-col gap-4">
+                    @foreach (var p in recentPayments)
+                    {
+                        <div class="flex items-center gap-4 group">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner group-hover:bg-emerald-500 group-hover:text-background-dark transition-all">
+                                <span class="material-symbols-outlined text-[18px]">payments</span>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">@p.Amount.ToString("N0") đ</h4>
+                                <p class="text-[10px] text-white/40 font-mono">@p.UserFullName</p>
+                            </div>
+                            <div class="ml-auto text-right">
+                                <p class="text-[10px] font-bold text-white/60">@(p.PaidAt?.ToString("MMM dd") ?? p.CreatedAt.ToString("MMM dd"))</p>
+                                <span class="text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                    Paid
+                                </span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!recentPayments.Any())
+                    {
+                        <p class="text-sm text-white/30 text-center italic py-4">No recent payments.</p>
+                    }
+                </div>
             </div>
         </div>
 
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            Chart.defaults.color = 'rgba(255, 255, 255, 0.4)';
+            Chart.defaults.font.family = "'Inter', sans-serif";
+
+            const perfLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyLabels));
+            const borrowActivityData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyBorrows));
+            const userData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyRegistrations));
+
+            const ctxPerf = document.getElementById('performanceChart').getContext('2d');
+
+            new Chart(ctxPerf, {
+                type: 'bar',
+                data: {
+                    labels: perfLabels,
+                    datasets: [
+                        {
+                            label: 'New Members',
+                            data: userData,
+                            backgroundColor: 'rgba(234, 179, 8, 0.4)',
+                            borderColor: '#eab308',
+                            borderWidth: 2,
+                            borderRadius: 12,
+                            yAxisID: 'yUsers',
+                        },
+                        {
+                            label: 'Borrowing Activity',
+                            data: borrowActivityData,
+                            type: 'line',
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'transparent',
+                            borderWidth: 4,
+                            pointBackgroundColor: '#3b82f6',
+                            pointRadius: 6,
+                            tension: 0.4,
+                            yAxisID: 'yActivity',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', align: 'end' },
+                        tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12 }
+                    },
+                    scales: {
+                        yActivity: {
+                            type: 'linear',
+                            position: 'left',
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { precision: 0 }
+                        },
+                        yUsers: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { display: false },
+                            ticks: { precision: 0 }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            const circLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyLabels));
+            const circBorrowData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyBorrows));
+            const circReturnData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyReturns));
+
+            const ctxCirc = document.getElementById('borrowChart').getContext('2d');
+
+            new Chart(ctxCirc, {
+                type: 'line',
+                data: {
+                    labels: circLabels,
+                    datasets: [
+                        {
+                            label: 'Borrows',
+                            data: circBorrowData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'Returns',
+                            data: circReturnData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', align: 'end' }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { precision: 0 }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            const catLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categoryLabels));
+            const catData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categoryCounts));
+
+            const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+
+            const dynamicColors = [
+                '#eab308',
+                '#3b82f6',
+                '#10b981',
+                '#a855f7',
+                '#ec4899',
+                '#f97316',
+                '#14b8a6',
+                '#64748b'
+            ];
+
+            new Chart(ctxCategory, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catData,
+                        backgroundColor: dynamicColors,
+                        borderWidth: 2,
+                        borderColor: '#1e293b',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                        }
+                    }
+                }
+            });
+
+            const statusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(bookStatusLabels));
+            const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(bookStatusCounts));
+
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+
+            const statusColors = [
+                '#10b981',
+                '#3b82f6',
+                '#f59e0b',
+                '#f43f5e',
+                '#ef4444'
+            ];
+
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusData,
+                        backgroundColor: statusColors.slice(0, statusLabels.length),
+                        borderWidth: 2,
+                        borderColor: '#1e293b',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                        }
+                    }
+                }
+            });
+
+        });
+    </script>
+}

@@ -6,6 +6,8 @@ using LibraryManagement.Client.Models;
 using LibraryManagement.Client.DTO.Auth;
 using LibraryManagementDAL.DTO.Dashboard;
 using LibraryManagementDAL.Models;
+using LibraryManagement.Client.DTO.Admin;
+using LibraryManagementDAL.DTO.Pagination;
 
 namespace LibraryManagement.Client.Controllers;
 
@@ -63,7 +65,7 @@ public class HomeController : Controller
         }
     }
 
-    public IActionResult Dashboard()
+    public async Task<IActionResult> Dashboard()
     {
         var token = HttpContext.Session.GetString("AccessToken");
 
@@ -72,6 +74,7 @@ public class HomeController : Controller
             return RedirectToAction("Login", "Auth");
         }
 
+        await LoadAdminDashboardStatsAsync();
         return View();
     }
 
@@ -90,7 +93,59 @@ public class HomeController : Controller
         }
 
         await LoadAdminDashboardStatsAsync();
+        await LoadRecentAuditLogsAsync();
+        await LoadLibraryPolicySettingsAsync();
         return View();
+    }
+
+    private async Task LoadRecentAuditLogsAsync()
+    {
+        var baseUrl = configuration["ApiSettings:BaseUrl"];
+        if (!string.IsNullOrWhiteSpace(baseUrl))
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient();
+                var result = await client.GetFromJsonAsync<PaginationResponseModel<AuditLogItemDto>>(
+                    $"{baseUrl.TrimEnd('/')}/api/auditlogs?pageSize=5")
+                    ?? new PaginationResponseModel<AuditLogItemDto>();
+                ViewBag.RecentAuditLogs = result.Items ?? new List<AuditLogItemDto>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not load recent audit logs for admin dashboard.");
+                ViewBag.RecentAuditLogs = new List<AuditLogItemDto>();
+            }
+        }
+        else
+        {
+            ViewBag.RecentAuditLogs = new List<AuditLogItemDto>();
+        }
+    }
+
+    private async Task LoadLibraryPolicySettingsAsync()
+    {
+        var baseUrl = configuration["ApiSettings:BaseUrl"];
+        if (!string.IsNullOrWhiteSpace(baseUrl))
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient();
+                var policy = await client.GetFromJsonAsync<LibraryPolicySettingsDto>(
+                    $"{baseUrl.TrimEnd('/')}/api/settings/policy")
+                    ?? new LibraryPolicySettingsDto();
+                ViewBag.LibraryPolicy = policy;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not load library settings for admin dashboard.");
+                ViewBag.LibraryPolicy = new LibraryPolicySettingsDto();
+            }
+        }
+        else
+        {
+            ViewBag.LibraryPolicy = new LibraryPolicySettingsDto();
+        }
     }
 
     public IActionResult Privacy()
@@ -145,6 +200,8 @@ public class HomeController : Controller
         ViewBag.BookStatusCounts = stats.BookStatusStats.Select(x => x.Count).ToList();
         ViewBag.RecentUsers = stats.RecentUsers;
         ViewBag.RecentPayments = stats.RecentPayments;
+        ViewBag.RecentTransactions = stats.RecentTransactions;
+        ViewBag.TopDebtors = stats.TopDebtors;
     }
 
 }

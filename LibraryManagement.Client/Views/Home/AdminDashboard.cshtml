@@ -1,21 +1,15 @@
 @using LibraryManagementDAL.DTO.Dashboard
+@using LibraryManagement.Client.DTO.Admin
 @{
-    ViewData["Title"] = "AdminDashboard";
+    ViewData["Title"] = "System Administration Panel";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
 
     var recentUsers = ViewBag.RecentUsers as List<DashboardUserItem> ?? new List<DashboardUserItem>();
-    var recentPayments = ViewBag.RecentPayments as List<DashboardPaymentItem> ?? new List<DashboardPaymentItem>();
+    var recentAuditLogs = ViewBag.RecentAuditLogs as List<AuditLogItemDto> ?? new List<AuditLogItemDto>();
+    var policy = ViewBag.LibraryPolicy as LibraryPolicySettingsDto ?? new LibraryPolicySettingsDto();
 
     var monthlyLabels = ViewBag.MonthlyLabels as List<string> ?? new List<string>();
-    var monthlyBorrows = ViewBag.MonthlyBorrows as List<int> ?? new List<int>();
-    var monthlyReturns = ViewBag.MonthlyReturns as List<int> ?? new List<int>();
     var monthlyRegistrations = ViewBag.MonthlyRegistrations as List<int> ?? new List<int>();
-
-    var categoryLabels = ViewBag.CategoryLabels as List<string> ?? new List<string>();
-    var categoryCounts = ViewBag.CategoryCounts as List<int> ?? new List<int>();
-
-    var bookStatusLabels = ViewBag.BookStatusLabels as List<string> ?? new List<string>();
-    var bookStatusCounts = ViewBag.BookStatusCounts as List<int> ?? new List<int>();
 }
 
 <div class="flex-1 p-8 min-w-0 overflow-y-auto custom-scrollbar">
@@ -32,7 +26,7 @@
             <h1 class="text-4xl font-extrabold text-white tracking-tight mb-2">
                 Good afternoon, <span class="text-primary">@User.Identity?.Name</span> 👑
             </h1>
-            <p class="text-white/50 text-lg">Here is your high-level system overview.</p>
+            <p class="text-white/50 text-lg">System Administration Control Panel</p>
         </div>
         <div class="text-right">
             <p class="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">System Status</p>
@@ -43,81 +37,217 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-8 mb-12">
-        <div class="bg-black/20 border border-white/10 p-8 rounded-[2rem] flex flex-col shadow-2xl relative overflow-hidden group">
-            <div class="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
-
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div class="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-primary/40 transition-all shadow-xl shadow-black/20">
+            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
+            <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 bg-primary/20 rounded-2xl text-primary">
+                    <span class="material-symbols-outlined text-3xl">group</span>
+                </div>
                 <div>
-                    <h3 class="text-2xl font-black text-white flex items-center gap-3">
-                        <span class="material-symbols-outlined text-primary p-2 bg-primary/10 rounded-xl">auto_graph</span>
-                        Library Growth & Activity
+                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Global Users</p>
+                    <h3 class="text-3xl font-black text-white">@(((int?)ViewBag.TotalUsers ?? 0).ToString("N0"))</h3>
+                </div>
+            </div>
+            <a asp-controller="User" asp-action="AllUsers" class="text-[10px] text-primary/70 font-bold bg-primary/5 w-fit px-2 py-0.5 rounded border border-primary/20 hover:bg-primary/15 transition-all block">
+                Manage System Users &rarr;
+            </a>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-blue-500/40 transition-all shadow-xl shadow-black/20">
+            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+            <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
+                    <span class="material-symbols-outlined text-3xl">compare_arrows</span>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Transactions</p>
+                    <h3 class="text-3xl font-black text-white">@(((int?)ViewBag.TotalTransactions ?? 0).ToString("N0"))</h3>
+                </div>
+            </div>
+            <a asp-controller="Reports" asp-action="Index" class="text-[10px] text-blue-400/70 font-bold bg-blue-500/5 w-fit px-2 py-0.5 rounded border border-blue-500/20 hover:bg-blue-500/15 transition-all block">
+                View Reports &rarr;
+            </a>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-purple-500/40 transition-all shadow-xl shadow-black/20">
+            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
+            <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 bg-purple-500/20 rounded-2xl text-purple-400">
+                    <span class="material-symbols-outlined text-3xl">auto_stories</span>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Library Book Catalog</p>
+                    <h3 class="text-3xl font-black text-white">@(((int?)ViewBag.TotalBooks ?? 0).ToString("N0"))</h3>
+                </div>
+            </div>
+            <div class="text-[10px] text-purple-400/70 font-bold bg-purple-500/5 w-fit px-2 py-0.5 rounded border border-purple-500/20">
+                Managed by Librarians
+            </div>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-green-500/40 transition-all shadow-xl shadow-black/20">
+            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-green-500/10 rounded-full blur-2xl group-hover:bg-green-500/20 transition-all"></div>
+            <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 bg-green-500/20 rounded-2xl text-green-400">
+                    <span class="material-symbols-outlined text-3xl">payments</span>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Total Unpaid Fines</p>
+                    <h3 class="text-3xl font-black text-white">@(((decimal?)ViewBag.TotalUnpaidFines ?? 0).ToString("N0")) đ</h3>
+                </div>
+            </div>
+            <div class="text-[10px] text-green-400/70 font-bold bg-green-500/5 w-fit px-2 py-0.5 rounded border border-green-500/20">
+                Fines Overview
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Panel -->
+    <div class="bg-white/5 border border-white/10 p-8 rounded-3xl relative overflow-hidden mb-12 shadow-2xl">
+        <h3 class="text-xl font-black text-primary mb-6 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">terminal</span>
+            System Actions & Management
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <a asp-controller="User" asp-action="AllUsers" class="flex flex-col items-center justify-center p-6 bg-white/5 hover:bg-primary hover:text-background-dark border border-white/10 rounded-2xl transition-all text-center group">
+                <span class="material-symbols-outlined text-3xl text-primary group-hover:text-background-dark mb-2">person_add</span>
+                <span class="font-bold text-sm">Manage Users</span>
+            </a>
+            <a asp-controller="Reports" asp-action="Index" class="flex flex-col items-center justify-center p-6 bg-white/5 hover:bg-blue-500 hover:text-background-dark border border-white/10 rounded-2xl transition-all text-center group">
+                <span class="material-symbols-outlined text-3xl text-blue-400 group-hover:text-background-dark mb-2">summarize</span>
+                <span class="font-bold text-sm">Advanced Reports</span>
+            </a>
+            <a asp-controller="Audit" asp-action="Index" class="flex flex-col items-center justify-center p-6 bg-white/5 hover:bg-amber-500 hover:text-background-dark border border-white/10 rounded-2xl transition-all text-center group">
+                <span class="material-symbols-outlined text-3xl text-amber-400 group-hover:text-background-dark mb-2">manage_search</span>
+                <span class="font-bold text-sm">Security Audit Logs</span>
+            </a>
+            <a asp-controller="SystemSettings" asp-action="Index" class="flex flex-col items-center justify-center p-6 bg-white/5 hover:bg-purple-500 hover:text-background-dark border border-white/10 rounded-2xl transition-all text-center group">
+                <span class="material-symbols-outlined text-3xl text-purple-400 group-hover:text-background-dark mb-2">settings</span>
+                <span class="font-bold text-sm">System Settings</span>
+            </a>
+            <form asp-controller="SystemSettings" asp-action="RunDueReminders" method="post" class="h-full">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="w-full h-full flex flex-col items-center justify-center p-6 bg-white/5 hover:bg-emerald-500 hover:text-background-dark border border-white/10 rounded-2xl transition-all text-center group">
+                    <span class="material-symbols-outlined text-3xl text-emerald-400 group-hover:text-background-dark mb-2">notifications_active</span>
+                    <span class="font-bold text-sm">Trigger Reminders</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left Content (Recent Audit Logs) -->
+        <div class="lg:col-span-2 flex flex-col gap-8">
+            <div class="bg-black/20 border border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-2xl">
+                <div class="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">security</span>
+                        Recent Audit Logs (Latest Activity)
                     </h3>
-                    <p class="text-white/40 text-sm mt-1">
-                        Monthly comparison of new member registrations and borrowing transactions.
-                    </p>
+                    <a asp-controller="Audit" asp-action="Index" class="text-xs font-bold text-primary hover:underline">Full Log &rarr;</a>
                 </div>
-                <div class="flex items-center gap-6">
-                    <div class="flex flex-col items-end">
-                        <p class="text-[10px] font-bold text-white/30 uppercase tracking-widest">Active Transactions</p>
-                        <p class="text-xl font-black text-white">@(((int?)ViewBag.TotalTransactions ?? 0).ToString("N0"))</p>
-                    </div>
-                    <div class="w-px h-10 bg-white/10"></div>
-                    <div class="flex flex-col items-end">
-                        <p class="text-[10px] font-bold text-white/30 uppercase tracking-widest">Global Users</p>
-                        <p class="text-xl font-black text-white">@(((int?)ViewBag.TotalUsers ?? 0).ToString("N0"))</p>
-                    </div>
+                <div class="flex-1 overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-[10px] uppercase font-bold tracking-widest text-white/40">
+                            <tr>
+                                <th class="px-6 py-4">Timestamp</th>
+                                <th class="px-6 py-4">Actor</th>
+                                <th class="px-6 py-4">Action</th>
+                                <th class="px-6 py-4">Entity</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            @foreach (var log in recentAuditLogs)
+                            {
+                                <tr class="hover:bg-white/[0.02] transition-colors group">
+                                    <td class="px-6 py-4 text-xs font-mono text-white/60">@log.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                    <td class="px-6 py-4 text-xs">
+                                        <div class="font-bold text-white">@log.ActorName</div>
+                                        <span class="px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-bold rounded-md border border-primary/20">@log.ActorRole</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-xs text-white/80 font-semibold truncate max-w-[200px]" title="@log.Summary">
+                                        @log.Action
+                                    </td>
+                                    <td class="px-6 py-4 text-xs text-white/40">@log.EntityName (@log.EntityId)</td>
+                                </tr>
+                            }
+                            @if (!recentAuditLogs.Any())
+                            {
+                                <tr>
+                                    <td colspan="4" class="px-6 py-8 text-center text-sm text-white/30 italic">No recent system logs.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="flex-1 w-full h-[350px] relative">
-                <canvas id="performanceChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-        <div class="lg:col-span-2 bg-black/20 border border-white/10 p-6 rounded-3xl flex flex-col shadow-2xl relative">
-            <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary">published_with_changes</span>
-                Circulation: Borrows vs Returns
-            </h3>
-            <div class="flex-1 w-full h-[300px] relative">
-                <canvas id="borrowChart"></canvas>
-            </div>
-        </div>
-
-        <div class="bg-black/20 border border-white/10 p-6 rounded-3xl flex flex-col shadow-2xl relative">
-            <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary">donut_large</span>
-                Books by Category
-            </h3>
-            <div class="flex-1 w-full h-[300px] relative flex justify-center items-center">
-                <canvas id="categoryChart"></canvas>
-            </div>
-        </div>
-
-        <div class="bg-black/20 border border-white/10 p-6 rounded-3xl flex flex-col shadow-2xl relative">
-            <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary">analytics</span>
-                Book Status Distribution
-            </h3>
-            <div class="flex-1 w-full h-[300px] relative flex justify-center items-center">
-                <canvas id="statusChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-        <div class="bg-white/5 border border-white/10 rounded-3xl flex flex-col shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-white/5 flex items-center justify-between">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">person_add</span>
-                    Newest Registrations
+            <!-- System Growth Chart -->
+            <div class="bg-black/20 border border-white/10 p-6 rounded-3xl flex flex-col shadow-2xl relative">
+                <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">trending_up</span>
+                    Monthly User Registrations Trend
                 </h3>
+                <div class="flex-1 w-full h-[250px] relative">
+                    <canvas id="growthChart"></canvas>
+                </div>
             </div>
-            <div class="p-6 flex-1">
+        </div>
+
+        <!-- Right Content (Registrations + Active Policies) -->
+        <div class="flex flex-col gap-8">
+            
+            <!-- System Policy Overview -->
+            <div class="bg-black/20 border border-white/10 p-6 rounded-3xl flex flex-col shadow-2xl">
+                <h3 class="text-sm font-bold text-white/60 uppercase tracking-widest mb-6 flex items-center justify-between">
+                    System Policy Settings
+                    <span class="material-symbols-outlined text-primary">policy</span>
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center py-2 border-b border-white/5">
+                        <span class="text-xs text-white/55">Default Loan Days</span>
+                        <span class="text-xs font-bold text-white bg-white/5 px-2.5 py-1 rounded-lg">@policy.DefaultLoanDays Days</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-white/5">
+                        <span class="text-xs text-white/55">Renew Duration</span>
+                        <span class="text-xs font-bold text-white bg-white/5 px-2.5 py-1 rounded-lg">@policy.RenewDays Days</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-white/5">
+                        <span class="text-xs text-white/55">Reservation Hold Duration</span>
+                        <span class="text-xs font-bold text-white bg-white/5 px-2.5 py-1 rounded-lg">@policy.ReservationHoldDays Days</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-white/5">
+                        <span class="text-xs text-white/55">Max Borrowed Books Limit</span>
+                        <span class="text-xs font-bold text-white bg-white/5 px-2.5 py-1 rounded-lg">@policy.MaxOpenBorrowedBooks Books</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-white/5">
+                        <span class="text-xs text-white/55">Overdue Fine Per Day</span>
+                        <span class="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">@policy.OverdueFinePerDay.ToString("N0") đ</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-white/5">
+                        <span class="text-xs text-white/55">Damaged Book Fine</span>
+                        <span class="text-xs font-bold text-red-400 bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20">@policy.DamagedFine.ToString("N0") đ</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-xs text-white/55">Lost Book Fine</span>
+                        <span class="text-xs font-bold text-red-500 bg-red-500/20 px-2.5 py-1 rounded-lg border border-red-500/30">@policy.LostFine.ToString("N0") đ</span>
+                    </div>
+                </div>
+                <a asp-controller="SystemSettings" asp-action="Index" class="mt-6 text-[10px] font-black text-center text-primary uppercase tracking-[0.2em] hover:tracking-[0.3em] transition-all block">
+                    Modify Policies
+                </a>
+            </div>
+
+            <!-- Newest Registrations -->
+            <div class="bg-white/5 border border-white/10 rounded-3xl flex flex-col shadow-2xl overflow-hidden p-6">
+                <h3 class="text-sm font-bold text-white/60 uppercase tracking-widest mb-6 flex items-center justify-between">
+                    New Members (Users)
+                    <span class="material-symbols-outlined text-primary">person_add</span>
+                </h3>
                 <div class="flex flex-col gap-4">
                     @foreach (var u in recentUsers)
                     {
@@ -126,58 +256,26 @@
                                 @(u.FullName?[0].ToString() ?? "?")
                             </div>
                             <div>
-                                <h4 class="text-sm font-bold text-white group-hover:text-primary transition-colors">@u.FullName</h4>
-                                <p class="text-[10px] text-white/40 font-mono">@u.Email</p>
+                                <h4 class="text-xs font-bold text-white group-hover:text-primary transition-colors">@u.FullName</h4>
+                                <p class="text-[9px] text-white/40 font-mono truncate max-w-[120px]">@u.Email</p>
                             </div>
                             <div class="ml-auto text-right">
-                                <p class="text-[10px] font-bold text-white/60">@u.CreatedAt.ToString("MMM dd")</p>
-                                <p class="text-[9px] text-white/30 uppercase">Joined</p>
+                                <p class="text-[9px] font-bold text-white/60">@u.CreatedAt.ToString("MMM dd")</p>
+                                <span class="text-[8px] px-1 py-0.25 bg-white/5 border border-white/10 text-white/55 rounded uppercase tracking-wider">User</span>
                             </div>
                         </div>
                     }
 
                     @if (!recentUsers.Any())
                     {
-                        <p class="text-sm text-white/30 text-center italic py-4">No users found.</p>
+                        <p class="text-xs text-white/30 text-center italic py-4">No users found.</p>
                     }
                 </div>
+                <a asp-controller="User" asp-action="AllUsers" class="mt-6 text-[10px] font-black text-center text-primary uppercase tracking-[0.2em] hover:tracking-[0.3em] transition-all block">
+                    Manage Users
+                </a>
             </div>
-        </div>
 
-        <div class="bg-white/5 border border-white/10 rounded-3xl flex flex-col shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-white/5 flex items-center justify-between">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">receipt_long</span>
-                    Recent Fine Settlements
-                </h3>
-            </div>
-            <div class="p-6 flex-1">
-                <div class="flex flex-col gap-4">
-                    @foreach (var p in recentPayments)
-                    {
-                        <div class="flex items-center gap-4 group">
-                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner group-hover:bg-emerald-500 group-hover:text-background-dark transition-all">
-                                <span class="material-symbols-outlined text-[18px]">payments</span>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">@p.Amount.ToString("N0") đ</h4>
-                                <p class="text-[10px] text-white/40 font-mono">@p.UserFullName</p>
-                            </div>
-                            <div class="ml-auto text-right">
-                                <p class="text-[10px] font-bold text-white/60">@(p.PaidAt?.ToString("MMM dd") ?? p.CreatedAt.ToString("MMM dd"))</p>
-                                <span class="text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                                    Paid
-                                </span>
-                            </div>
-                        </div>
-                    }
-
-                    @if (!recentPayments.Any())
-                    {
-                        <p class="text-sm text-white/30 text-center italic py-4">No recent payments.</p>
-                    }
-                </div>
-            </div>
         </div>
 
     </div>
@@ -187,41 +285,29 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-
             Chart.defaults.color = 'rgba(255, 255, 255, 0.4)';
             Chart.defaults.font.family = "'Inter', sans-serif";
 
             const perfLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyLabels));
-            const borrowActivityData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyBorrows));
-            const userData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyRegistrations));
+            const registrationData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyRegistrations));
 
-            const ctxPerf = document.getElementById('performanceChart').getContext('2d');
+            const ctxGrowth = document.getElementById('growthChart').getContext('2d');
 
-            new Chart(ctxPerf, {
-                type: 'bar',
+            new Chart(ctxGrowth, {
+                type: 'line',
                 data: {
                     labels: perfLabels,
                     datasets: [
                         {
-                            label: 'New Members',
-                            data: userData,
-                            backgroundColor: 'rgba(234, 179, 8, 0.4)',
+                            label: 'New Member Registrations',
+                            data: registrationData,
                             borderColor: '#eab308',
-                            borderWidth: 2,
-                            borderRadius: 12,
-                            yAxisID: 'yUsers',
-                        },
-                        {
-                            label: 'Borrowing Activity',
-                            data: borrowActivityData,
-                            type: 'line',
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'transparent',
-                            borderWidth: 4,
-                            pointBackgroundColor: '#3b82f6',
-                            pointRadius: 6,
+                            backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                            fill: true,
                             tension: 0.4,
-                            yAxisID: 'yActivity',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#eab308',
+                            pointRadius: 5
                         }
                     ]
                 },
@@ -231,65 +317,6 @@
                     plugins: {
                         legend: { position: 'top', align: 'end' },
                         tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12 }
-                    },
-                    scales: {
-                        yActivity: {
-                            type: 'linear',
-                            position: 'left',
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { precision: 0 }
-                        },
-                        yUsers: {
-                            type: 'linear',
-                            position: 'right',
-                            grid: { display: false },
-                            ticks: { precision: 0 }
-                        },
-                        x: {
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
-
-            const circLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyLabels));
-            const circBorrowData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyBorrows));
-            const circReturnData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(monthlyReturns));
-
-            const ctxCirc = document.getElementById('borrowChart').getContext('2d');
-
-            new Chart(ctxCirc, {
-                type: 'line',
-                data: {
-                    labels: circLabels,
-                    datasets: [
-                        {
-                            label: 'Borrows',
-                            data: circBorrowData,
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointRadius: 4
-                        },
-                        {
-                            label: 'Returns',
-                            data: circReturnData,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointRadius: 4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top', align: 'end' }
                     },
                     scales: {
                         y: {
@@ -302,104 +329,6 @@
                     }
                 }
             });
-
-            const catLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categoryLabels));
-            const catData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categoryCounts));
-
-            const ctxCategory = document.getElementById('categoryChart').getContext('2d');
-
-            const dynamicColors = [
-                '#eab308',
-                '#3b82f6',
-                '#10b981',
-                '#a855f7',
-                '#ec4899',
-                '#f97316',
-                '#14b8a6',
-                '#64748b'
-            ];
-
-            new Chart(ctxCategory, {
-                type: 'doughnut',
-                data: {
-                    labels: catLabels,
-                    datasets: [{
-                        data: catData,
-                        backgroundColor: dynamicColors,
-                        borderWidth: 2,
-                        borderColor: '#1e293b',
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            padding: 12,
-                            cornerRadius: 8,
-                        }
-                    }
-                }
-            });
-
-            const statusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(bookStatusLabels));
-            const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(bookStatusCounts));
-
-            const ctxStatus = document.getElementById('statusChart').getContext('2d');
-
-            const statusColors = [
-                '#10b981',
-                '#3b82f6',
-                '#f59e0b',
-                '#f43f5e',
-                '#ef4444'
-            ];
-
-            new Chart(ctxStatus, {
-                type: 'doughnut',
-                data: {
-                    labels: statusLabels,
-                    datasets: [{
-                        data: statusData,
-                        backgroundColor: statusColors.slice(0, statusLabels.length),
-                        borderWidth: 2,
-                        borderColor: '#1e293b',
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            padding: 12,
-                            cornerRadius: 8,
-                        }
-                    }
-                }
-            });
-
         });
     </script>
 }
