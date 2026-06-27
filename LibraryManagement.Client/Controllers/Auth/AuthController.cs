@@ -114,6 +114,10 @@ namespace LibraryManagement.Client.Controllers.Auth
             {
                 return RedirectToAction("AdminDashboard", "Home");
             }
+            if (loginResult.Roles.Contains("Librarian"))
+            {
+                return RedirectToAction("Dashboard", "Home");
+            }
 
             return RedirectToAction("Index", "Home");
         }
