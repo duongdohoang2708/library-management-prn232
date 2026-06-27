@@ -185,7 +185,7 @@
                 </div>
 
                 <!-- ACTION BUTTONS -->
-                <div class="mt-8 flex flex-col sm:flex-row gap-4">
+                <div class="mt-8 flex flex-col sm:flex-row gap-3 sm:items-stretch">
                     @if (isMember)
                     {
                         @if (isAuthenticated)
@@ -210,13 +210,20 @@
                             }
                             else if (canBorrowNow)
                             {
-                                <form asp-action="RequestReserve" asp-controller="UserAction" method="post" class="flex-1">
+                                <form asp-action="RequestReserve" asp-controller="UserAction" method="post" class="flex-1 min-w-0 flex">
                                     <input type="hidden" name="bookId" value="@Model.BookId" />
-                                    <button type="submit" class="w-full px-10 py-5 bg-primary text-background-dark font-black rounded-2xl hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+                                    <button type="submit" class="w-full h-14 px-6 bg-primary text-background-dark font-black rounded-2xl hover:bg-primary-hover shadow-xl shadow-primary/30 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
                                         <span class="material-symbols-outlined">event_note</span>
                                         <span>Reserve for Pickup</span>
                                     </button>
                                 </form>
+                                <button type="button"
+                                        id="addToCartBtn"
+                                        title="Add to Reading List"
+                                        onclick="addToCart(@Model.BookId, '@Html.Raw(Model.Title?.Replace("'", "\\'"))', '@Html.Raw(Model.Author?.Name?.Replace("'", "\\'") ?? "")', '@(Model.ImageUrl ?? "")')"
+                                        class="shrink-0 w-14 h-14 bg-white/5 hover:bg-white/10 text-white/70 rounded-2xl border border-white/5 transition-all active:scale-[0.98] flex items-center justify-center">
+                                    <span id="addToCartBtnIcon" class="material-symbols-outlined text-2xl">bookmark_add</span>
+                                </button>
                             }
                             else if (Model.IsActive)
                             {
@@ -256,7 +263,7 @@
                     }
 
                     <a asp-action="@(isMember ? "ViewBooks" : "AllBooks")" asp-controller="Books"
-                       class="px-10 py-5 bg-white/5 hover:bg-white/10 text-white/70 font-bold rounded-2xl border border-white/5 transition-all text-center flex items-center justify-center gap-2">
+                       class="shrink-0 h-14 px-6 bg-white/5 hover:bg-white/10 text-white/70 font-bold rounded-2xl border border-white/5 transition-all flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined">arrow_back</span>
                         Back
                     </a>
@@ -303,4 +310,52 @@
             });
         }
     </script>
+
+    <script>
+        // ---- Borrow Cart (localStorage) ----
+        const CART_KEY = "lms_borrow_cart";
+        function getCart() { try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch { return []; } }
+        function saveCart(c) { localStorage.setItem(CART_KEY, JSON.stringify(c)); }
+
+        function addToCart(id, title, author, image) {
+            const cart = getCart();
+            if (cart.some(b => b.id === id)) {
+                // Already in cart → go to cart
+                window.location.href = "/UserAction/BorrowCart";
+                return;
+            }
+            cart.push({ id, title, author, image });
+            saveCart(cart);
+            updateCartButton(true);
+            updateCartBadges();
+        }
+
+        function updateCartButton(inCart) {
+            const btn = document.getElementById("addToCartBtn");
+            const icon = document.getElementById("addToCartBtnIcon");
+            if (!btn || !icon) return;
+            if (inCart) {
+                btn.classList.remove("bg-white/5", "hover:bg-white/10", "text-white/70", "border-white/5");
+                btn.classList.add("bg-emerald-500/20", "border-emerald-500/30", "text-emerald-400");
+                btn.title = "In List – View List";
+                icon.textContent = "playlist_add_check";
+            }
+        }
+
+        function updateCartBadges() {
+            const count = getCart().length;
+            document.querySelectorAll(".cart-badge").forEach(el => {
+                el.textContent = count;
+                el.classList.toggle("hidden", count === 0);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const bookId = @Model.BookId;
+            const inCart = getCart().some(b => b.id === bookId);
+            if (inCart) updateCartButton(true);
+            updateCartBadges();
+        });
+    </script>
 }
+

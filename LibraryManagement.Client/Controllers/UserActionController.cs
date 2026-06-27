@@ -61,6 +61,60 @@ namespace LibraryManagement.Client.Controllers
             return RedirectToAction("Details", "Books", new { id = bookId });
         }
 
+        /// <summary>
+        /// Member views their borrow cart page.
+        /// GET /UserAction/BorrowCart
+        /// </summary>
+        [HttpGet]
+        [Authorize(Roles = "Member")]
+        public IActionResult BorrowCart()
+        {
+            return View();
+        }
+
+        /// <summary>
+        /// Member submits cart to self-checkout multiple books in one transaction.
+        /// POST /UserAction/CheckoutCart
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Member")]
+        public async Task<IActionResult> CheckoutCart([FromForm] List<int> bookIds)
+        {
+            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdText, out var userId))
+            {
+                return RedirectToAction("Login", "Auth");
+            }
+
+            if (bookIds == null || !bookIds.Any())
+            {
+                TempData["ErrorMessage"] = "Your reading list is empty. Please add books before reserving.";
+                return RedirectToAction(nameof(BorrowCart));
+            }
+
+            var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
+            var response = await client.PostAsJsonAsync(
+                $"{GetApiBaseUrl()}/api/circulation/member-borrow",
+                new MemberBorrowRequest
+                {
+                    UserId = userId,
+                    BookIds = bookIds
+                });
+
+            var result = await response.Content.ReadFromJsonAsync<CirculationActionResponse>();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                TempData["ErrorMessage"] = result?.Message ?? "Reservation failed. Please try again.";
+                return RedirectToAction(nameof(BorrowCart));
+            }
+
+            TempData["SuccessMessage"] = result?.Message ?? "Books reserved successfully!";
+            return RedirectToAction("BorrowHistory", "User");
+        }
+
 
 
         private string GetApiBaseUrl()

@@ -62,6 +62,15 @@
             </div>
         }
 
+        @if (isAuthenticated && User.IsInRole("Member"))
+        {
+            <!-- My Reading List Icon -->
+            <a href="/UserAction/BorrowCart" class="relative p-2 text-white/60 hover:text-primary transition-colors" title="My Reading List">
+                <span class="material-symbols-outlined">bookmarks</span>
+                <span class="cart-badge hidden absolute -top-1 -right-1 bg-primary text-xs text-white font-black rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-tight">0</span>
+            </a>
+        }
+
         @if (isAuthenticated)
         {
             <!-- USER INFO WITH DROPDOWN -->
@@ -158,6 +167,15 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        // Update cart badge from localStorage
+        try {
+            const cart = JSON.parse(localStorage.getItem("lms_borrow_cart")) || [];
+            document.querySelectorAll(".cart-badge").forEach(el => {
+                el.textContent = cart.length;
+                el.classList.toggle("hidden", cart.length === 0);
+            });
+        } catch (e) {}
+
         const btn = document.getElementById("notificationButton");
         const dropdown = document.getElementById("notificationDropdown");
         const badge = document.getElementById("notificationBadge");

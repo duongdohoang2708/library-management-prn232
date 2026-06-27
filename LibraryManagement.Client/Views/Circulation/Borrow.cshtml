@@ -25,7 +25,7 @@
                     <span class="material-symbols-outlined text-primary text-3xl">post_add</span>
                     Create New Loan
                 </h2>
-                <p class="text-sm text-white/40">Select reader and search for books. Maximum 5 books per transaction.</p>
+                <p class="text-sm text-white/40">Select reader and search for books to add to this loan.</p>
             </div>
 
             <div class="p-8 relative z-10 bg-black/10">
@@ -81,7 +81,7 @@
                                 <span class="material-symbols-outlined text-[18px] text-white/40">library_books</span>
                                 Selected Books
                             </label>
-                            <span id="selectedCount" class="text-[10px] uppercase font-bold tracking-wider text-primary/60 bg-primary/10 px-2 py-0.5 rounded border border-primary/20">0 / 5 books</span>
+                            <span id="selectedCount" class="text-[10px] uppercase font-bold tracking-wider text-primary/60 bg-primary/10 px-2 py-0.5 rounded border border-primary/20">0 books selected</span>
                         </div>
 
                         <!-- Selected books container -->
@@ -219,7 +219,7 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         const selectedBooks = new Map(); // barcode -> { title, author }
-        const MAX_BOOKS = 5;
+
 
         // User Search Logic
         const userSearchInput = document.getElementById('userSearchInput');
@@ -308,10 +308,7 @@
                 selectedBooks.delete(barcode);
                 cardEl.classList.remove('selected');
             } else {
-                if (selectedBooks.size >= MAX_BOOKS) {
-                    alert('You can only select a maximum of ' + MAX_BOOKS + ' books!');
-                    return;
-                }
+
                 selectedBooks.set(barcode, { title, author });
                 cardEl.classList.add('selected');
             }
@@ -332,7 +329,7 @@
             const emptyMsg = document.getElementById('emptyMessage');
             const submitBtn = document.getElementById('submitBtn');
 
-            countEl.textContent = `${selectedBooks.size} / ${MAX_BOOKS} books`;
+            countEl.textContent = `${selectedBooks.size} book${selectedBooks.size !== 1 ? 's' : ''} selected`;
             container.querySelectorAll('.selected-tag').forEach(el => el.remove());
             hiddenContainer.innerHTML = '';
 

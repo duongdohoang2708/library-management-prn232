@@ -109,18 +109,12 @@
                                                         }
                                                         else
                                                         {
-                                                            <form asp-action="Renew" method="post" class="inline">
-                                                                @Html.AntiForgeryToken()
-                                                                <input type="hidden" name="borrowDetailId" value="@detail.BorrowDetailId" />
-                                                                <input type="hidden" name="transactionId" value="@ViewBag.TransactionId" />
-                                                                <input type="hidden" name="extraDays" value="7" />
-                                                                <input type="hidden" name="redirectToAction" value="Return" />
-                                                                <button type="submit"
-                                                                        class="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-black hover:border-amber-550 transition-all"
-                                                                        title="Renew 7 days">
-                                                                    <span class="material-symbols-outlined text-sm">autorenew</span>
-                                                                </button>
-                                                            </form>
+                                                            <button type="button"
+                                                                    onclick="submitRenew('@detail.BorrowDetailId', '@ViewBag.TransactionId')"
+                                                                    class="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-black hover:border-amber-550 transition-all"
+                                                                    title="Renew 7 days">
+                                                                <span class="material-symbols-outlined text-sm">autorenew</span>
+                                                            </button>
                                                         }
 
                                                         <button type="button" 
@@ -197,6 +191,15 @@
         <input type="hidden" name="fineAmount" id="reportFineAmount" />
     </form>
 
+    <!-- Hidden form for Renew -->
+    <form id="renewForm" asp-action="Renew" method="post" style="display:none;">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="borrowDetailId" id="renewBorrowDetailId" />
+        <input type="hidden" name="transactionId" id="renewTransactionId" />
+        <input type="hidden" name="extraDays" value="7" />
+        <input type="hidden" name="redirectToAction" value="Return" />
+    </form>
+
     <script>
         function submitReport(borrowDetailId, status, fineAmount) {
             if (confirm('Bạn có chắc chắn muốn báo cáo sự cố này? Hành động này sẽ áp dụng phí phạt ngay lập tức.')) {
@@ -204,6 +207,14 @@
                 document.getElementById('reportStatus').value = status;
                 document.getElementById('reportFineAmount').value = fineAmount;
                 document.getElementById('reportIssueForm').submit();
+            }
+        }
+
+        function submitRenew(borrowDetailId, transactionId) {
+            if (confirm('Gia hạn sách này thêm 7 ngày?')) {
+                document.getElementById('renewBorrowDetailId').value = borrowDetailId;
+                document.getElementById('renewTransactionId').value = transactionId;
+                document.getElementById('renewForm').submit();
             }
         }
     </script>

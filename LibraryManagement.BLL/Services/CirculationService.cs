@@ -135,11 +135,6 @@ namespace LibraryManagement.BLL.Services
                 return Fail("Please select at least one book.");
             }
 
-            if (barcodes.Count > 5)
-            {
-                return Fail("A transaction can borrow at most 5 books.");
-            }
-
             var copies = await circulationRepository.GetCopiesByBarcodesAsync(barcodes);
             if (copies.Count != barcodes.Count)
             {
@@ -249,8 +244,115 @@ namespace LibraryManagement.BLL.Services
 
         public async Task<CirculationActionResponse> MemberBorrowNowAsync(MemberBorrowRequest request)
         {
-            return Fail("Direct online checkout is not supported. Please reserve the book instead.");
+            var user = await circulationRepository.GetAccountAsync(request.UserId);
+            if (user == null)
+            {
+                return Fail("Your account does not exist or is inactive.");
+            }
+
+            var bookIds = request.BookIds.Distinct().ToList();
+            if (!bookIds.Any())
+            {
+                return Fail("Please select at least one book.");
+            }
+
+            var policy = await systemSettingService.GetPolicyAsync();
+            var now = DateTime.UtcNow;
+
+            // Validate no overdue books
+            var overdueCount = await circulationRepository.CountOverdueBooksAsync(user.UserId, now);
+            if (overdueCount > 0)
+            {
+                return Fail($"You cannot borrow books because you have {overdueCount} overdue book(s) that must be returned first.");
+            }
+
+            // Validate no unpaid fines
+            var unpaidFines = await circulationRepository.GetTotalUnpaidFinesAsync(user.UserId);
+            if (unpaidFines > 0)
+            {
+                return Fail($"You cannot borrow books because you have unpaid fines of {unpaidFines:N0} đ. Please pay your fines first.");
+            }
+
+            // Validate max open borrowed books
+            var openBorrowedBooks = await circulationRepository.CountOpenBorrowedBooksAsync(user.UserId);
+            if (openBorrowedBooks + bookIds.Count > policy.MaxOpenBorrowedBooks)
+            {
+                return Fail($"You can borrow at most {policy.MaxOpenBorrowedBooks} books total. You currently have {openBorrowedBooks} borrowed.");
+            }
+
+            // Find available copies for each BookId
+            var copies = new List<BookCopy>();
+            foreach (var bookId in bookIds)
+            {
+                // Check not already borrowing this book
+                var isBorrowing = await circulationRepository.IsCurrentlyBorrowingBookAsync(user.UserId, bookId);
+                if (isBorrowing)
+                {
+                    return Fail($"You are already borrowing a copy of one of the selected books.");
+                }
+
+                var copy = await circulationRepository.GetFirstAvailableCopyByBookIdAsync(bookId);
+                if (copy == null)
+                {
+                    return Fail($"One of the selected books has no available copies. Please try again or reserve it instead.");
+                }
+                copies.Add(copy);
+            }
+
+            var dueDate = now.Date.AddDays(policy.DefaultLoanDays);
+
+            var transaction = new BorrowTransaction
+            {
+                UserId = user.UserId,
+                BorrowDate = now,
+                DueDate = dueDate,
+                Status = "Borrowing",
+                CreatedAt = now,
+                BorrowDetails = copies.Select(copy =>
+                {
+                    copy.Status = BookCopyStatus.Borrowed;
+                    copy.UpdatedAt = now;
+                    return new BorrowDetail
+                    {
+                        BookCopyId = copy.BookCopyId,
+                        BorrowDate = now,
+                        DueDate = dueDate,
+                        FineAmount = 0,
+                        FinePaidAmount = 0,
+                        IsFinePaid = true,
+                        CreatedAt = now
+                    };
+                }).ToList()
+            };
+
+            circulationRepository.AddTransaction(transaction);
+            await circulationRepository.SaveChangesAsync();
+            await auditLogService.LogAsync("MemberBorrowBooks", "BorrowTransaction", transaction.BorrowTransactionId.ToString(),
+                $"Member #{user.UserId} self-checked out {copies.Count} book(s).");
+
+            // Send notification
+            try
+            {
+                var bookTitles = string.Join(", ", copies.Select(x => $"\"{x.Book?.Title ?? "Unknown Book"}\""));
+                var dueDateStr = dueDate.ToLocalTime().ToString("dd/MM/yyyy");
+                await notificationService.CreateAsync(new NotificationRequest
+                {
+                    UserId = user.UserId,
+                    Title = "Books Checked Out",
+                    Message = $"You have borrowed: {bookTitles}. Please return by {dueDateStr}.",
+                    Type = "Borrow"
+                });
+            }
+            catch { }
+
+            return new CirculationActionResponse
+            {
+                IsSuccess = true,
+                Message = $"Successfully checked out {copies.Count} book(s). Due date: {dueDate.ToLocalTime():dd/MM/yyyy}.",
+                TransactionId = transaction.BorrowTransactionId
+            };
         }
+
 
         public async Task<ReturnDetailsResult?> GetReturnDetailsAsync(int transactionId)
         {

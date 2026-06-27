@@ -320,6 +320,22 @@
                                        class="mt-auto w-full py-2.5 border border-primary/40 text-primary hover:bg-primary hover:text-background-dark font-bold rounded-lg text-xs transition-all uppercase tracking-widest text-center">
                                         View Details
                                     </a>
+                                    @if (!isStaff && book.IsActive)
+                                    {
+                                        var hasAvailable = (book.BookCopies?.Any(c => c.Status == LibraryManagementDAL.Models.BookCopyStatus.Available)) ?? false;
+                                        if (hasAvailable)
+                                        {
+                                            <button type="button"
+                                                    data-book-id="@book.BookId"
+                                                    data-book-title="@book.Title"
+                                                    data-book-author="@(book.Author?.Name ?? "")"
+                                                    data-book-image="@(book.ImageUrl ?? "")"
+                                                    onclick="toggleCart(this)"
+                                                    class="cart-toggle-btn mt-2 w-full py-2 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-black font-bold rounded-lg text-xs transition-all uppercase tracking-widest text-center">
+                                                + Add to List
+                                            </button>
+                                        }
+                                    }
                                 </div>
                             </div>
                         }
@@ -406,6 +422,7 @@
                 });
                 
                 window.history.replaceState({}, '', `${form.action}?${params.toString()}`);
+                syncCartButtons();
             })
             .catch(error => {
                 console.error("Error fetching data:", error);
@@ -417,5 +434,47 @@
                 });
             });
         }
+
+        // ---- Borrow Cart ----
+        const CART_KEY = "lms_borrow_cart";
+        function getCart() { try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch { return []; } }
+        function saveCart(c) { localStorage.setItem(CART_KEY, JSON.stringify(c)); }
+
+        function toggleCart(btn) {
+            const id = parseInt(btn.dataset.bookId);
+            const cart = getCart();
+            const idx = cart.findIndex(b => b.id === id);
+            if (idx >= 0) {
+                cart.splice(idx, 1);
+                saveCart(cart);
+            } else {
+                cart.push({ id, title: btn.dataset.bookTitle, author: btn.dataset.bookAuthor, image: btn.dataset.bookImage });
+                saveCart(cart);
+            }
+            syncCartButtons();
+        }
+
+        function syncCartButtons() {
+            const cart = getCart();
+            const ids = new Set(cart.map(b => b.id));
+            document.querySelectorAll(".cart-toggle-btn").forEach(btn => {
+                const id = parseInt(btn.dataset.bookId);
+                if (ids.has(id)) {
+                    btn.textContent = "\u2713 In List";
+                    btn.classList.remove("border-emerald-500/30", "text-emerald-400", "hover:bg-emerald-500", "hover:text-black");
+                    btn.classList.add("bg-emerald-500/20", "border-emerald-500/40", "text-emerald-300");
+                } else {
+                    btn.textContent = "+ Add to List";
+                    btn.classList.add("border-emerald-500/30", "text-emerald-400", "hover:bg-emerald-500", "hover:text-black");
+                    btn.classList.remove("bg-emerald-500/20", "border-emerald-500/40", "text-emerald-300");
+                }
+            });
+            document.querySelectorAll(".cart-badge").forEach(el => {
+                el.textContent = cart.length;
+                el.classList.toggle("hidden", cart.length === 0);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", syncCartButtons);
     </script>
 }

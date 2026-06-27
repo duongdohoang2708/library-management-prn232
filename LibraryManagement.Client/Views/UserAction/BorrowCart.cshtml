@@ -1,0 +1,147 @@
+@{
+    ViewData["Title"] = "My Reading List";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="p-8">
+    <div class="max-w-3xl mx-auto">
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="mb-6 px-5 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-3">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span class="font-bold">@TempData["SuccessMessage"]</span>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="mb-6 px-5 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-3">
+                <span class="material-symbols-outlined">error</span>
+                <span class="font-bold">@TempData["ErrorMessage"]</span>
+            </div>
+        }
+
+        <div class="flex items-center gap-3 mb-8">
+            <a href="javascript:history.back()" class="flex items-center gap-2 text-white/40 hover:text-primary transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+                <span class="text-sm font-medium tracking-wide">Back</span>
+            </a>
+        </div>
+
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-4xl font-black text-white tracking-tight flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary text-4xl">bookmarks</span>
+                    My Reading List
+                </h1>
+                <p class="text-white/40 mt-1">Review your selected books and reserve them all at once.</p>
+            </div>
+            <span id="cartBadge" class="px-4 py-2 bg-primary/10 border border-primary/20 text-primary font-black rounded-2xl text-sm">0 books</span>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyCart" class="bg-white/5 border border-white/10 rounded-3xl p-20 text-center hidden">
+            <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span class="material-symbols-outlined text-4xl text-white/20">bookmarks</span>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Your reading list is empty</h3>
+            <p class="text-white/40 mb-8 max-w-sm mx-auto">Browse the library and add books to your reading list.</p>
+            <a href="/Books/AllBooks" class="inline-flex items-center gap-2 px-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:bg-primary-hover transition-all">
+                <span class="material-symbols-outlined">explore</span>
+                Explore Library
+            </a>
+        </div>
+
+        <!-- Cart Items -->
+        <div id="cartItems" class="space-y-4 hidden"></div>
+
+        <!-- Checkout Form -->
+        <form id="checkoutForm" asp-action="CheckoutCart" asp-controller="UserAction" method="post" class="hidden">
+            @Html.AntiForgeryToken()
+            <div id="hiddenBookIds"></div>
+            <div class="mt-8 bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-wrap items-center justify-between gap-6">
+                <div>
+                    <p class="text-[10px] text-white/30 font-black uppercase tracking-widest mb-1">Ready to reserve</p>
+                    <p class="text-white font-bold">All selected books will be reserved in <span class="text-primary">one transaction</span>.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="clearCart()"
+                            class="px-5 py-3 border border-white/10 bg-white/5 hover:bg-rose-500/10 hover:border-rose-500/20 hover:text-rose-400 text-white/60 font-bold rounded-xl transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+                        Clear
+                    </button>
+                    <button type="submit"
+                            class="px-8 py-3 bg-primary hover:bg-primary-hover text-background-dark font-black rounded-xl transition-all flex items-center gap-2 shadow-xl shadow-primary/30 active:scale-[0.98]">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        Reserve Now
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const CART_KEY = "lms_borrow_cart";
+        function getCart() { try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch { return []; } }
+        function saveCart(c) { localStorage.setItem(CART_KEY, JSON.stringify(c)); }
+        function removeFromCart(id) { saveCart(getCart().filter(b => b.id !== id)); renderCart(); }
+        function clearCart() { localStorage.removeItem(CART_KEY); renderCart(); }
+
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function renderCart() {
+            const cart = getCart();
+            const emptyEl = document.getElementById("emptyCart");
+            const itemsEl = document.getElementById("cartItems");
+            const formEl  = document.getElementById("checkoutForm");
+            const badge   = document.getElementById("cartBadge");
+            const hidden  = document.getElementById("hiddenBookIds");
+
+            badge.textContent = cart.length + (cart.length !== 1 ? " books" : " book");
+            hidden.innerHTML = "";
+
+            if (cart.length === 0) {
+                emptyEl.classList.remove("hidden");
+                itemsEl.classList.add("hidden");
+                formEl.classList.add("hidden");
+                return;
+            }
+
+            emptyEl.classList.add("hidden");
+            itemsEl.classList.remove("hidden");
+            formEl.classList.remove("hidden");
+
+            itemsEl.innerHTML = cart.map(book => `
+                <div class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-white/20 transition-all group">
+                    <div class="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-white/5 border border-white/10">
+                        <img src="${escapeHtml(book.image || "")}" alt="${escapeHtml(book.title)}"
+                             onerror="this.onerror=null;this.src='/images/book-placeholder.png';"
+                             class="w-full h-full object-cover" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-white group-hover:text-primary transition-colors truncate">${escapeHtml(book.title)}</h4>
+                        <p class="text-xs text-white/40">${escapeHtml(book.author || "Unknown Author")}</p>
+                    </div>
+                    <button type="button" onclick="removeFromCart(${book.id})"
+                            class="p-2 rounded-xl text-white/30 hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+                        <span class="material-symbols-outlined text-lg">close</span>
+                    </button>
+                </div>
+            `).join("");
+
+            cart.forEach(b => {
+                const inp = document.createElement("input");
+                inp.type = "hidden"; inp.name = "bookIds"; inp.value = b.id;
+                hidden.appendChild(inp);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", renderCart);
+    </script>
+}
