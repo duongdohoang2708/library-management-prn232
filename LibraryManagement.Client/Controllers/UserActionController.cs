@@ -61,47 +61,7 @@ namespace LibraryManagement.Client.Controllers
             return RedirectToAction("Details", "Books", new { id = bookId });
         }
 
-        /// <summary>
-        /// Member mượn sách trực tiếp khi còn bản copy.
-        /// POST /UserAction/RequestBorrow
-        /// </summary>
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Member")]
-        public async Task<IActionResult> RequestBorrow(int bookId)
-        {
-            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(userIdText, out var userId))
-            {
-                return RedirectToAction("Login", "Auth");
-            }
 
-            var client = httpClientFactory.CreateClient();
-            ApiActorHeaderHelper.AddActorHeaders(client, User);
-            var response = await client.PostAsJsonAsync(
-                $"{GetApiBaseUrl()}/api/circulation/member-borrow",
-                new MemberBorrowRequest
-                {
-                    UserId = userId,
-                    BookId = bookId,
-                    LoanDays = 14
-                });
-
-            var result = await response.Content.ReadFromJsonAsync<CirculationActionResponse>();
-
-            TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
-                result?.Message ?? (response.IsSuccessStatusCode
-                    ? "Book borrowed successfully."
-                    : "Failed to submit borrow request.");
-            if (response.IsSuccessStatusCode)
-            {
-                TempData["SuccessLinkController"] = "User";
-                TempData["SuccessLinkAction"] = "BorrowHistory";
-                TempData["SuccessLinkText"] = "View Borrowed Books";
-            }
-
-            return RedirectToAction("Details", "Books", new { id = bookId });
-        }
 
         private string GetApiBaseUrl()
         {
