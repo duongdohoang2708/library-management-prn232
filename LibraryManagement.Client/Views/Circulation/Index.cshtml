@@ -49,6 +49,8 @@
         </div>
     }
 
+    @await Html.PartialAsync("_RenewalRequestsPanel", ViewBag.PendingRenewalRequests as IEnumerable<LibraryManagementDAL.DTO.RenewalRequest.RenewalRequestItem> ?? Enumerable.Empty<LibraryManagementDAL.DTO.RenewalRequest.RenewalRequestItem>())
+
     <!-- Search Bar & Filters -->
     <div class="bg-black/20 border border-white/10 rounded-2xl p-6 mb-8 backdrop-blur-md">
         <form method="get" asp-action="Index" id="filterForm" class="flex flex-col md:flex-row gap-4">
@@ -302,6 +304,21 @@
 
 @section Scripts {
     <script>
+        function openRejectRenewalModal(id, bookTitle) {
+            document.getElementById('rejectRenewalBookTitle').textContent = bookTitle;
+            document.getElementById('rejectRenewalForm').action = '/Circulation/RejectRenewalRequest/' + id;
+            document.getElementById('rejectRenewalReason').value = '';
+            const modal = document.getElementById('rejectRenewalModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeRejectRenewalModal() {
+            const modal = document.getElementById('rejectRenewalModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
         function triggerSearch(form) {
             const formData = new FormData(form);
             const params = new URLSearchParams(formData);
