@@ -472,44 +472,14 @@ namespace LibraryManagement.BLL.Services
                 return Fail("Borrow detail not found.");
             }
 
-            if (detail.ActualReturnDate != null)
+            var validationError = await ValidateRenewalEligibilityAsync(detail);
+            if (validationError != null)
             {
-                return Fail("Returned books cannot be renewed.");
+                return Fail(validationError);
             }
 
             var policy = await systemSettingService.GetPolicyAsync();
             var now = DateTime.UtcNow;
-
-            // Check 1: Already Overdue
-            if (detail.DueDate.Date < now.Date)
-            {
-                return Fail("Overdue books cannot be renewed online. Please return the book or contact a librarian.");
-            }
-
-            // Check 2: Unpaid Fines
-            var unpaidFines = await circulationRepository.GetTotalUnpaidFinesAsync(detail.BorrowTransaction.UserId);
-            if (unpaidFines > 0)
-            {
-                return Fail("You cannot renew books because you have unpaid fines. Please pay off your fines first.");
-            }
-
-            // Check 3: Waitlist / Pending Reservations
-            if (detail.BookCopy != null)
-            {
-                var pendingReservationsCount = await reservationService.CountPendingReservationsAsync(detail.BookCopy.BookId);
-                if (pendingReservationsCount > 0)
-                {
-                    return Fail("This book has a pending reservation waitlist. You cannot renew it.");
-                }
-            }
-
-            // Check 4: Limit to maximum 1 renewal
-            var defaultDays = policy.DefaultLoanDays > 0 ? policy.DefaultLoanDays : 14;
-            if ((detail.DueDate.Date - detail.BorrowDate.Date).Days > defaultDays)
-            {
-                return Fail("This book copy has already been renewed once. You cannot renew it again.");
-            }
-
             var baseDate = detail.DueDate.Date < now.Date ? now.Date : detail.DueDate.Date;
             detail.DueDate = baseDate.AddDays(request.ExtraDays <= 0 ? policy.RenewDays : request.ExtraDays);
             detail.UpdatedAt = now;
@@ -526,6 +496,45 @@ namespace LibraryManagement.BLL.Services
             await circulationRepository.SaveChangesAsync();
             await auditLogService.LogAsync("RenewBook", "BorrowDetail", detail.BorrowDetailId.ToString(), $"Borrow detail #{detail.BorrowDetailId} renewed until {detail.DueDate:yyyy-MM-dd}.");
             return Ok("Book renewed successfully.", transaction.BorrowTransactionId);
+        }
+
+        public async Task<string?> ValidateRenewalEligibilityAsync(BorrowDetail detail)
+        {
+            if (detail.ActualReturnDate != null)
+            {
+                return "Returned books cannot be renewed.";
+            }
+
+            var policy = await systemSettingService.GetPolicyAsync();
+            var now = DateTime.UtcNow;
+
+            if (detail.DueDate.Date < now.Date)
+            {
+                return "Overdue books cannot be renewed online. Please return the book or contact a librarian.";
+            }
+
+            var unpaidFines = await circulationRepository.GetTotalUnpaidFinesAsync(detail.BorrowTransaction.UserId);
+            if (unpaidFines > 0)
+            {
+                return "You cannot renew books because you have unpaid fines. Please pay off your fines first.";
+            }
+
+            if (detail.BookCopy != null)
+            {
+                var pendingReservationsCount = await reservationService.CountPendingReservationsAsync(detail.BookCopy.BookId);
+                if (pendingReservationsCount > 0)
+                {
+                    return "This book has a pending reservation waitlist. You cannot renew it.";
+                }
+            }
+
+            var defaultDays = policy.DefaultLoanDays > 0 ? policy.DefaultLoanDays : 14;
+            if ((detail.DueDate.Date - detail.BorrowDate.Date).Days > defaultDays)
+            {
+                return "This book copy has already been renewed once. You cannot renew it again.";
+            }
+
+            return null;
         }
 
         public async Task<CirculationActionResponse> ReportIssueAsync(ReportIssueRequest request)
