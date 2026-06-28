@@ -4,6 +4,7 @@ using LibraryManagement.Client.Helpers;
 using LibraryManagement.Client.DTO.User;
 using LibraryManagementDAL.DTO.Circulation;
 using LibraryManagementDAL.DTO.Pagination;
+using LibraryManagementDAL.DTO.RenewalRequest;
 using LibraryManagementDAL.DTO.Reservation;
 using LibraryManagementDAL.DTO.User;
 using LibraryManagementDAL.Models;
@@ -253,12 +254,20 @@ namespace LibraryManagement.Client.Controllers
 
             ViewBag.DefaultLoanDays = defaultLoanDays;
 
+            var renewalRequests = await client.GetFromJsonAsync<List<RenewalRequestItem>>(
+                $"{GetApiBaseUrl()}/api/renewal-requests/users/{userId}")
+                ?? new List<RenewalRequestItem>();
+
+            ViewBag.RenewalRequestsByDetailId = renewalRequests
+                .GroupBy(x => x.BorrowDetailId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.RequestedAt).First());
+
             return View(transactions);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RenewBook(int borrowDetailId)
+        public async Task<IActionResult> RequestRenewal(int borrowDetailId)
         {
             var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdText, out var userId))
@@ -270,56 +279,22 @@ namespace LibraryManagement.Client.Controllers
             {
                 var client = httpClientFactory.CreateClient();
                 ApiActorHeaderHelper.AddActorHeaders(client, User);
-                var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/circulation/renew", new RenewRequest
+                var response = await client.PostAsJsonAsync($"{GetApiBaseUrl()}/api/renewal-requests", new RenewalRequestCreateRequest
                 {
+                    UserId = userId,
                     BorrowDetailId = borrowDetailId,
-                    ExtraDays = 7
+                    ExtraDays = 0
                 });
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var result = await response.Content.ReadFromJsonAsync<CirculationActionResponse>();
-                    TempData["SuccessMessage"] = result?.Message ?? "Book renewed successfully.";
-                }
-                else
-                {
-                    var contentType = response.Content.Headers.ContentType?.MediaType;
-                    if (contentType != null && contentType.Contains("json", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var jsonNode = await response.Content.ReadFromJsonAsync<System.Text.Json.Nodes.JsonNode>();
-                        if (jsonNode?["errors"] != null)
-                        {
-                            var errorsList = new List<string>();
-                            foreach (var prop in jsonNode["errors"].AsObject())
-                            {
-                                foreach (var err in prop.Value.AsArray())
-                                {
-                                    errorsList.Add(err.ToString());
-                                }
-                            }
-                            TempData["ErrorMessage"] = string.Join(" ", errorsList);
-                        }
-                        else
-                        {
-                            var result = System.Text.Json.JsonSerializer.Deserialize<CirculationActionResponse>(jsonNode.ToString(), new System.Text.Json.JsonSerializerOptions
-                            {
-                                PropertyNameCaseInsensitive = true
-                            });
-                            TempData["ErrorMessage"] = result?.Message ?? $"Failed to renew book (Status: {response.StatusCode}).";
-                        }
-                    }
-                    else
-                    {
-                        var errorText = await response.Content.ReadAsStringAsync();
-                        TempData["ErrorMessage"] = !string.IsNullOrWhiteSpace(errorText) 
-                            ? errorText 
-                            : $"Failed to renew book (Status: {response.StatusCode}).";
-                    }
-                }
+                var result = await response.Content.ReadFromJsonAsync<RenewalRequestActionResponse>();
+                TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
+                    result?.Message ?? (response.IsSuccessStatusCode
+                        ? "Renewal request submitted."
+                        : "Failed to submit renewal request.");
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"An error occurred during renewal: {ex.Message}";
+                TempData["ErrorMessage"] = $"An error occurred while submitting your renewal request: {ex.Message}";
             }
 
             return RedirectToAction(nameof(BorrowHistory));
