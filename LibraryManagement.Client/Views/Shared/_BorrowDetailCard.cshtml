@@ -1,4 +1,25 @@
 @model LibraryManagementDAL.DTO.Circulation.CirculationBorrowDetailItem
+@using LibraryManagementDAL.DTO.RenewalRequest
+@using LibraryManagementDAL.Models
+
+@{
+    var renewalByDetail = ViewBag.RenewalRequestsByDetailId as Dictionary<int, RenewalRequestItem>;
+    RenewalRequestItem? latestRenewalRequest = null;
+    if (renewalByDetail != null)
+    {
+        renewalByDetail.TryGetValue(Model.BorrowDetailId, out latestRenewalRequest);
+    }
+
+    var hasViewableRequest = latestRenewalRequest != null && latestRenewalRequest.Status != RenewalRequestStatus.Cancelled;
+    string StatusLabel(RenewalRequestStatus status) => status switch
+    {
+        RenewalRequestStatus.Pending => "Awaiting Approval",
+        RenewalRequestStatus.Approved => "Approved",
+        RenewalRequestStatus.Rejected => "Rejected",
+        RenewalRequestStatus.Cancelled => "Cancelled",
+        _ => status.ToString()
+    };
+}
 
 <div class="flex items-center gap-4 p-4 bg-black/20 rounded-2xl border border-white/5 group/book">
     <div class="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-white/5 border border-white/10">
@@ -24,25 +45,64 @@
             @if (Model.DueDate.Date >= DateTime.UtcNow.Date)
             {
                 var isAlreadyRenewed = (Model.DueDate.Date - Model.BorrowDate.Date).Days > (ViewBag.DefaultLoanDays ?? 14);
-                if (isAlreadyRenewed)
-                {
-                    <div class="mt-2 flex justify-end">
+                <div class="mt-2 flex flex-col items-end gap-1.5">
+                    @if (isAlreadyRenewed)
+                    {
                         <button type="button" disabled class="px-3 py-1 bg-white/5 text-white/30 border border-white/10 rounded-xl text-[10px] font-black cursor-not-allowed flex items-center gap-1">
                             <span class="material-symbols-outlined text-[12px]">check_circle</span>
                             Renewed
                         </button>
-                    </div>
-                }
-                else
-                {
-                    <form asp-action="RenewBook" method="post" class="mt-2 flex justify-end">
-                        <input type="hidden" name="borrowDetailId" value="@Model.BorrowDetailId" />
-                        <button type="submit" class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/30 rounded-xl text-[10px] font-black transition-all active:scale-[0.98] flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[12px]">autorenew</span>
-                            Renew
+                    }
+                    else if (latestRenewalRequest?.Status == RenewalRequestStatus.Pending)
+                    {
+                        <button type="button" disabled class="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl text-[10px] font-black cursor-not-allowed flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[12px]">hourglass_top</span>
+                            Awaiting Approval
                         </button>
-                    </form>
-                }
+                    }
+                    else if (latestRenewalRequest?.Status == RenewalRequestStatus.Rejected)
+                    {
+                        <form asp-controller="User" asp-action="RequestRenewal" method="post">
+                            <input type="hidden" name="borrowDetailId" value="@Model.BorrowDetailId" />
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/30 rounded-xl text-[10px] font-black transition-all active:scale-[0.98] flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[12px]">autorenew</span>
+                                Request Again
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-controller="User" asp-action="RequestRenewal" method="post" class="flex justify-end">
+                            <input type="hidden" name="borrowDetailId" value="@Model.BorrowDetailId" />
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/30 rounded-xl text-[10px] font-black transition-all active:scale-[0.98] flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[12px]">autorenew</span>
+                                Request Renewal
+                            </button>
+                        </form>
+                    }
+
+                    @if (hasViewableRequest)
+                    {
+                        <button type="button"
+                                onclick="openRenewalRequestModal(this)"
+                                class="px-3 py-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 rounded-xl text-[10px] font-bold transition-all flex items-center gap-1"
+                                data-request-id="@latestRenewalRequest!.RenewalRequestId"
+                                data-book-title="@Model.BookTitle"
+                                data-status="@StatusLabel(latestRenewalRequest.Status)"
+                                data-status-raw="@latestRenewalRequest.Status"
+                                data-requested-at="@latestRenewalRequest.RequestedAt.ToString("dd/MM/yyyy HH:mm")"
+                                data-current-due="@latestRenewalRequest.CurrentDueDate.ToString("dd/MM/yyyy")"
+                                data-new-due="@(latestRenewalRequest.NewDueDate?.ToString("dd/MM/yyyy") ?? "")"
+                                data-reviewed-at="@(latestRenewalRequest.ReviewedAt?.ToString("dd/MM/yyyy HH:mm") ?? "")"
+                                data-rejection-reason="@(latestRenewalRequest.RejectionReason ?? "")"
+                                data-extra-days="@latestRenewalRequest.RequestedExtraDays">
+                            <span class="material-symbols-outlined text-[12px]">visibility</span>
+                            View
+                        </button>
+                    }
+                </div>
             }
             else
             {
