@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
+using System.Security.Claims;
 using LibraryManagement.Client.Helpers;
 using LibraryManagementDAL.DTO.Circulation;
+using LibraryManagementDAL.DTO.RenewalRequest;
 using LibraryManagementDAL.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -48,6 +50,11 @@ namespace LibraryManagement.Client.Controllers
             catch { }
 
             ViewBag.DefaultLoanDays = defaultLoanDays;
+
+            var renewalRequests = await client.GetFromJsonAsync<List<RenewalRequestItem>>(
+                $"{GetApiBaseUrl()}/api/renewal-requests")
+                ?? new List<RenewalRequestItem>();
+            ViewBag.PendingRenewalRequests = renewalRequests;
 
             return View(result.Items);
         }
@@ -173,6 +180,52 @@ namespace LibraryManagement.Client.Controllers
             {
                 return RedirectToAction("Return", new { id = transactionId });
             }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveRenewalRequest(int id)
+        {
+            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdText, out var reviewerUserId))
+            {
+                return RedirectToAction("Login", "Auth");
+            }
+
+            var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
+            var response = await client.PostAsJsonAsync(
+                $"{GetApiBaseUrl()}/api/renewal-requests/{id}/approve",
+                new RenewalRequestApproveRequest { ReviewerUserId = reviewerUserId });
+            var result = await response.Content.ReadFromJsonAsync<RenewalRequestActionResponse>();
+
+            TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
+                result?.Message ?? (response.IsSuccessStatusCode ? "Renewal request approved." : "Approve renewal request failed.");
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectRenewalRequest(int id, string reason)
+        {
+            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdText, out var reviewerUserId))
+            {
+                return RedirectToAction("Login", "Auth");
+            }
+
+            var client = httpClientFactory.CreateClient();
+            ApiActorHeaderHelper.AddActorHeaders(client, User);
+            var response = await client.PostAsJsonAsync(
+                $"{GetApiBaseUrl()}/api/renewal-requests/{id}/reject",
+                new RenewalRequestRejectRequest { ReviewerUserId = reviewerUserId, Reason = reason });
+            var result = await response.Content.ReadFromJsonAsync<RenewalRequestActionResponse>();
+
+            TempData[response.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
+                result?.Message ?? (response.IsSuccessStatusCode ? "Renewal request rejected." : "Reject renewal request failed.");
+
             return RedirectToAction(nameof(Index));
         }
 
