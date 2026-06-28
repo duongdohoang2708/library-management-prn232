@@ -80,6 +80,9 @@ namespace LibraryManagementDAL.Models
         // Danh sách đặt chỗ trước
         public ICollection<Reservation>? Reservations { get; set; }
 
+        // Yêu cầu gia hạn sách
+        public ICollection<RenewalRequest>? RenewalRequests { get; set; }
+
         // Lịch sử thanh toán
         public ICollection<Payment>? Payments { get; set; }
 

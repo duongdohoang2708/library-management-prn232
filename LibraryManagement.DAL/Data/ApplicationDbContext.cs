@@ -28,6 +28,7 @@ namespace LibraryManagement.DAL.Data
         public DbSet<BorrowDetail> BorrowDetails => Set<BorrowDetail>();
 
         public DbSet<Reservation> Reservations => Set<Reservation>();
+        public DbSet<RenewalRequest> RenewalRequests => Set<RenewalRequest>();
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<PaymentDetail> PaymentDetails => Set<PaymentDetail>();
         public DbSet<BookReview> BookReviews => Set<BookReview>();
@@ -82,6 +83,7 @@ namespace LibraryManagement.DAL.Data
             modelBuilder.Entity<BookCopy>().Property(x => x.Status).HasConversion<int>();
             modelBuilder.Entity<BookCopy>().Property(x => x.Condition).HasConversion<int>();
             modelBuilder.Entity<Reservation>().Property(x => x.Status).HasConversion<int>();
+            modelBuilder.Entity<RenewalRequest>().Property(x => x.Status).HasConversion<int>();
             modelBuilder.Entity<Payment>().Property(x => x.PaymentMethod).HasConversion<int>();
             modelBuilder.Entity<Payment>().Property(x => x.PaymentStatus).HasConversion<int>();
         }
@@ -122,6 +124,9 @@ namespace LibraryManagement.DAL.Data
                 .Ignore(x => x.User);
 
             modelBuilder.Entity<Reservation>()
+                .Ignore(x => x.User);
+
+            modelBuilder.Entity<RenewalRequest>()
                 .Ignore(x => x.User);
 
             modelBuilder.Entity<BookReview>()
@@ -189,6 +194,24 @@ namespace LibraryManagement.DAL.Data
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<RenewalRequest>()
+                .HasOne(x => x.Account)
+                .WithMany(x => x.RenewalRequests)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RenewalRequest>()
+                .HasOne(x => x.BorrowDetail)
+                .WithMany()
+                .HasForeignKey(x => x.BorrowDetailId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RenewalRequest>()
+                .HasOne(x => x.ReviewedBy)
+                .WithMany()
+                .HasForeignKey(x => x.ReviewedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<Payment>()
                 .HasOne(x => x.Account)
                 .WithMany(x => x.Payments)
@@ -240,6 +263,9 @@ namespace LibraryManagement.DAL.Data
 
             modelBuilder.Entity<Reservation>()
                 .HasIndex(x => new { x.BookId, x.Status });
+
+            modelBuilder.Entity<RenewalRequest>()
+                .HasIndex(x => new { x.BorrowDetailId, x.Status });
 
             modelBuilder.Entity<BorrowDetail>()
                 .HasIndex(x => x.BookCopyId);
